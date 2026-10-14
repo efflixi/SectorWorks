@@ -1,0 +1,194 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SectorWorks.UI.ViewModels"
+             xmlns:core="using:SectorWorks.Core"
+             xmlns:ui="using:SectorWorks.UI"
+             x:Class="SectorWorks.UI.WorkspaceView" x:DataType="vm:WorkspaceViewModel">
+  <Grid x:Name="PaneGrid" Margin="4">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="260" MinWidth="160" MaxWidth="600" />
+      <ColumnDefinition Width="5" />
+      <ColumnDefinition Width="*" MinWidth="250" />
+      <ColumnDefinition Width="5" />
+      <ColumnDefinition Width="300" MinWidth="180" MaxWidth="600" />
+    </Grid.ColumnDefinitions>
+    <Border Classes="pane">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="IMAGE STRUCTURE" Padding="7" Foreground="{DynamicResource WorkbenchMuted}" />
+        <TreeView x:Name="StructureTree" ItemsSource="{Binding Roots}" SelectedItem="{Binding SelectedNode, Mode=OneWay}" SelectionChanged="TreeSelected"
+                  AutomationProperties.Name="Image structure">
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate x:DataType="vm:StructureNode" ItemsSource="{Binding Children}">
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <PathIcon Data="{Binding Icon}" Width="16" Height="16" />
+                <TextBlock Text="{Binding Title}" />
+              </StackPanel>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+          <TreeView.Styles>
+            <Style Selector="TreeViewItem" x:DataType="vm:StructureNode">
+              <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            </Style>
+          </TreeView.Styles>
+        </TreeView>
+      </DockPanel>
+    </Border>
+    <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+    <Grid Grid.Column="2" x:Name="CenterGrid">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" MinHeight="100" />
+        <RowDefinition Height="5" />
+        <RowDefinition Height="220" MinHeight="0" MaxHeight="600" />
+      </Grid.RowDefinitions>
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="pane" Padding="3">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Button Content="↑" Command="{Binding UpCommand}" ToolTip.Tip="Parent directory (Alt+Up)" />
+            <Button Grid.Column="2" Content="Tools" Command="{Binding ToggleToolsCommand}" ToolTip.Tip="Show/hide lower tool pane" />
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="BreadcrumbBar" ItemsSource="{Binding Breadcrumbs}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:Breadcrumb">
+                  <Button Content="{Binding Title}" Click="BreadcrumbClicked" ToolTip.Tip="{Binding Path}" MinWidth="28" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+        <DataGrid x:Name="FileGrid" ItemsSource="{Binding Entries}" AutoGenerateColumns="False" IsReadOnly="True"
+                  SelectionMode="Extended" CanUserResizeColumns="True" CanUserSortColumns="True"
+                  SelectionChanged="FilesSelected" DoubleTapped="FileActivated" Sorting="ColumnSorting"
+                  AutomationProperties.Name="Files and directories">
+          <DataGrid.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Open / Preview" Click="OpenSelected" />
+              <MenuItem Header="Extract selected…" Command="{Binding ExtractCommand}" />
+              <MenuItem Header="Properties" Command="{Binding PropertiesViewCommand}" />
+              <MenuItem Header="Hex View" Command="{Binding HexCommand}" />
+              <Separator />
+              <MenuItem Header="Add File…" Command="{Binding AddCommand}" ToolTip.Tip="{Binding AddReason}" />
+              <MenuItem Header="Replace File…" Command="{Binding ReplaceCommand}" ToolTip.Tip="{Binding ReplaceReason}" />
+              <MenuItem Header="Delete…" Command="{Binding DeleteCommand}" ToolTip.Tip="{Binding DeleteReason}" />
+              <MenuItem Header="Rename…" Command="{Binding RenameCommand}" ToolTip.Tip="{Binding RenameReason}" />
+              <MenuItem Header="New Folder…" Command="{Binding NewDirectoryCommand}" ToolTip.Tip="{Binding NewDirectoryReason}" />
+              <Separator />
+              <MenuItem Header="Review Pending Changes" Command="{Binding ReviewChangesCommand}" />
+            </ContextMenu>
+          </DataGrid.ContextMenu>
+          <DataGrid.Columns>
+            <DataGridTemplateColumn Header="Name" SortMemberPath="Name" Width="2*" MinWidth="160">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate x:DataType="core:FileEntry">
+                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="5,0" VerticalAlignment="Center">
+                    <PathIcon Data="{StaticResource IconFile}" Width="16" Height="16" IsVisible="{Binding !IsDirectory}" />
+                    <PathIcon Data="{StaticResource IconFolder}" Width="16" Height="16" IsVisible="{Binding IsDirectory}" />
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding IsChanged, Converter={x:Static ui:PresentationConverters.ChangeMarker}}"
+                               Foreground="{DynamicResource WorkbenchWarning}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn Header="Size (bytes)" Binding="{Binding Length}" Width="110" />
+            <DataGridTextColumn Header="Type" Binding="{Binding ., Converter={x:Static ui:PresentationConverters.EntryType}}" Width="80" SortMemberPath="Name" />
+            <DataGridTextColumn Header="Modified" Binding="{Binding ModifiedUtc, Converter={x:Static ui:PresentationConverters.Modified}}" Width="190" />
+            <DataGridTextColumn Header="Attributes" Binding="{Binding Attributes}" Width="100" />
+            <DataGridTextColumn Header="Offset" Binding="{Binding Offset}" Width="100" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </DockPanel>
+      <GridSplitter Grid.Row="1" ResizeDirection="Rows" IsVisible="{Binding ToolVisible}" />
+      <Border Grid.Row="2" Classes="pane" IsVisible="{Binding ToolVisible}">
+        <TabControl x:Name="ToolTabs" SelectedIndex="{Binding ToolIndex}" SelectionChanged="ToolSelected" AutomationProperties.Name="Context tools">
+          <TabItem Header="File Preview">
+            <TextBox Classes="technical" Text="{Binding PreviewText}" AcceptsReturn="True" TextWrapping="Wrap"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Bounded file preview" />
+          </TabItem>
+          <TabItem Header="Hex View">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6">
+                <Button Content="Previous page" Command="{Binding PreviousHexCommand}" />
+                <TextBlock Text="{Binding HexOffset, StringFormat='Offset: {0:N0}'}" VerticalAlignment="Center" />
+                <Button Content="Next page" Command="{Binding NextHexCommand}" />
+              </StackPanel>
+              <TextBox Classes="technical" Text="{Binding HexText}" AcceptsReturn="True"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Read-only hex bytes" />
+            </DockPanel>
+          </TabItem>
+          <TabItem Header="Properties">
+            <TextBox Classes="technical" Text="{Binding Properties}" AcceptsReturn="True"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" />
+          </TabItem>
+          <TabItem Header="Search Results">
+            <ListBox x:Name="SearchList" ItemsSource="{Binding SearchResults}" DoubleTapped="SearchActivated"
+                     AutomationProperties.Name="Search results — Enter to navigate">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="core:SearchHit">
+                  <TextBlock Text="{Binding Entry.Path}" ToolTip.Tip="{Binding VolumeId}" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </TabItem>
+          <TabItem Header="Validation">
+            <TextBox x:Name="ValidationResult" Classes="technical" Text="{Binding Validation}" TextWrapping="Wrap" AcceptsReturn="True"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" />
+          </TabItem>
+          <TabItem Header="Audio Player" IsEnabled="False" ToolTip.Tip="CD-DA playback belongs to Phase 6." />
+          <TabItem Header="Track Information" IsEnabled="False" ToolTip.Tip="BIN/CUE track browsing belongs to Phase 6." />
+          <TabItem Header="Image Map" IsEnabled="False" ToolTip.Tip="Graphical image map is not implemented in Phase 1." />
+          <TabItem Header="Pending Changes">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Top" Spacing="4">
+                <TextBlock Text="{Binding PendingSummary}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PendingSummary}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Button Content="Undo" Command="{Binding UndoCommand}" />
+                  <Button Content="Redo" Command="{Binding RedoCommand}" />
+                  <Button Content="Discard…" Command="{Binding DiscardCommand}" />
+                  <Button Content="Save As New Image…" Command="{Binding SaveAsCommand}" ToolTip.Tip="{Binding SaveAsReason}" />
+                </StackPanel>
+                </ScrollViewer>
+              </StackPanel>
+              <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="0,3,0,0">
+                <TextBlock Text="{Binding SaveProgress}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding SaveProgress}" />
+                <Button Grid.Column="1" Content="Validation…" Command="{Binding ShowValidationCommand}" ToolTip.Tip="Show full Save As result, validation details, or failure/recovery paths." />
+              </Grid>
+              <ListBox x:Name="PendingChangesList" ItemsSource="{Binding PendingChanges}" AutomationProperties.Name="Ordered pending changes"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                <ListBox.Styles>
+                  <Style Selector="ListBoxItem">
+                    <Setter Property="MinHeight" Value="24" />
+                    <Setter Property="Padding" Value="4,2" />
+                  </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="core:PendingImageChange">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding Sequence}" />
+                      <TextBlock Text="{Binding Kind}" />
+                      <TextBlock Text="{Binding VolumeId}" />
+                      <TextBlock Text="{Binding Path}" />
+                      <TextBlock Text="{Binding NewName}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+          </TabItem>
+        </TabControl>
+      </Border>
+    </Grid>
+    <GridSplitter Grid.Column="3" ResizeDirection="Columns" />
+    <Border Grid.Column="4" Classes="pane">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="IMAGE / PARTITION / FILESYSTEM" Padding="7" Foreground="{DynamicResource WorkbenchAccent}" />
+        <TextBox Classes="technical" Text="{Binding Inspector}" TextWrapping="Wrap" AcceptsReturn="True"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Copyable technical inspector" />
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

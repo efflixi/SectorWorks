@@ -1,0 +1,1231 @@
+SECTORWORKS DEVELOPMENT CHECKLIST
+Workflow Revision: 0.2
+
+Purpose:
+This checklist converts the SectorWorks technical phases into an agent-executable implementation plan. It is intentionally more concrete than the technical specification.
+
+WORKFLOW AUTHORITY
+- The command "Start Phase N" authorizes autonomous work through THAT PHASE ONLY.
+- Agents must read rules.txt, this checklist, and relevant specifications before beginning.
+- Agents may proceed through individual tasks in the authorized phase without asking for approval for each task.
+- Agents must NEVER begin a later phase without explicit user approval.
+- A later-phase dependency discovered during current work must be noted under the affected item and reported to the user.
+- At the end of every phase, the agent must perform verification, update this checklist truthfully, request user review, and STOP.
+
+STATUS KEY
+[ ] Not started / incomplete
+[x] Completed and verified
+[-] Intentionally not applicable or explicitly deferred
+[!] Blocked, uncertain, requires user decision, or blocked by a later-phase dependency
+
+CHECKLIST NOTE FORMAT
+[!] Example blocked task.
+    NOTE: Completion requires Phase 3 item 3.x. Current phase implements only the minimum abstraction required to remain architecturally sound.
+
+GLOBAL RULES
+    NOTE: Continuous requirements, re-evaluated for every phase. Per-phase
+    evidence is recorded in verification gates, not permanent exemptions.
+[ ] Read rules.txt before beginning an authorized phase.
+[ ] Keep storage, UI, and platform-specific code separated by interfaces.
+[ ] Treat image files as untrusted input; validate offsets, lengths, counts, and sizes.
+[ ] Use checked arithmetic for storage calculations.
+[ ] Never require host-OS mounting for core image access.
+[ ] Do not assume images fit in memory; prefer streaming/random access and bounded buffers.
+[ ] Keep long operations off the UI thread.
+[ ] Track capabilities independently rather than treating a recognized format as fully supported.
+[ ] Add tests with new storage functionality in the phase that introduces it.
+[ ] Use disposable/generated copies for all write tests.
+[ ] Keep representative golden fixtures and record hashes where useful.
+[ ] Prefer managed .NET dependencies.
+[ ] Review native dependencies for all required OS/architecture combinations.
+[ ] Keep Windows 7/8 best-effort only; do not compromise the architecture for them.
+[ ] Never weaken valid tests to make verification pass.
+[ ] Never mark physical platform validation complete based solely on cross-compilation.
+[ ] Never cross into a later phase without explicit user approval.
+
+
+============================================================
+PROJECT FOUNDATION - COMPLETE BEFORE OR DURING EARLY PHASE 1
+============================================================
+
+Repository / agent workflow
+[x] Create source repository.
+    NOTE: Git repository on main; private GitHub repository: https://github.com/efflixi/SectorWorks
+[x] Add README describing SectorWorks and current project status.
+[x] Add appropriate license and third-party notices.
+    NOTE: Owner selected GPL-3.0-only. Dependency license texts and bundled
+    native/runtime notices retained in docs/licenses and publish outputs.
+[x] Add .editorconfig and C# style/formatting rules.
+[x] Put rules.txt in repository root.
+[x] Put checklist.txt in repository root.
+[x] Put current technical specification in repository documentation.
+[x] Put current UI specification in repository documentation.
+    NOTE: Documentation copies and design references byte-compared with
+    supplied references; owner-authorized scope corrections kept synchronized.
+[x] Document which files agents must read before beginning work.
+    NOTE: AGENTS.md documents required reading and the phase authority gate.
+
+Solution / architecture
+[x] Select initial .NET version.
+    NOTE: .NET 10 LTS / net10.0 selected; no legacy Windows accommodation.
+[x] Record selected .NET SDK/runtime version.
+    NOTE: SDK 10.0.402 pinned in global.json; host runtime 10.0.13.
+    Missing SDK installed user-locally; scripts discover it without system changes.
+[x] Create initial .NET solution.
+[x] Add Avalonia packages.
+    NOTE: Avalonia/Desktop/Fluent 12.1.4; native assets inspected for six RIDs.
+[x] Establish MVVM conventions.
+    NOTE: CommunityToolkit.Mvvm 8.4.2, observable base and notification test;
+    conventions documented in docs/architecture.md. Shell added in Phase 1.
+[x] Create SectorWorks.Core.
+[x] Create SectorWorks.Storage.
+[x] Create SectorWorks.Services.
+[x] Create SectorWorks.Platform or equivalent platform abstraction project(s).
+[x] Create SectorWorks.UI.
+[x] Create SectorWorks.Tests project(s).
+[x] Ensure Core does not depend on Avalonia.
+[x] Ensure Storage does not depend on Avalonia.
+[x] Ensure filesystem handlers do not depend on host OS filesystem drivers for core image functionality.
+    NOTE: Shared-layer graph verified by tests, including Phase 1 handlers.
+    Platform APIs create extraction output; they do not interpret image data.
+
+Dependency evaluation
+[x] Prototype DiscUtils or selected maintained fork.
+    NOTE: Owner approved keeping DiscUtils 0.16.13 for development on 2026-10-13.
+    Maintenance/replacement risk accepted for now; re-evaluate in release-quality
+    work before production release. Probe remains isolated from the product.
+[x] Document containers it can read.
+[x] Document containers it can write.
+[x] Document filesystems it can read.
+[x] Document filesystems it can write.
+    NOTE: docs/dependency-evaluation.md separates upstream claims from executed
+    evidence. NTFS formatting fails on Linux Windows SID APIs; ordinary NTFS
+    reads passed against independently authored media. No product write support.
+[x] Test malformed/truncated input behavior.
+    NOTE: Five invalid media cases assert exact observed exception types in
+    subprocesses with 15-second deadlines; read-only FAT write is rejected.
+[x] Review licensing.
+    NOTE: MIT with full retained notice; authoring-only NTFS tools not bundled.
+[x] Review maintenance status/test coverage.
+    NOTE: 2021 upstream/package baseline, high maintenance risk; upstream test
+    suite inspected, not executed or measured for coverage. Local probes pass.
+[x] Identify areas requiring additional libraries or internal implementations.
+    NOTE: Missing formats/optical audio, hostile-input guards, error mapping,
+    preservation and transactional safety documented as later-phase work.
+
+Agent-friendly local commands
+[x] Create repository-local restore command/script.
+[x] Create repository-local build command/script.
+[x] Create repository-local test command/script.
+[x] Create repository-local verify command/script.
+[x] Ensure scripts are callable from Linux Mint 22 / VS Code terminal.
+    NOTE: Executed on Linux Mint 22 x64, including invocation outside repository.
+[x] Ensure failures return nonzero exit codes.
+[x] Ensure output clearly identifies the failing stage.
+    NOTE: Missing SDK (127), invalid RID (2), and deliberate MSBuild failure
+    verified. No failure was hidden or converted into success.
+[x] Document local build/test/verify commands.
+[x] Do not require remote CI infrastructure for normal project development.
+
+Build/publish targets from primary Linux host
+[x] Configure linux-x64 target.
+[x] Configure linux-arm64 target.
+[x] Configure win-x64 target.
+[x] Configure win-arm64 target.
+[x] Configure osx-x64 target.
+[x] Configure osx-arm64 target.
+[x] Create repeatable local cross-target build/publish scripts.
+[x] Confirm linux-x64 builds from primary Linux host.
+[x] Confirm linux-arm64 builds from primary Linux host.
+[x] Confirm win-x64 builds from primary Linux host.
+[x] Confirm win-arm64 builds from primary Linux host, where dependencies permit.
+[x] Confirm osx-x64 builds from primary Linux host, where dependencies permit.
+[x] Confirm osx-arm64 builds from primary Linux host, where dependencies permit.
+    NOTE: Release self-contained publishes passed for all six RIDs. Target
+    executable/native binary architecture headers inspected.
+[x] Keep physical platform validation tracked separately from cross-build success.
+    NOTE: Foundation console evidence retained separately from Phase 1 Linux
+    X11 UI/workflows. No Windows/macOS/ARM64 physical validation is claimed.
+
+Initial fixtures
+[x] Create small raw FAT12 floppy fixture.
+[x] Create FAT16 fixture.
+[x] Create FAT32 fixture.
+[x] Create MBR-partitioned fixture.
+[x] Create GPT-partitioned fixture.
+[x] Create NTFS fixture.
+    NOTE: Independently authored with installed mkntfs/ntfscp, reopened via
+    managed DiscUtils. Native tools not needed for routine tests.
+[x] Create ISO 9660/Joliet fixture.
+[x] Create VHD fixture.
+[x] Create VHDX fixture.
+    NOTE: Dynamic VHD/VHDX initially; fixed/differencing variants are later tests.
+[x] Create intentionally truncated/corrupt fixtures.
+[x] Record hashes for immutable golden fixtures.
+    NOTE: 14 gzip goldens, 802460 compressed bytes / 695694972 expanded bytes.
+    Manifest records compressed and expanded SHA256 and lengths. Tests stream
+    expansion/hash verification and reopen normal media to check contents.
+
+FOUNDATION VERIFICATION / REVIEW STATUS
+    NOTE: Locked restore, Release solution build (zero warnings/errors), all
+    30 tests (zero skips), format verification and document-copy comparisons
+    passed on Linux Mint 22 x64. Six self-contained cross-publishes passed.
+    Missing SDK, invalid RID and build-stage failure propagation verified.
+    Foundation reviewed; owner authorized Phase 1 on 2026-10-14.
+    Audio scope resolved by owner on 2026-10-13: follow this checklist, with
+    BIN/CUE and functional CD-DA playback in Phase 6. UI spec/guide corrected
+    and documentation copies synchronized; Phase 1 only reserves structure/tabs.
+
+
+============================================================
+PHASE 1 - READ-ONLY EXPLORER
+============================================================
+
+GOAL:
+Establish the permanent UI foundation and a safe read-only storage pipeline capable of opening, inspecting, browsing, previewing, and extracting the initial image formats.
+
+1.1 Block-device foundation
+[x] Define common read-only block-device interface.
+[x] Expose logical byte length.
+[x] Expose logical/physical sector size where known.
+[x] Implement bounded random-access reads.
+[x] Reject out-of-range reads.
+[x] Define future write/flush members without enabling writes.
+[x] Expose read-only state/capabilities.
+[x] Implement bounded partition/sub-device views.
+[x] Add cancellation where useful.
+[x] Test beginning/middle/end/out-of-range reads.
+[x] Test with image sizes that cannot reasonably be loaded whole into memory.
+    NOTE: Verified bounded reads, EOF/overflow, cancellation and readonly
+    behavior; 8 TiB sparse raw / 1 TiB dynamic VHDX tests. Maximum request 1 MiB.
+
+1.2 Format detection / raw IMG
+[x] Define image/container handler interface.
+[x] Define format detection result/priority model.
+    NOTE: Wired raw/ISO/VHD/VHDX handler interface and content-priority
+    selection; filesystem factories likewise use a separate handler contract.
+[x] Do not rely solely on extension.
+[x] Implement raw handler.
+[x] Expose raw image as block device.
+[x] Detect filesystem-only floppy/raw images.
+[x] Detect whole-disk raw images with partition table.
+[x] Report image size/sector assumptions.
+[x] Handle unknown layouts safely.
+[x] Add detection/open tests.
+    NOTE: Content-prioritized detection; unknown raw images retain metadata/
+    virtual hex access with warnings and no inferred filesystem capabilities.
+
+1.3 VHD/VHDX read support
+[x] Detect VHD.
+[x] Open fixed VHD read-only.
+[x] Open dynamic VHD read-only.
+[x] Detect/report differencing VHD parent requirements.
+[x] Detect VHDX.
+[x] Open fixed VHDX read-only where supported.
+    NOTE: Synthetic fixed-reader fixture (all blocks allocated and fixed flag).
+    Independent-tool fixed-VHDX interoperability remains release-hardening work.
+[x] Open dynamic VHDX read-only.
+[x] Detect/report differencing VHDX parent requirements.
+    NOTE: Parent-requiring containers rejected explicitly; no automatic parent
+    paths followed. Active VHDX log replay is also refused, not repaired.
+[x] Expose virtual size separately from container file size.
+[x] Expose useful VHD/VHDX metadata.
+[x] Avoid expanding sparse/dynamic images.
+[x] Add VHD/VHDX read tests.
+[x] Add missing-parent/error tests.
+
+1.4 ISO read support
+[x] Detect ISO.
+[x] Detect ISO 9660.
+[x] Detect Joliet.
+[x] Detect Rock Ridge when supported.
+[x] Detect UDF when supported.
+    NOTE: UDF recognition only; ISO/UDF bridges expose their ISO view.
+    UDF-only browsing is unavailable and reported, not falsely advertised.
+[x] Expose volume identifier/metadata.
+[x] Detect El Torito catalog where possible.
+[x] Report bootability metadata without unsupported guarantees.
+[x] Browse ISO files/directories read-only.
+[x] Add ISO extraction/naming tests.
+    NOTE: Joliet Unicode, ordinary Rock Ridge and boot catalog metadata tested.
+    Multi-extent/interleaved/relocated optical layouts explicitly unsupported.
+
+1.5 MBR support
+[x] Detect MBR signature.
+[x] Parse primary partitions.
+[x] Validate offsets/lengths.
+[x] Detect overlap/out-of-range partitions.
+[x] Expose valid partitions as bounded block devices.
+[x] Report partition type and active flag.
+[x] Represent unallocated regions where practical.
+[x] Add normal/malformed tests.
+    NOTE: Primary partitions only; extended containers reported, not traversed.
+    Unallocated ranges exposed as metadata. Hybrid protective MBR warns.
+
+1.6 GPT support
+[x] Recognize protective MBR.
+[x] Parse GPT header.
+[x] Validate header/bounds.
+[x] Parse entries.
+[x] Expose type GUID, unique GUID, and name.
+[x] Validate extents/overlaps.
+[x] Report primary/backup GPT consistency where practical.
+[x] Expose partitions as bounded block devices.
+[x] Represent unallocated regions where practical.
+[x] Add normal/damaged GPT tests.
+    NOTE: Header/entry CRCs, usable extents and metadata overlaps checked.
+    Valid primary + damaged backup browses with warning; no silent recovery.
+
+1.7 Filesystem detection
+[x] Define filesystem handler interface.
+[x] Define standardized file/directory metadata model.
+[x] Define filesystem capability model.
+[x] Detect FAT12/FAT16/FAT32.
+[x] Detect NTFS.
+[x] Detect ISO 9660/Joliet through optical path.
+[x] Detect UDF where supported.
+[x] Never infer write support from detection alone.
+[x] Add false-positive tests.
+
+1.8 FAT read-only browsing
+[x] Enumerate FAT12 root/subdirectories and read files.
+[x] Repeat for FAT16.
+[x] Repeat for FAT32.
+[x] Support long filenames where applicable.
+[x] Preserve/display short names where useful.
+[x] Expose attributes/timestamps.
+[x] Detect invalid/cyclic cluster chains safely.
+[x] Handle empty files/directories.
+[x] Add long-name/Unicode fixtures where applicable.
+    NOTE: Internal readonly FAT walker bounds chains, validates LFN/checksums/
+    extents/ancestry and rejects cycles. FAT times retain unspecified timezone.
+    NOTE: Owner's Compaq diagnostic floppy exposed a legacy-BPB compatibility
+    gap. Validated unsigned early-DOS FAT12 floppies now open with a warning;
+    exact size/floppy geometry/matching FATs required. Eight synthetic regressions
+    pass; all ten supplied files read/hash successfully with source unchanged.
+    NOTE: Retain this tested 720K subset. Owner prioritizes 360K/720K retro
+    workflows; broader compatibility and qualification are tracked in Phase 7
+    item 7.10, not implemented as part of these Phase 1 refinements.
+
+1.9 NTFS read-only browsing
+[x] Open NTFS read-only.
+[x] Enumerate directories.
+[x] Read ordinary files.
+[x] Expose names/timestamps/basic attributes.
+[x] Handle resident/non-resident files.
+[ ] Handle sparse/compressed files when supported.
+    NOTE: Sparse/compressed/encrypted/link content, ADS and attribute-list
+    extensions explicitly rejected in current adapter; no such read claim.
+[x] Report unsupported features rather than returning incorrect data.
+[x] Add browsing/large-file/Unicode tests.
+    NOTE: Ordinary resident/nonresident files and synthetic Unicode rename
+    tested. Resource-limited NTFS preflight; initialized MFT limit 128 MiB.
+    NTFS formatting/write limitations remain recorded for release review.
+
+1.10 Workspace/capability model
+[x] Implement ImageWorkspace/session model.
+[x] Implement Opening, Ready/Read-only, Failed, and Closed states.
+[x] Implement CanBrowse/CanExtract/CanPreview.
+[x] Implement CanValidate where available.
+    NOTE: Full validation is explicitly unavailable; bounded opening checks
+    and their warnings are not advertised as full filesystem certification.
+[x] Define CanPlayAudioTrack for later optical expansion without implementing Phase 6 behavior.
+[x] Populate write capabilities accurately as unavailable in Phase 1.
+[x] Provide human-readable reasons for unavailable capabilities.
+[x] Map image -> partition -> filesystem -> directory/file hierarchy.
+[x] Derive effective capability from complete stack rather than extension.
+    NOTE: Per-volume capabilities independently constrain workspace and
+    selected-volume operations; metadata-only regression coverage included.
+
+1.11 Phase 1 UI shell
+[x] Implement main Avalonia window.
+[x] Apply dark graphite/charcoal visual direction.
+[x] Define reusable theme/accent/semantic colors.
+[x] Establish compact desktop typography.
+[x] Avoid Electron/SaaS dashboard styling, oversized cards, excessive whitespace, and excessive rounding.
+[x] Implement File/Edit/View/Image/Tools/Window/Help menus.
+[x] Implement compact toolbar.
+[x] Implement Open/Close/Extract/Properties/Refresh.
+[x] Display future Add/Replace/Delete/New Folder commands disabled when appropriate.
+[x] Implement Hex View command/placeholder according to Phase 1 scope.
+[x] Implement compact search field/framework.
+[x] Implement status bar.
+[x] Add File > Preferences with persistent default sorting options.
+    NOTE: Owner requested on 2026-10-14 before Phase 2; initial default is
+    folders first alphabetically, then files alphabetically.
+    NOTE: Sort field/direction/grouping persisted; Cancel does not apply/save.
+    Errors visible; open-tab selections survive Save and re-sorting.
+
+1.12 Vector icon system
+[x] Select coherent appropriately licensed vector icon family.
+[x] Document icon license/attribution.
+    NOTE: Original SectorWorks Compact geometry, GPL-3.0-only; twenty shared
+    icons. No external artwork copied; attribution shipped in licenses/.
+[x] Create shared XAML icon resource dictionary.
+[x] Use Avalonia PathIcon/StreamGeometry where practical.
+[x] Add file/image command icons.
+[x] Add tool/search/refresh icons.
+[x] Add disk/optical/partition/filesystem/folder/file icons.
+[x] Add information/warning/error/success icons.
+[x] Add tree navigation visuals.
+[x] Ensure Foreground derives from theme/state resources.
+[x] Test 16/18/20/24 logical-pixel rendering.
+[x] Test high-DPI scaling.
+[x] Add labels/tooltips/accessibility names for ambiguous icons.
+[x] Keep SectorWorks app icon/logo/wordmark as external branding assets.
+    NOTE: Product branding itself remains unproduced release-preparation work.
+
+1.13 Multi-workspace tabs
+[x] Implement workspace tab host.
+[x] Open each image in own tab.
+[x] Support multiple images.
+[x] Display format-aware tab icon.
+[x] Close individual tabs safely.
+[x] Preserve navigation/tree/selection/pane state according to chosen policy.
+    NOTE: Per-tab state retained while open; last active pane layout saved
+    on detachment/window close. Invalid layout produces a persistent warning.
+[x] Handle failed open without affecting other tabs.
+
+1.14 Left structure pane
+[x] Implement hierarchical tree.
+[x] Show image info, MBR/GPT, partitions, filesystems, directories, unallocated space where available.
+    NOTE: Unpartitioned ranges are labeled as possibly containing metadata,
+    not certified filesystem free space; directory children load lazily.
+[x] Reserve session/track nodes without implementing Phase 6 optical behavior.
+    NOTE: ISO tree has an explicitly informational Phase 6 reservation with
+    no loader/volume/path/children; no real sessions or tracks are invented.
+[x] Use semantic vector icons.
+[x] Add keyboard navigation and expand/collapse.
+[x] Synchronize selected node with browser/inspector.
+[x] Synchronize browser-driven folder navigation back to the lazy structure tree.
+    NOTE: Owner found the initial tree-to-browser behavior insufficient;
+    folder activation, parent/breadcrumb and search navigation must select and
+    reveal the displayed directory without stale or recursive updates.
+    NOTE: Actual TreeView selection, lazy-load sharing, failed/cancelled/late
+    navigation and real header-click descending folder grouping verified.
+
+1.15 Center file browser
+[x] Implement compact Details grid.
+[x] Provide Name/Size/Type/Modified/Attributes columns as available.
+[x] Provide optional/contextual LBA/offset field.
+[x] Support sorting/resizing/single-select/multi-select.
+[x] Add keyboard and double-click navigation.
+[x] Add context menu and breadcrumbs.
+[x] Synchronize inspector.
+[x] Keep large directories responsive.
+    NOTE: Skia-backed test verifies 50,000 entries realize at most 100 rows.
+    DataGrid 12.1.2 is separately versioned, MIT, and adds no native library.
+
+1.16 Right inspector
+[x] Show image format/path/file size/virtual size/sector info.
+[x] Show partition-table/partition/filesystem metadata.
+[x] Show selected entry properties.
+[x] Show capability section and reasons for unavailable features.
+[x] Use compact label/value presentation rather than cards.
+[x] Allow useful technical values to be copied.
+    NOTE: Inspector uses selectable/copyable text. Native clipboard integration
+    and presentation polish warrant human review on each physical platform.
+
+1.17 Context-sensitive lower pane
+[x] Implement collapsible/resizable tool pane.
+[x] Add File Preview/Text/Hex/Properties/Search Results/Validation tabs as appropriate.
+[x] Reserve Audio Player/Track Information tabs for Phase 6 without implementing playback.
+[x] Reserve Image Map if deferred.
+    NOTE: Audio/track and Image Map reservations visibly unavailable.
+[x] Activate relevant tab according to selection.
+
+1.18 Preview/hex
+[x] Define safe preview handler interface.
+[x] Add bounded plain-text preview.
+[x] Do not execute content automatically.
+[x] Implement read-only hex view or explicitly defer with checklist NOTE if approved.
+[x] Stream/paginate large hex content.
+[x] Add safe unsupported/error states.
+    NOTE: Strict UTF-8/BOM UTF-16 at 64 KiB; truncation handles split
+    multibyte characters. File/virtual-image hex uses 4 KiB pages.
+    Preview/file hex reject metadata-length mismatches and premature EOF.
+
+1.19 Extraction
+[x] Extract single/multiple files and recursive directories.
+[x] Prevent path traversal outside selected destination.
+[x] Define duplicate/overwrite behavior.
+[x] Handle host-invalid filenames safely.
+[x] Show progress and safe cancellation.
+[x] Report per-file failures sensibly.
+[x] Add hostile filename/path traversal tests.
+    NOTE: Create-new/no-overwrite; held OS directory handles prevent link
+    redirection. Reject reserved DOS names/ADS/traversal/invalid components.
+    Cancellation removes the current incomplete file; completed files and
+    empty created directories can remain. Other-OS runtime semantics untested.
+
+1.20 Search
+[x] Define search scope.
+[x] Implement async search and cancellation.
+[x] Display results.
+[x] Navigate from result to containing path.
+[x] Prevent cycles/infinite traversal.
+    NOTE: Whole-image case-insensitive filename search, not file contents;
+    depth 128, 100,000 entries and 10,000 results. Exceeded limits fail explicitly.
+
+1.21 Status/performance
+[x] Show Ready/Opening/progress/warning/error states.
+[x] Show current image/size/active filesystem/selection/read-only status.
+[x] Keep long work off UI thread.
+[x] Ensure cancellation leaves valid state.
+[x] Confirm large-image opening does not require whole-file reads.
+    NOTE: Worker operations serialized per image; close waits for streams.
+    Superseded presentation results discarded; close/navigation races tested.
+
+1.22 UI quality pass
+[x] Match approved three-pane design direction.
+[x] Make primary panes resizable; persist layout.
+[x] Keep tree/table rows compact.
+[x] Keep disabled controls legible.
+[x] Do not communicate state by color alone.
+[x] Add major keyboard shortcuts/focus states/tooltips.
+[x] Test 100/125/150/200% DPI.
+[x] Test realistic minimum window size.
+[x] Verify dark-theme contrast.
+[x] Keep future light-theme structure possible.
+    NOTE: Actual Skia headless scaling/icon renders; Linux X11 physical smoke
+    also at process-local 125/150/200%. Minimum 1000x640; tested text contrast
+    >=4.5:1. App-only screenshots reviewed against the approved mockups.
+[ ] Complete human native-picker, pointer-splitter and assistive-technology review.
+    NOTE: Automated smoke supplies destination paths; no native picker or
+    exhaustive accessibility claim. Inspector presentation warrants owner review.
+
+1.23 Platform smoke/build validation
+[x] Linux Mint 22 x64: physically run UI and representative open/browse/extract workflows.
+    NOTE: Nine normal goldens exercised through a real X11 window/view model/
+    service; source SHA-256 unchanged. Production entry startup/close tested.
+[x] Windows x64: physically run UI and representative workflows on available machine(s).
+    NOTE: Owner reports Phase 1 working on 2026-10-14, within existing limits.
+    Detailed OS/workflow matrix not supplied; later hex fix tested locally only.
+[x] Linux ARM64: physically run representative build on available ARM64 hardware when practical.
+    NOTE: Owner reports Phase 1 working on Raspberry Pi 500 on 2026-10-14.
+    OS/version/backend unspecified; not Raspberry Pi 5 performance qualification.
+[x] Windows ARM64: cross-build from Linux where possible; keep physical validation incomplete until real hardware/OS testing occurs.
+[x] macOS x64: cross-build from Linux where possible; keep physical validation incomplete until real Mac testing occurs.
+[x] macOS ARM64: cross-build from Linux where possible; keep physical validation incomplete until real Apple Silicon testing occurs.
+    NOTE: All six self-contained publishes pass. Owner additionally reports
+    Linux x64 working. Windows ARM64, successful macOS execution, explicit
+    Wayland coverage and the full distro matrix remain physically unverified.
+[-] Investigate macOS launch blocker and complete physical runtime/workflow testing.
+    NOTE: Owner reports unsigned build blocked even after attempted security
+    disablement on 2026-10-14. OS/architecture/diagnostics unspecified; sole
+    signing cause unconfirmed. Track distribution/signing work; no bypass claim.
+    NOTE: Owner explicitly deferred Mac runtime/signing follow-up on 2026-10-14
+    while authorizing Phase 2. macOS remains an intended supported target;
+    successful cross-publishes do not establish physical compatibility.
+[x] Isolate platform file-dialog/path differences behind platform services.
+[x] Document physical platforms not yet tested.
+
+----------------------------------------
+PHASE 1 VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[x] Re-read rules.txt.
+[x] Run repository restore/build/verify workflow.
+[x] Run all Phase 1 unit/fixture/integration tests.
+[x] Run all available Phase 1 cross-target build/publish checks.
+[x] Exercise major Phase 1 workflows on physically available target machines.
+[x] Review code for TODOs, temporary stubs, disabled tests, placeholders, and false-success paths.
+    NOTE: No implementation TODOs/stubs/skipped tests found; later-phase
+    commands/panes explicitly reserved and disabled, not success placeholders.
+[x] Review every Phase 1 checklist item and update status honestly.
+[x] Add NOTE lines for partial/deferred/later-phase-dependent work.
+[x] Confirm untested platforms remain explicitly physically unverified.
+[x] Review all Phase 1 exit criteria below.
+[x] Prepare user review summary: implemented features, verification performed, incomplete items, blockers, later-phase dependencies, limitations/risks, and recommended human review areas.
+[x] STOP and request user approval. Do not begin Phase 2.
+    NOTE: Supported read-only subset ready for owner review. Advanced NTFS
+    reads, manual desktop integration and unavailable physical platforms remain
+    incomplete; no production readiness or later-phase authorization implied.
+    NOTE: Final 2026-10-14 verification: locked restore, zero-warning Release
+    build, 148 tests / zero skips, formatting, UI resource checks and unchanged
+    document copies. Six self-contained publishes; nine final X11 workflows
+    independently repeated with unchanged source hashes. Legal copies verified.
+    NOTE: Owner accepted the first draft on Linux Mint 22 x64, with sorting/
+    preferences, browser-to-tree synchronization and a supplied-floppy diagnosis
+    requested before Phase 2. Follow-up verification is tracked separately below.
+[x] Verify owner-requested Phase 1 refinements and stop again for review.
+    NOTE: 177 solution tests / zero skips; locked restore, zero-warning build,
+    formatting, resources and specification-copy checks pass. All six publishes
+    pass. Physical X11 Preferences/navigation and original Compaq browse/hex/
+    search/extraction passed with source unchanged. Legacy README encoding is
+    explicitly unsupported in text preview; Hex View works. No Phase 2 started.
+[x] Reproduce and fix owner-reported file Hex View failures, including very small files.
+    NOTE: Initial Hex View tab selection did not issue a read. Tab activation
+    now loads bytes; pending text preview is cancelled by explicit hex requests.
+    Nineteen regressions cover 0/1/15/16/17/1494/4096/4097/9000 bytes, actual
+    tab selection, binary raw-byte equality, paging and late text results.
+    196 solution tests pass, including 43 UI tests; full verification passes.
+    Actual 1494-byte LEVEL01.OPL first page and post-search hex tested on X11
+    via disposable ISO; extraction/source hashes unchanged. Sample not bundled.
+    No original VHD needed; no decoder change. Other-platform fix retests pending.
+    All six self-contained publish folders refreshed successfully with the fix.
+
+PHASE 1 EXIT CRITERIA
+[x] Raw IMG opens/inspects read-only.
+[x] VHD opens/inspects read-only.
+[x] VHDX opens/inspects read-only.
+[x] ISO opens/inspects read-only.
+[x] MBR/GPT partitions are correctly exposed.
+[x] FAT is browseable/extractable.
+[x] NTFS is browseable/extractable for supported cases.
+[x] ISO 9660/Joliet is browseable/extractable.
+[x] Multiple image tabs coexist.
+[x] Image/partition/filesystem properties are visible.
+[x] Unsupported/unknown structures fail safely and clearly.
+[x] UI conforms materially to current UI specification.
+[x] Representative large operations remain responsive.
+[x] Automated Phase 1 tests pass.
+[x] All feasible cross-target builds pass from the Linux host or have a documented blocker.
+[x] Physical test status is accurately documented.
+    NOTE: Exit evidence is limited to documented reader subsets, local Linux
+    x64/X11 execution and owner-reported Linux x64/Windows x64/Raspberry Pi 500
+    Linux ARM64 testing. Initial hex-page regression fixed/tested locally;
+    macOS launch remains blocked.
+    This does not complete unfinished platform/manual items or Phase 5 hardening.
+
+
+============================================================
+PHASE 2 - STAGED FILE MODIFICATION
+============================================================
+
+GOAL:
+Make logical changes without immediately altering the source; review changes and save a modified copy.
+
+    NOTE: Owner authorized Phase 2 on 2026-10-14. macOS remains intended;
+    unavailable Mac runtime/signing testing is explicitly deferred and does not
+    block this phase. Phase 3 direct commit and Phase 4 ISO rebuild are not
+    authorized. Owner-supplied ignored images/samples must remain unchanged.
+
+2.1 Change model
+[x] Define change operation abstraction.
+[x] Implement AddFile/AddDirectory/Replace/Delete/Rename operations.
+[x] Reserve metadata-change operation.
+[x] Preserve operation order and stable targets.
+[x] Support undo/redo where practical and discard-all.
+    NOTE: Separate IImageEditingService; ordered requests and bounded snapshots.
+    Directory rename/descendant edits, undo/redo branching and payload pruning
+    verified. Metadata operations explicitly rejected; host-folder import absent.
+
+2.2 Overlay/session view
+[x] Implement pending-change overlay.
+[x] Reflect adds/replacements/deletions/renames before save.
+[x] Mark changed entries in UI.
+[x] Keep original untouched while staged.
+[x] Serve unchanged content from base and changed content from overlay/temp source.
+    NOTE: Browse/preview/hex/search/extract share the staged view. Imported
+    content is snapshotted privately; later host-file changes do not alter it.
+    Normal discard/close cleans owned payloads; 8 GiB per-workspace spool cap.
+
+2.3 Validation/capabilities
+[x] Enable operations only when full stack supports them.
+[x] Check capacity/free space, duplicate names, case/file naming rules, conflicts, and expected output/temp space.
+[x] Explain unavailable operations.
+    NOTE: Strict conventional unpartitioned raw FAT only; uppercase DOS 8.3
+    names, read-only attributes/ancestors, root slots and conservative allocation
+    margins checked. Bounds: 64 GiB image, 8 MiB per FAT, 1048576 data clusters.
+
+2.4 Editing UI
+[x] Enable Add/Replace/Delete/New Folder/Rename only when supported.
+[x] Add changed-item markers and Pending Changes view.
+[x] Add Undo/Redo/Discard.
+[x] Show Modified state and distinguish staged from committed data.
+    NOTE: Menus/toolbar/context/keys wired; close refreshes actual pending state
+    and requires discard confirmation. Busy close blocked. At least three
+    pending rows visible at minimum size/default pane; full results in Validation.
+
+2.5 Save As New Image
+[x] Define Save As separate from direct commit.
+[x] Do not overwrite source by default in Phase 2.
+[x] Verify destination space.
+[x] Produce new/temp image safely.
+[x] Apply staged changes.
+[x] Flush, reopen, and validate output.
+[x] Keep source untouched on failure.
+[x] Explain residual temp output after failure.
+    NOTE: Create-new same-directory temporary copy, flush-to-disk, independent
+    reopen, tree/length/SHA-256/allocation/date validation, non-overwriting move.
+    Source baseline/copy/final hashes reject external changes. Pending state
+    retained after success. Cleanup errors name residual paths; no crash journal.
+
+2.6 Initial writable combinations
+[x] Select first officially writable container/filesystem combination, preferably simple raw IMG + FAT if viable.
+[x] Test FAT create/replace/delete/rename/directory creation.
+[x] Evaluate NTFS write behavior before advertising it.
+[x] Document unsupported operations.
+    NOTE: FAT12/FAT16/FAT32 independently qualified within docs/staged-editing.md.
+    FAT12 writes only conventional 1474560-byte media; 360K/720K remain readonly.
+    Consistent labels/mirrors and FAT32 backup/FSInfo required; no source repair.
+    NTFS Windows SID/format limitation reviewed; portable writes still unproven
+    and disabled. Partitioned raw/VHD/VHDX/ISO/LFN trees remain nonwritable.
+
+2.7 Round-trip validation
+[x] Reopen saved image.
+[x] Verify expected tree and hashes for changed/unchanged data.
+[x] Test output with independent tool where practical.
+[x] Add automated round-trip tests.
+    NOTE: All three write combinations pass fsck.fat -n and mdir locally.
+    Fixed DiscUtils replacement cluster leak, missing rename dates and stale
+    directory-parent cache; FAT32 FSInfo updated. Lost clusters, bad changed
+    dates, wrong content, cancellation and output races prevent publication.
+
+----------------------------------------
+PHASE 2 VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[x] Re-read rules.txt.
+[x] Run restore/build/verify.
+[x] Run all Phase 2 tests and available cross-target builds.
+[x] Exercise staged edit/Save As workflows.
+[x] Check TODOs/stubs/disabled tests/false success.
+[x] Update every Phase 2 checklist item honestly, including later-phase dependency NOTES.
+[x] Review exit criteria.
+[x] Prepare user review summary.
+[x] STOP and request user approval. Do not begin Phase 3.
+    NOTE: Final 2026-10-14 verification: locked restore; zero-warning Release
+    build; 287 tests, zero skips (128 services, 67 storage, 62 UI, 30 foundation);
+    formatting/resources/reference-copy checks pass. All six self-contained
+    publishes refreshed, native architecture headers checked; Linux package
+    resource diagnostic passes. Real Mint/X11 staged edit/Save As/reopen/
+    extraction/history/discard workflow passes, source SHA unchanged; fsck/mdir
+    confirm clean output and valid dates. Owner samples unchanged/unpackaged.
+    NOTE: Mac runtime/signing explicitly deferred per owner, not a phase blocker.
+    Phase 2 runtime on Windows/ARM64 and native picker/manual desktop integration
+    remain unverified. No direct commit, ISO rebuild, recovery journal, metadata
+    editor, bootability or exact-layout guarantee. Ready for owner review.
+
+PHASE 2 EXIT CRITERIA
+[x] At least one supported combination can queue add/replace/delete/rename/create-directory.
+[x] Source remains unchanged while staged.
+[x] Pending changes are reviewable/discardable.
+[x] Save As creates a new modified image.
+[x] New image reopens/validates.
+[x] Validation catches intentional failure cases.
+[x] Round-trip tests pass for advertised combinations.
+    NOTE: Completion applies only to the qualified raw/FAT DOS 8.3 envelope,
+    not every reader-supported layout or physical platform. See Phase 2 guide.
+
+
+============================================================
+PHASE 3 - SAFE DIRECT COMMIT
+============================================================
+
+GOAL:
+Commit staged changes directly to tested mutable images with locking, recovery, validation, and external-change protection.
+
+3.1 External change detection
+[ ] Record source path/identity/size/time and optional lightweight fingerprint.
+[ ] Recheck before commit.
+[ ] Detect external replacement/change.
+[ ] Abort/reopen when source identity is no longer trustworthy.
+
+3.2 File locking
+[ ] Define platform locking abstraction.
+[ ] Implement Windows/Linux/macOS behavior as appropriate.
+[ ] Acquire write/exclusive lock when supported.
+[ ] Explain lock failures.
+[ ] Release reliably.
+[ ] Prevent multiple SectorWorks writers to same image.
+
+3.3 Backup/recovery
+[ ] Define backup policy and naming/location rules.
+[ ] Verify free space.
+[ ] Create backup/snapshot/overlay as appropriate.
+[ ] Retain recovery information until validation succeeds.
+[ ] Define success/failure cleanup policy.
+[ ] Detect recoverable interrupted work at next startup.
+
+3.4 Transaction journal
+[ ] Define transaction states.
+[ ] Record source and intended operations/current stage.
+[ ] Flush journal at safe points.
+[ ] Detect interrupted transaction.
+[ ] Provide safe recovery choices.
+
+3.5 Direct-write pipeline
+[ ] Verify source -> lock -> validate -> space check -> backup -> apply -> flush -> reopen -> validate -> finalize -> unlock.
+[ ] Mark success only after validation.
+
+3.6 Failure injection
+[ ] Test failure before/during write, metadata update, flush, application termination, low space, and lock failures where possible.
+[ ] Verify recoverability and no false success.
+
+----------------------------------------
+PHASE 3 VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[ ] Re-read rules.txt.
+[ ] Run restore/build/verify.
+[ ] Run all Phase 3 tests/failure injection and available cross-target builds.
+[ ] Exercise direct commit/recovery workflows on disposable images.
+[ ] Update checklist and later-phase NOTES honestly.
+[ ] Review exit criteria.
+[ ] Prepare user review summary.
+[ ] STOP and request user approval. Do not begin Phase 4.
+
+PHASE 3 EXIT CRITERIA
+[ ] At least one combination supports tested direct commit.
+[ ] External changes/concurrent writers are detected/prevented.
+[ ] Backup/recovery is operational.
+[ ] Interrupted commits are detectable.
+[ ] Successful commit reopens/validates.
+[ ] Failure tests demonstrate recoverability.
+
+
+============================================================
+PHASE 4 - ISO REBUILD
+============================================================
+
+GOAL:
+Apply normal staged editing to supported ISO images and rebuild safely while reporting exactly what can be preserved.
+
+4.1 Rebuild capability analysis
+[ ] Detect ISO level/Joliet/Rock Ridge/UDF/hybrid structures.
+[ ] Detect El Torito, BIOS/UEFI boot images, hybrid MBR/GPT, and unsupported metadata.
+[ ] Compute CanRebuild/CanPreserveBootability/CanPreserveExactLayout.
+[ ] Explain limitations.
+
+4.2 Rebuild engine
+[ ] Build rebuild plan from source + staged changes.
+[ ] Preserve unchanged content and supported metadata/extensions.
+[ ] Apply add/replace/delete/rename.
+[ ] Preserve supported boot configuration/alignment.
+[ ] Write to new/temp output.
+[ ] Never claim bit-identical output without proof.
+
+4.3 UI
+[ ] Display Rebuild Required state.
+[ ] Use accurate rebuild wording and preservation summary.
+[ ] Show bootability/exact-layout status.
+[ ] Show progress/size and safe cancellation where possible.
+
+4.4 Validation
+[ ] Reopen rebuilt ISO.
+[ ] Validate tree/hashes/identifiers/extensions/boot catalog as claimed.
+[ ] Boot-test representative BIOS/UEFI images when boot preservation is claimed.
+[ ] Test with independent tool where practical.
+
+----------------------------------------
+PHASE 4 VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[ ] Re-read rules.txt.
+[ ] Run restore/build/verify.
+[ ] Run all Phase 4 rebuild/validation tests and available cross-target builds.
+[ ] Exercise representative rebuild workflows.
+[ ] Update checklist/dependency NOTES honestly.
+[ ] Review exit criteria.
+[ ] Prepare user review summary.
+[ ] STOP and request user approval. Do not begin Phase 5.
+
+PHASE 4 EXIT CRITERIA
+[ ] Supported ISO uses common staged workflow.
+[ ] UI clearly communicates rebuild.
+[ ] Rebuilt ISO reopens/validates.
+[ ] Naming/boot preservation is accurate where advertised.
+[ ] Unsupported/hybrid cases are safely limited/read-only.
+
+
+============================================================
+PHASE 5 - LINUX AND ARM64 HARDENING
+============================================================
+
+GOAL:
+Deliberately validate major Linux environments and ARM64, using Raspberry Pi 5 as an ARM64 baseline.
+
+5.1 Linux x64 matrix
+[ ] Physically test Ubuntu, Mint, Debian, Fedora, and Arch representative environments.
+[ ] Document required system libraries.
+[ ] Test dialogs, drag/drop, clipboard, locking, temp/cache, atomic replacement, case-sensitive and Unicode paths.
+
+5.2 X11/Wayland
+[ ] Test startup, resizing, DPI, drag/drop, clipboard on X11.
+[ ] Repeat on Wayland.
+[ ] Document backend-specific limitations.
+
+5.3 Linux ARM64
+[ ] Produce linux-arm64 self-contained build.
+[ ] Physically test Debian/Ubuntu ARM64 where available.
+[ ] Physically test Raspberry Pi OS 64-bit.
+[ ] Verify dependencies/container/filesystem/extraction/modification/rebuild behaviors implemented so far.
+
+5.4 Raspberry Pi 5 performance
+[ ] Record reference hardware/OS/storage configuration.
+[ ] Measure startup, opening small/large/dynamic images, large directories, extraction, and ISO rebuild when available.
+[ ] Track UI responsiveness and peak memory.
+[ ] Optimize obvious bottlenecks without architecture debt.
+
+5.5 Packaging prototypes
+[ ] Produce portable archive.
+[ ] Evaluate DEB/RPM/Arch/AppImage/Flatpak options and sandbox implications.
+[ ] Document packaging recommendation.
+
+----------------------------------------
+PHASE 5 VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[ ] Re-read rules.txt.
+[ ] Run restore/build/verify.
+[ ] Run all relevant Linux/ARM64 tests and cross-target checks.
+[ ] Confirm exactly which distro/backend/hardware combinations were physically tested.
+[ ] Update checklist honestly.
+[ ] Review exit criteria.
+[ ] Prepare user review summary.
+[ ] STOP and request user approval. Do not begin Phase 6.
+
+PHASE 5 EXIT CRITERIA
+[ ] Core functionality passes on representative Linux x64 distributions.
+[ ] linux-arm64 passes representative physical workflows.
+[ ] Raspberry Pi 5 is responsive for normal browsing.
+[ ] X11/Wayland behavior documented.
+[ ] Linux-specific code remains behind abstractions.
+[ ] Packaging direction documented.
+
+
+============================================================
+PHASE 6 - BIN/CUE AND OPTICAL EXPANSION
+============================================================
+
+GOAL:
+Support CUE/disc structures, data and mixed-mode tracks, direct CD-DA playback, and only those rebuilds whose preservation behavior is understood.
+
+6.1 CUE parser
+[ ] Parse FILE/TRACK/INDEX/PREGAP/POSTGAP.
+[ ] Support multi-file layouts, quoted names, relative paths safely.
+[ ] Report missing/malformed references clearly.
+[ ] Add parser fixtures/tests.
+
+6.2 Disc/track model
+[ ] Define disc/session/track models.
+[ ] Represent data and CD-DA tracks, sector modes/sizes, LBA, length, indexes, gaps, raw access, and supported subchannel metadata.
+[ ] Expose preservation capabilities.
+
+6.3 Data-track browsing
+[ ] Detect supported CD data modes.
+[ ] Expose user data correctly to filesystem parser.
+[ ] Detect/browse ISO 9660/Joliet/UDF as supported.
+[ ] Extract and test.
+
+6.4 Mixed-mode UI
+[ ] Add sessions/tracks to tree.
+[ ] Distinguish data/audio icons/colors.
+[ ] Add track table with number/type/title/LBA/length/size/details.
+[ ] Data selection opens filesystem view.
+[ ] Audio selection opens track/audio pane.
+[ ] Add track inspector details.
+
+6.5 CD-DA streaming
+[ ] Stream directly from sectors without temporary WAV extraction.
+[ ] Handle Red Book PCM and expose 44.1 kHz/16-bit/stereo attributes.
+[ ] Use bounded buffering.
+[ ] Support seeking/end-of-track and malformed/truncated failure states.
+[ ] Never modify source during playback.
+
+6.6 Audio backend
+[ ] Define platform-neutral playback interface.
+[ ] Evaluate dependency licensing/x64/ARM64/OS support.
+[ ] Implement portable or platform backends for Windows/Linux/macOS.
+[ ] Test available x64/ARM64 targets.
+[ ] Keep behavior consistent.
+
+6.7 Player UI
+[ ] Implement Audio Player tab.
+[ ] Show track metadata/format/duration/position.
+[ ] Implement Play/Pause/Stop/Previous/Next/Seek/Volume.
+[ ] Keep playing track highlighted.
+[ ] Stop/rebind safely on close/source loss.
+[ ] Ensure keyboard accessibility.
+
+6.8 BIN/CUE rebuild/capabilities
+[ ] Detect whether track order/indexes/gaps/mode/audio/subchannels/bootability can be preserved.
+[ ] Compute CanRebuild accurately.
+[ ] Disable unsafe modifications.
+[ ] Implement only understood/tested rebuild layouts.
+[ ] Validate CUE syntax/offsets/indexes/audio preservation.
+[ ] Reopen and independently test rebuilt images where practical.
+
+----------------------------------------
+PHASE 6 VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[ ] Re-read rules.txt.
+[ ] Run restore/build/verify.
+[ ] Run parser/data/audio/rebuild tests and available cross-target checks.
+[ ] Physically test playback on available Linux/Windows/ARM64 environments as applicable.
+[ ] Keep untested macOS playback marked physically unverified until tested.
+[ ] Update checklist/dependency NOTES honestly.
+[ ] Review exit criteria.
+[ ] Prepare user review summary.
+[ ] STOP and request user approval. Do not begin Phase 7.
+
+PHASE 6 EXIT CRITERIA
+[ ] Supported CUE sheets parse reliably.
+[ ] Data/audio track hierarchy is coherent.
+[ ] Supported data tracks browse/extract.
+[ ] CD-DA plays directly from image.
+[ ] Player controls work consistently on physically tested platforms.
+[ ] Read-only images can play audio.
+[ ] Rebuild is offered only for understood layouts.
+[ ] Unsupported layouts fail safely/remain read-only.
+
+
+============================================================
+PHASE 7 - ADDITIONAL FORMATS AND FILESYSTEMS
+============================================================
+
+GOAL:
+Expand only when implementation quality, portability, preservation guarantees, and tests justify support.
+
+7.1 Common evaluation for EACH new format/filesystem
+[ ] Identify demand/use case.
+[ ] Evaluate implementation/library, license, maintenance, managed/native nature.
+[ ] Evaluate linux-x64/linux-arm64/win-x64/win-arm64/osx-x64/osx-arm64 compatibility.
+[ ] Determine detection/read/write/create capabilities.
+[ ] Determine sparse/dynamic/differencing behavior where relevant.
+[ ] Determine preservation guarantees and corrupt-input behavior.
+[ ] Obtain/create legal repeatable fixtures.
+[ ] Add detection/read tests.
+[ ] Add write/rebuild and round-trip tests only where advertised.
+[ ] Add capability mapping/UI labeling/properties.
+[ ] Document limitations.
+[ ] Add to support matrix only after validation.
+
+7.2 VMDK
+[ ] Evaluate common variants and declare initial subset.
+[ ] Complete common evaluation.
+[ ] Add fixtures/handler/parent behavior as supported.
+
+7.3 VDI
+[ ] Evaluate variants.
+[ ] Complete common evaluation.
+[ ] Add fixtures/handler.
+
+7.4 QCOW2
+[ ] Evaluate compression/encryption/backing files.
+[ ] Choose initial read/write level.
+[ ] Complete common evaluation.
+[ ] Add fixtures/handler/backing handling.
+
+7.5 DMG
+[ ] Enumerate target variants/compression/encryption limitations.
+[ ] Complete common evaluation.
+[ ] Add fixtures/supported handlers.
+
+7.6 ext2/ext3/ext4
+[ ] Evaluate implementation.
+[ ] Define feature/journal/incompat baselines.
+[ ] Start read-only unless writes are rigorously proven.
+[ ] Add Linux-generated fixtures, symlink/ownership/case/extents tests.
+[ ] Complete common evaluation.
+
+7.7 exFAT
+[ ] Evaluate implementation.
+[ ] Add fixture/Unicode/large-file tests.
+[ ] Implement read support and prove writes before enabling.
+[ ] Complete common evaluation.
+
+7.8 HFS+
+[ ] Evaluate implementation/read-only scope.
+[ ] Add fixture/case/Unicode/resource metadata tests.
+[ ] Complete common evaluation.
+
+7.9 APFS
+[ ] Evaluate realistic library/licensing options.
+[ ] Choose detection-only/read-only initial scope.
+[ ] Identify encryption/snapshot/container limitations.
+[ ] Do not expose write support without extensive independent validation.
+[ ] Add legal fixtures and achievable common evaluation.
+
+7.10 Retro-computing floppy compatibility - 360K and 720K priorities
+    NOTE: Owner requested explicit priority on 2026-10-14. Keep the Phase 1
+    read-only 720K Compaq/early-DOS FAT12 compatibility already verified.
+    Conventional raw sizes: 360K = 368640 bytes (40x2x9x512);
+    720K = 737280 bytes (80x2x9x512). Size alone never establishes support.
+    Full 360K qualification and broader 720K variants remain incomplete;
+    this roadmap entry does not authorize beginning Phase 7 now.
+[ ] Complete common format evaluation for the additional retro variants.
+[ ] Create legal repeatable 360K and 720K fixtures covering standard and early-DOS FAT12 layouts, labels, empty/full media, directories and multi-cluster files.
+[ ] Expand BPB/version, geometry, media-descriptor and mirrored-FAT validation without weakening corrupt-input checks.
+[ ] Evaluate absent/incomplete BPBs and nonstandard geometry; reject ambiguous layouts or report unsupported cases rather than guess solely from image size.
+[ ] Test valid legacy boot-sector conventions, including missing 0x55AA where justified, alongside damaged modern headers and truncated images.
+[ ] Verify browse/preview/search/extraction and unchanged source hashes for both capacities; cross-check contents with independent tools where practical.
+[ ] Expose accurate capacity/geometry/legacy metadata and per-variant capability limitations in the UI and support matrix.
+[ ] Evaluate explicit legacy OEM text-preview support without weakening binary-content checks.
+    NOTE: The Compaq README extracts correctly but currently requires Hex View;
+    filesystem compatibility and text-decoding capability are independent.
+[ ] Regress the existing 720K Compaq-compatible subset throughout expansion.
+[ ] Separately qualify any write/create/conversion support using the staged-write/commit pipelines, capacity checks, reopen and round-trip tests.
+[ ] Verify geometry, boot-sector and opaque-metadata preservation before claiming bootability or exact-layout preservation; never silently resize or normalize retro media.
+[ ] Keep physical platform evidence separate from cross-build results.
+    NOTE: Structured track/sector images and flux captures require their own
+    evaluation/fixtures; raw 360K/720K IMG support does not imply those formats.
+
+----------------------------------------
+PHASE 7 VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[ ] Re-read rules.txt.
+[ ] Run restore/build/verify.
+[ ] Run tests for every newly advertised format/filesystem.
+[ ] Run available cross-target checks.
+[ ] Review physical-validation status for dependencies/features that require it.
+[ ] Update checklist honestly.
+[ ] Review exit criteria.
+[ ] Prepare user review summary.
+[ ] STOP and request user approval before any post-Phase-7 roadmap work.
+
+PHASE 7 EXIT CRITERIA
+[ ] Every advertised addition has documented capabilities/limitations.
+[ ] Required architecture dependency coverage exists.
+[ ] Repeatable fixtures/tests exist.
+[ ] Capability model/UI accurately reflects support level.
+[ ] No new format weakens data-integrity rules.
+
+
+============================================================
+LATER-PHASE DEPENDENCY TRACKING RULES
+============================================================
+
+When a task in the authorized phase requires later-phase functionality:
+[ ] Stop only the portion crossing the phase boundary.
+[ ] Add a NOTE under the affected item identifying the later phase/item when known.
+[ ] Mark [!] if current-phase completion is blocked.
+[ ] Notify the user immediately when the dependency materially blocks phase progress; otherwise include it in the phase report.
+[ ] Continue other current-phase tasks that are not blocked.
+[ ] Create only the minimum abstraction/placeholder needed for sound current-phase architecture.
+[ ] Do not implement the later-phase behavior.
+[ ] Never interpret the dependency as permission to start the later phase.
+
+
+============================================================
+CROSS-PHASE FEASIBILITY MILESTONES
+============================================================
+
+[x] One Avalonia codebase runs physically on Linux x64.
+[x] Same codebase physically runs on Windows x64.
+    NOTE: Owner-reported Phase 1 testing, 2026-10-14.
+[x] Same codebase cross-builds/publishes for macOS x64/ARM64.
+[ ] Same codebase has been physically run on macOS when access becomes available.
+[x] linux-arm64 builds/publishes.
+[x] Representative Linux ARM64 build physically runs on ARM64 hardware.
+    NOTE: Owner-reported Raspberry Pi 500 testing, 2026-10-14.
+[x] Raw IMG opens.
+[x] VHD/VHDX opens.
+[x] ISO opens.
+[x] Partition tables detected.
+[x] FAT browses.
+[x] NTFS browses.
+[x] Files extract.
+[x] Replacement can be staged.
+[x] Modified image can Save As.
+[x] Saved image reopens/validates.
+    NOTE: Phase 2 qualified conventional unpartitioned raw FAT subset only.
+[ ] linux-arm64 runs on Raspberry Pi 5.
+    NOTE: Raspberry Pi 500 success is recorded separately; exact Pi 5 testing
+    and Phase 5 performance/OS qualification remain incomplete.
+
+
+============================================================
+RELEASE-QUALITY WORK TO TRACK THROUGHOUT
+============================================================
+
+Storage dependency production-readiness review
+[ ] Re-evaluate DiscUtils once other production-readiness work is substantially complete, before production release.
+    NOTE: Owner approved continued development with DiscUtils 0.16.13 on
+    2026-10-13 and accepts possible future replacement/rework. This review is
+    intentionally scheduled here, not a prerequisite to starting development.
+[ ] Review then-current maintenance, maintained forks/alternatives, licensing, security/error behavior, and all six OS/architecture targets.
+[ ] Revisit the NTFS formatting failure and independently verify any advertised NTFS write/format capabilities.
+    NOTE: Format throws PlatformNotSupportedException on Linux .NET 10 due to
+    Windows principal/SID APIs. Ordinary NTFS reads passed; portable NTFS
+    writes/formatting remain unproven and must not be enabled without evidence.
+[ ] Record the keep/patch/replace decision, resolve release-blocking limitations, and run regression/preservation tests for any dependency changes.
+    NOTE: Development approval does not waive per-phase verification, input
+    safety, data-integrity rules, or honest capability reporting. Keep library
+    integration behind replaceable storage interfaces.
+
+Security
+[ ] Test malformed offsets/sizes, integer boundaries, deep nesting, huge counts, crafted names, traversal, and symlink attacks when relevant.
+[ ] Ensure previews never execute image content automatically.
+[ ] Extend hostile-media fuzzing and evaluate parser process isolation before production release.
+    NOTE: Phase 1 bounds parser reads/seeks and performs structural preflights;
+    it is not a complete sandbox or guarantee against all dependency defects.
+
+Logging
+[ ] Log image detection/workspace/capability/validation/change/commit/rebuild/error/recovery events appropriately.
+[ ] Do not log file contents by default.
+
+Local testing infrastructure
+[ ] Unit tests run through repository-local verification.
+[ ] Read-only fixture tests run through repository-local verification.
+[ ] Disposable write/rebuild tests run locally where practical.
+[ ] Keep deterministic agent-readable pass/fail output.
+[ ] Add regression fixture/test for serious bugs.
+[ ] Maintain testing/platform status documentation.
+[ ] Add independently authored fixed-VHDX and representative bootable optical interoperability fixtures.
+    NOTE: Current fixed-VHDX test is synthetic; El Torito metadata inspection
+    establishes no bootability or rebuild-preservation guarantee.
+
+Cross-platform UX
+[ ] Test actual keyboard/dialog/clipboard/drag-drop/path/permission behavior on physically available OSes.
+[ ] Keep OS-specific behavior behind platform interfaces.
+
+Distribution / later release preparation
+[ ] Decide self-contained policy.
+[ ] Decide Windows installer/portable format.
+[ ] Decide macOS bundle/signing/notarization approach.
+    NOTE: Owner's 2026-10-14 macOS launch attempt blocked for unsigned build,
+    including after attempted security disablement. Obtain exact diagnostics
+    and resolve distribution/runtime launch before physical workflow validation.
+[ ] Decide Linux package formats.
+[ ] Define update/code-signing strategy.
+[ ] Produce external SectorWorks app icon/logo/wordmark and platform exports.
+
+Legacy best effort
+[ ] Periodically test Windows 8.1 x64 when convenient.
+[ ] Periodically test Windows 7 SP1 x64 when convenient.
+[x] Record functional status.
+    NOTE: Owner reports current build works on Windows 7 x64, 2026-10-14.
+    SP/prerequisites/environment unspecified. Functional but unsupported;
+    .NET 10 baseline unchanged; no future compatibility guarantee.
+[ ] Never block a release solely on Windows 7/8.
+
+
+============================================================
+SUPPORT-MATRIX COMPLETION CHECK
+============================================================
+
+For every user-facing format/filesystem combination:
+[x] Detection documented.
+[x] Browsing documented.
+[x] Extraction documented.
+[x] Preview documented.
+[x] Modification documented.
+[x] Direct commit documented.
+[x] Rebuild documented.
+[x] Bootability preservation documented where applicable.
+[x] Exact-layout preservation documented where applicable.
+[x] Audio playback documented where applicable.
+[x] Known limitations documented.
+[x] Automated tests exist for claimed functionality.
+    NOTE: Phase 1 readers and Phase 2 qualified raw/FAT staged Save As subset
+    documented in docs/support-matrix.md and docs/staged-editing.md. Direct
+    commit/rebuild/preservation/audio unavailable; unsupported variants explicit.
+    Re-review this check whenever another phase expands user-facing claims.
+
+
+============================================================
+AGENT PHASE WORKFLOW SUMMARY
+============================================================
+
+1. User says "Start Phase N."
+2. Agent reads rules.txt, checklist.txt, technical spec, and relevant UI/other specs.
+3. Agent works autonomously through Phase N only.
+4. Agent updates checklist.txt as work becomes genuinely verified.
+5. Agent records later-phase dependencies; agent does not implement them.
+6. Agent builds/tests repeatedly while working.
+7. Agent runs the Phase N Verification and User Review Gate.
+8. Agent checks every Phase N exit criterion.
+9. Agent prepares user review summary.
+10. Agent STOPS.
+11. Only explicit user approval authorizes the next phase.
+
+FINAL PRINCIPLE
+Do not mark a format, platform, feature, task, or phase complete merely because code exists or a cross-build succeeds. Completion claims must match the verification actually performed.

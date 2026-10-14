@@ -1,0 +1,177 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SectorWorks.UI.ViewModels"
+        xmlns:ui="using:SectorWorks.UI"
+        xmlns:converters="using:Avalonia.Data.Converters"
+        x:Class="SectorWorks.UI.MainWindow" x:DataType="vm:MainWindowViewModel"
+        Title="SectorWorks — Disk Image Workbench" Width="1440" Height="900"
+        MinWidth="1000" MinHeight="640">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}" />
+    <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseCommand}" />
+    <KeyBinding Gesture="F5" Command="{Binding ActiveWorkspace.RefreshCommand}" />
+    <KeyBinding Gesture="Ctrl+E" Command="{Binding ActiveWorkspace.ExtractCommand}" />
+    <KeyBinding Gesture="Alt+Up" Command="{Binding ActiveWorkspace.UpCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding ActiveWorkspace.SaveAsCommand}" />
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding ActiveWorkspace.UndoCommand}" />
+    <KeyBinding Gesture="Ctrl+Y" Command="{Binding ActiveWorkspace.RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding ActiveWorkspace.NewDirectoryCommand}" />
+    <KeyBinding Gesture="Ctrl+Insert" Command="{Binding ActiveWorkspace.AddCommand}" />
+  </Window.KeyBindings>
+  <DockPanel>
+    <Menu DockPanel.Dock="Top" Background="{DynamicResource WorkbenchSurface}">
+      <MenuItem Header="_File">
+        <MenuItem Header="_Open Image…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
+        <MenuItem Header="_Close Image" Command="{Binding CloseCommand}" InputGesture="Ctrl+W" />
+        <MenuItem Header="_Preferences…" Click="OpenPreferences" />
+        <Separator />
+        <MenuItem Header="_Extract Selected…" Command="{Binding ActiveWorkspace.ExtractCommand}" InputGesture="Ctrl+E" />
+        <MenuItem Header="_Save As New Image…" Command="{Binding ActiveWorkspace.SaveAsCommand}" ToolTip.Tip="{Binding ActiveWorkspace.SaveAsReason}" InputGesture="Ctrl+Shift+S" />
+      </MenuItem>
+      <MenuItem Header="_Edit">
+        <MenuItem Header="_Undo staged change" Command="{Binding ActiveWorkspace.UndoCommand}" InputGesture="Ctrl+Z" />
+        <MenuItem Header="_Redo staged change" Command="{Binding ActiveWorkspace.RedoCommand}" InputGesture="Ctrl+Y" />
+        <Separator />
+        <MenuItem Header="_Add File…" Command="{Binding ActiveWorkspace.AddCommand}" ToolTip.Tip="{Binding ActiveWorkspace.AddReason}" InputGesture="Ctrl+Insert" />
+        <MenuItem Header="_Replace File…" Command="{Binding ActiveWorkspace.ReplaceCommand}" ToolTip.Tip="{Binding ActiveWorkspace.ReplaceReason}" />
+        <MenuItem Header="_Delete…" Command="{Binding ActiveWorkspace.DeleteCommand}" ToolTip.Tip="{Binding ActiveWorkspace.DeleteReason}" />
+        <MenuItem Header="Re_name…" Command="{Binding ActiveWorkspace.RenameCommand}" ToolTip.Tip="{Binding ActiveWorkspace.RenameReason}" />
+        <MenuItem Header="New _Folder…" Command="{Binding ActiveWorkspace.NewDirectoryCommand}" ToolTip.Tip="{Binding ActiveWorkspace.NewDirectoryReason}" InputGesture="Ctrl+Shift+N" />
+        <MenuItem Header="Copy technical values: select text, Ctrl+C" IsEnabled="False" />
+      </MenuItem>
+      <MenuItem Header="_View">
+        <MenuItem Header="_Properties" Command="{Binding ActiveWorkspace.PropertiesViewCommand}" />
+        <MenuItem Header="_Hex View" Command="{Binding ActiveWorkspace.HexCommand}" />
+        <MenuItem Header="Show / hide lower _tool pane" Command="{Binding ActiveWorkspace.ToggleToolsCommand}" />
+        <MenuItem Header="_Refresh" Command="{Binding ActiveWorkspace.RefreshCommand}" InputGesture="F5" />
+      </MenuItem>
+      <MenuItem Header="_Image">
+        <MenuItem Header="_Review Pending Changes" Command="{Binding ActiveWorkspace.ReviewChangesCommand}" />
+        <MenuItem Header="_Discard Pending Changes…" Command="{Binding ActiveWorkspace.DiscardCommand}" />
+        <MenuItem Header="Source remains read-only; Save As writes a new output" IsEnabled="False" />
+        <MenuItem Header="Commit Changes — Phase 3" IsEnabled="False" />
+        <MenuItem Header="Rebuild ISO — Phase 4" IsEnabled="False" />
+      </MenuItem>
+      <MenuItem Header="_Tools">
+        <MenuItem Header="_Search Current Image" Command="{Binding ActiveWorkspace.SearchCommand}" />
+        <MenuItem Header="_Cancel operation" Command="{Binding CancelCommand}" InputGesture="Escape" />
+      </MenuItem>
+      <MenuItem Header="_Window">
+        <MenuItem Header="Close active workspace" Command="{Binding CloseCommand}" />
+      </MenuItem>
+      <MenuItem Header="_Help">
+        <MenuItem Header="SectorWorks — GPL-3.0-only" IsEnabled="False" />
+        <MenuItem Header="Phase 2 staged editing; audio / BIN/CUE in Phase 6" IsEnabled="False" />
+      </MenuItem>
+    </Menu>
+    <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource WorkbenchBorder}" BorderThickness="0,0,0,1" Padding="5">
+      <Grid ColumnDefinitions="*,270">
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Spacing="3">
+            <Button Command="{Binding OpenCommand}" ToolTip.Tip="Open image read-only (Ctrl+O)">
+              <StackPanel><PathIcon Data="{StaticResource IconOpen}" /><TextBlock Text="Open" /></StackPanel>
+            </Button>
+            <Button Command="{Binding CloseCommand}" ToolTip.Tip="Close active image (Ctrl+W)">
+              <StackPanel><PathIcon Data="{StaticResource IconClose}" /><TextBlock Text="Close" /></StackPanel>
+            </Button>
+            <Button Command="{Binding ActiveWorkspace.ExtractCommand}" ToolTip.Tip="Extract selected files/directories. Existing files are never overwritten (Ctrl+E).">
+              <StackPanel><PathIcon Data="{StaticResource IconExtract}" /><TextBlock Text="Extract" /></StackPanel>
+            </Button>
+            <Button Command="{Binding ActiveWorkspace.AddCommand}" ToolTip.Tip="{Binding ActiveWorkspace.AddReason}">
+              <StackPanel><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Add" /></StackPanel>
+            </Button>
+            <Button Command="{Binding ActiveWorkspace.ReplaceCommand}" ToolTip.Tip="{Binding ActiveWorkspace.ReplaceReason}">
+              <StackPanel><PathIcon Data="{StaticResource IconReplace}" /><TextBlock Text="Replace" /></StackPanel>
+            </Button>
+            <Button Command="{Binding ActiveWorkspace.DeleteCommand}" ToolTip.Tip="{Binding ActiveWorkspace.DeleteReason}">
+              <StackPanel><PathIcon Data="{StaticResource IconClose}" /><TextBlock Text="Delete" /></StackPanel>
+            </Button>
+            <Button Command="{Binding ActiveWorkspace.NewDirectoryCommand}" ToolTip.Tip="{Binding ActiveWorkspace.NewDirectoryReason}">
+              <StackPanel><PathIcon Data="{StaticResource IconFolder}" /><TextBlock Text="New Folder" /></StackPanel>
+            </Button>
+            <Button Content="Rename" Command="{Binding ActiveWorkspace.RenameCommand}" ToolTip.Tip="{Binding ActiveWorkspace.RenameReason}" />
+            <Button Content="Undo" Command="{Binding ActiveWorkspace.UndoCommand}" ToolTip.Tip="Undo last staged operation (Ctrl+Z)" />
+            <Button Content="Redo" Command="{Binding ActiveWorkspace.RedoCommand}" ToolTip.Tip="Redo staged operation (Ctrl+Y)" />
+            <Button Content="Changes" Command="{Binding ActiveWorkspace.ReviewChangesCommand}" ToolTip.Tip="Review pending changes and output validation" />
+            <Button Content="Save As" Command="{Binding ActiveWorkspace.SaveAsCommand}" ToolTip.Tip="{Binding ActiveWorkspace.SaveAsReason}" />
+            <Button Command="{Binding ActiveWorkspace.PropertiesViewCommand}" ToolTip.Tip="Show copyable selected-entry properties">
+              <StackPanel><PathIcon Data="{StaticResource IconInfo}" /><TextBlock Text="Properties" /></StackPanel>
+            </Button>
+            <Button Command="{Binding ActiveWorkspace.HexCommand}" ToolTip.Tip="Read-only paginated hex view">
+              <StackPanel><PathIcon Data="{StaticResource IconHex}" /><TextBlock Text="Hex View" /></StackPanel>
+            </Button>
+            <Button IsEnabled="False" ToolTip.Tip="CD-DA playback is reserved for Phase 6.">
+              <StackPanel><PathIcon Data="{StaticResource IconPlay}" /><TextBlock Text="Play" /></StackPanel>
+            </Button>
+            <Button Command="{Binding ActiveWorkspace.RefreshCommand}" ToolTip.Tip="Refresh current directory (F5)">
+              <StackPanel><PathIcon Data="{StaticResource IconRefresh}" /><TextBlock Text="Refresh" /></StackPanel>
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
+        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Margin="8,0,0,0" VerticalAlignment="Center">
+          <TextBox x:Name="SearchBox" PlaceholderText="Search all volumes in image…" Text="{Binding ActiveWorkspace.Query}"
+                   AutomationProperties.Name="Search current image">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding ActiveWorkspace.SearchCommand}" />
+            </TextBox.KeyBindings>
+          </TextBox>
+          <Button Grid.Column="1" Command="{Binding ActiveWorkspace.SearchCommand}" ToolTip.Tip="Search current image">
+            <PathIcon Data="{StaticResource IconSearch}" />
+          </Button>
+        </Grid>
+      </Grid>
+    </Border>
+    <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource WorkbenchBorder}" Padding="6,3">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel>
+          <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding ActiveWorkspace.ContextStatus}" FontSize="12" Foreground="{DynamicResource WorkbenchMuted}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" ToolTip.Tip="Cancel active work (Escape)" />
+      </Grid>
+    </Border>
+    <StackPanel DockPanel.Dock="Bottom">
+      <TextBox Text="{Binding PreferencesWarning}" IsReadOnly="True" TextWrapping="Wrap"
+               Foreground="{DynamicResource WorkbenchWarning}" MaxHeight="70" BorderThickness="0"
+               IsVisible="{Binding PreferencesWarning, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+               AutomationProperties.Name="Preferences warning" />
+      <TextBox Text="{Binding LayoutWarning}" IsReadOnly="True" TextWrapping="Wrap"
+               Foreground="{DynamicResource WorkbenchWarning}" MaxHeight="70" BorderThickness="0"
+               IsVisible="{Binding LayoutWarning, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+               AutomationProperties.Name="Layout settings warning" />
+      <TextBox Text="{Binding Error}" IsReadOnly="True" TextWrapping="Wrap"
+               Foreground="{DynamicResource WorkbenchError}" MaxHeight="70" BorderThickness="0"
+               IsVisible="{Binding Error, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+               AutomationProperties.Name="Application error" />
+      <TextBox Text="{Binding ActiveWorkspace.Error}" IsReadOnly="True" TextWrapping="Wrap"
+               Foreground="{DynamicResource WorkbenchError}" MaxHeight="70" BorderThickness="0"
+               IsVisible="{Binding ActiveWorkspace.Error, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+               AutomationProperties.Name="Workspace error" />
+      <TextBlock Text="{Binding ActiveWorkspace.Status}" Margin="6,0" />
+      <ProgressBar Height="3" IsIndeterminate="True" IsVisible="{Binding ActiveWorkspace.IsBusy}" />
+    </StackPanel>
+    <Grid>
+      <TextBlock Text="Open an image to browse, inspect, preview and extract — without mounting or modifying the source."
+                 HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="620" />
+      <TabControl ItemsSource="{Binding Workspaces}" SelectedItem="{Binding ActiveWorkspace}"
+                  Background="{DynamicResource WorkbenchBackground}" AutomationProperties.Name="Image workspaces">
+        <TabControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:WorkspaceViewModel">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <PathIcon Data="{Binding Icon}" Width="16" Height="16" />
+              <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+              <Button Content="×" Padding="4,0" MinHeight="20" ToolTip.Tip="Close this image"
+                      Click="CloseTab" AutomationProperties.Name="Close image" />
+            </StackPanel>
+          </DataTemplate>
+        </TabControl.ItemTemplate>
+        <TabControl.ContentTemplate>
+          <DataTemplate x:DataType="vm:WorkspaceViewModel">
+            <ui:WorkspaceView />
+          </DataTemplate>
+        </TabControl.ContentTemplate>
+      </TabControl>
+    </Grid>
+  </DockPanel>
+</Window>

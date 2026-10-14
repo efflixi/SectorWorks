@@ -1,0 +1,1065 @@
+CROSS-PLATFORM DISK IMAGE WORKSPACE
+DETAILED STARTER TECHNICAL SPECIFICATION
+Version 0.3
+Date: October 12, 2026
+Status: Feasibility / Initial Architecture
+
+
+1. DOCUMENT PURPOSE
+
+This document defines the initial technical architecture, platform targets, functional scope, safety model, and implementation direction for a cross-platform desktop application used to inspect, browse, extract, modify, rebuild, and validate disk and optical-media image files.
+
+This is a starter specification. Exact product features, final supported formats, minimum operating-system versions, packaging methods, and detailed user-interface requirements will be revised as the application concept matures.
+
+
+2. PRODUCT SUMMARY
+
+The application will provide a unified workspace for opening and working with common disk and optical-media image formats entirely within the application.
+
+The application will not rely on mounting an image as a host operating-system drive, volume, or mount point. Instead, it will interpret the image through its own storage subsystem and expose partitions, filesystems, directories, files, tracks, and metadata through its own interface.
+
+The intended user experience is similar to opening an archive in an archive manager. A user should be able to open an image, browse its contents, extract files, queue modifications, and save the changes according to the capabilities of the image format and contained filesystem.
+
+Some formats may support direct modification. Other formats, particularly optical-media formats such as ISO or BIN/CUE, may require the application to rebuild and save a replacement image rather than modify the source image in place.
+
+Primary product goal:
+
+- Provide consistent functionality across Windows, macOS, and Linux.
+- Platform implementations do not need to be identical.
+- Platform-specific methods may be used where necessary, provided the user-facing capabilities and results remain reasonably consistent.
+
+
+3. PRIMARY TECHNOLOGY STACK
+
+Programming Language:
+- C#
+
+Runtime:
+- .NET
+- The final .NET version will be selected when active development begins.
+- Prefer a current long-term-support release unless compatibility or dependency requirements justify another version.
+
+User Interface Framework:
+- Avalonia UI
+- XAML-based interface definitions
+- MVVM architecture
+
+Primary Development Goals:
+- One shared application codebase.
+- Modern desktop interface.
+- Strong separation between UI, storage logic, and platform integration.
+- Consistent behavior and visual identity across operating systems.
+- Support for complex layouts, tabs, custom controls, themes, high-DPI displays, and large file operations.
+- Architecture-neutral managed code wherever practical.
+
+
+4. PLATFORM AND CPU TARGETS
+
+The application will be 64-bit only.
+
+Supported CPU Architectures:
+- x86-64 / AMD64
+- ARM64 / AArch64
+
+Unsupported CPU Architectures:
+- x86 32-bit
+- ARM 32-bit
+
+Application code should remain CPU-architecture-neutral. Native dependencies must be independently reviewed for every OS and CPU combination on which they are required.
+
+
+4.1 WINDOWS TARGETS
+
+Primary Targets:
+- Windows 11 x86-64
+- Windows 11 ARM64
+- Windows 10 x86-64
+
+Potential / Conditional Target:
+- Windows 10 ARM64, subject to framework and dependency testing
+
+Legacy Best-Effort Targets:
+- Windows 8/8.1 x86-64
+- Windows 7 SP1 x86-64
+
+Windows 7 and Windows 8 compatibility is desirable but is not an architectural requirement. The application must not be designed around these systems if doing so significantly restricts the framework, runtime, security, storage features, or maintainability of the modern application.
+
+If the application remains operational on Windows 7 or 8 without special accommodation, those systems may be classified as functional but unsupported.
+
+Legacy Windows testing will not be a release requirement.
+
+
+4.2 MACOS TARGETS
+
+Architectures:
+- Intel x86-64
+- Apple Silicon ARM64
+
+Minimum macOS Version:
+- To be determined based on the selected .NET and Avalonia releases.
+
+Both macOS architectures should use the same shared source code and storage engine. Separate platform packages may be produced as required.
+
+
+4.3 LINUX TARGETS
+
+Primary x86-64 Distributions:
+- Ubuntu
+- Linux Mint
+- Debian
+- Fedora
+- Arch Linux
+
+Primary ARM64 Distributions / Environments:
+- Ubuntu
+- Debian
+- Raspberry Pi OS 64-bit
+
+Reference ARM64 Hardware:
+- Raspberry Pi 5
+
+General Linux Target:
+- Modern 64-bit glibc-based Linux distributions.
+- X11 and Wayland desktop sessions where practical.
+
+Distributions derived from a tested distribution are expected to work when they provide compatible libraries and desktop facilities, but are not automatically considered officially supported.
+
+Linux compatibility is defined by the tested application package, required runtime libraries, graphical environment, and CPU architecture rather than distribution branding alone.
+
+
+5. CROSS-PLATFORM COMPATIBILITY POLICY
+
+The application will target feature parity rather than implementation parity.
+
+The Windows, macOS, and Linux versions should provide the same major user-facing capabilities, including:
+- Opening supported images.
+- Inspecting image structure.
+- Browsing partitions and filesystems.
+- Previewing and extracting files.
+- Adding, replacing, renaming, or deleting files when supported.
+- Reviewing pending changes.
+- Saving, committing, or rebuilding images.
+- Validating output images.
+
+Underlying platform operations may differ for:
+- File locking.
+- Memory mapping.
+- Temporary-file handling.
+- Atomic replacement of the source image.
+- Native file dialogs.
+- Drag-and-drop integration.
+- Clipboard integration.
+- File metadata and permissions.
+- Notifications and application integration.
+
+Platform-specific behavior must be isolated behind well-defined interfaces and must not be scattered throughout the storage engine or UI logic.
+
+
+6. FUNCTIONAL SCOPE
+
+
+6.1 CORE IMAGE WORKSPACE
+
+The application will open each image as an internal workspace, normally represented by a tab or document window.
+
+A workspace should expose:
+- Image path and basic metadata.
+- Detected container format.
+- Image size and logical sector information.
+- Partition table, if present.
+- Partitions and unallocated regions.
+- Filesystems detected on each partition or directly in the image.
+- Directory and file contents.
+- Optical-disc sessions and tracks where applicable.
+- Selectable CD audio tracks with integrated playback where applicable.
+- Current access and save capabilities.
+- Pending changes.
+- Validation results and warnings.
+
+Suggested workspace states:
+- Opening
+- Ready / Read-only
+- Ready / Writable
+- Ready / Rebuild required
+- Modified
+- Committing
+- Rebuilding
+- Validating
+- Failed
+- Closed
+
+The term mount may be used informally in internal discussion, but user-facing terminology should prefer:
+- Open Image
+- Image Workspace
+- Close Image
+- Commit Changes
+- Rebuild Image
+- Save Image As
+- Discard Changes
+
+This avoids implying that the image is attached to the host operating system.
+
+
+6.2 INITIAL IMAGE FORMAT GOALS
+
+High-Priority Formats:
+- Raw IMG and equivalent raw disk images
+- ISO
+- VHD
+- VHDX
+
+Later / Advanced Formats:
+- BIN/CUE
+- VMDK
+- VDI
+- QCOW2
+- DMG
+- Expanded retro-floppy compatibility, prioritizing 360K and 720K media
+- Other common disk, floppy, optical, or virtual-machine image formats
+
+Format support must be capability-based rather than extension-based. A recognized file extension does not guarantee that every internal variation can be safely modified or rebuilt.
+
+
+6.2.1 RETRO-COMPUTING FLOPPY PRIORITIES
+
+360K and 720K PC floppy images are important product requirements for retro-computing workflows, not incidental compatibility:
+- 360K: 368,640 bytes for a conventional raw image; typically 40 cylinders, two heads, nine 512-byte sectors per track.
+- 720K: 737,280 bytes for a conventional raw image; typically 80 cylinders, two heads, nine 512-byte sectors per track.
+
+Capacity describes raw sector data, not a separate filesystem or a guarantee that every image of that length is supported. Detection must validate the contained layout rather than infer a filesystem solely from size or extension.
+
+Retain the Phase 1 read-only 720K compatibility already demonstrated by the supplied Compaq diagnostic disk and synthetic legacy FAT12 fixtures. This includes a narrowly validated early-DOS BIOS parameter block (BPB) path without the conventional 0x55AA trailer; it is not blanket support for all historical variants.
+
+Broader 360K/720K compatibility and its qualification belong to Phase 7 - Additional Formats and Filesystems. Work includes representative fixtures, early-DOS BPB variations, geometry/media-descriptor validation, legacy volume labels, safe handling of missing or inconsistent metadata, and independently checked browsing/extraction. Write/create/conversion and bootability or exact-layout preservation remain separate capabilities requiring their own tests and the applicable staged-write/commit safeguards. Track/sector-structured and flux captures require separate format evaluation; raw IMG support does not imply support for them.
+
+
+6.3 PARTITION TABLE GOALS
+
+Initial Targets:
+- MBR
+- GPT
+
+Potential Later Targets:
+- Apple Partition Map
+- BSD disk labels
+- Extended or legacy platform-specific layouts
+
+The partition subsystem must support:
+- Detection
+- Enumeration
+- Metadata inspection
+- Offset and size validation
+- Nested access to contained filesystems
+- Representation of unallocated regions
+
+Partition creation, deletion, movement, and resizing are outside the initial scope unless added later.
+
+
+6.4 FILESYSTEM GOALS
+
+Initial / High-Priority Filesystems:
+- FAT12
+- FAT16
+- FAT32
+- NTFS
+- ISO 9660
+- Joliet extensions
+- UDF
+
+Secondary Filesystems:
+- ext2
+- ext3
+- ext4
+- exFAT
+
+Potential Later / Limited Support:
+- HFS+
+- APFS
+- Other legacy or specialized filesystems
+
+A filesystem may be supported at different capability levels:
+- Detection only
+- Metadata inspection
+- Read-only browsing
+- Extraction
+- Limited modification
+- Full modification
+- Creation or formatting
+
+Read support and write support must be tracked separately.
+
+
+6.5 FILE OPERATIONS
+
+Where supported by the container and filesystem, the application should provide:
+- Browse directories.
+- Preview files.
+- Extract files and directories.
+- Add files and directories.
+- Replace file contents.
+- Rename files and directories.
+- Delete files and directories.
+- Create directories.
+- Edit selected text or configuration files.
+- View file properties and filesystem metadata.
+- Export a change report.
+
+Possible later operations:
+- Edit timestamps and attributes.
+- Edit permissions and ownership.
+- Create hard links or symbolic links.
+- Defragment or optimize filesystems.
+- Resize partitions or filesystems.
+- Repair limited filesystem errors.
+
+All operations must be subject to the capabilities of the current image session.
+
+
+7. STORAGE ARCHITECTURE
+
+Storage logic must be separated into independent layers.
+
+Conceptual Data Path:
+
+Image File
+  -> Container Handler
+  -> Virtual Block Device
+  -> Partition Table Handler
+  -> Partition / Logical Block Device
+  -> Filesystem Handler
+  -> Files and Directories
+  -> Workspace and UI
+
+For optical-media images, the data path may instead be:
+
+Image File(s)
+  -> Optical Container Handler
+  -> Disc Sessions and Tracks
+  -> Data Track
+  -> ISO 9660 / UDF Filesystem
+  -> Files and Directories
+  -> Workspace and UI
+
+Each layer must use interfaces that prevent upper levels from depending on one specific file format or filesystem.
+
+
+7.1 BLOCK DEVICE ABSTRACTION
+
+The block-device layer should provide:
+- Random-access reads.
+- Controlled random-access writes where supported.
+- Logical size.
+- Logical and physical sector-size information where known.
+- Flush operation.
+- Read-only state.
+- Bounds validation.
+- Optional sparse or differencing behavior.
+- Optional change-overlay support.
+
+Container handlers should expose one or more block devices without requiring filesystem handlers to understand the underlying container format.
+
+
+7.2 CONTAINER HANDLERS
+
+Each image-container handler should be responsible for:
+- Format detection.
+- Header and metadata parsing.
+- Exposing virtual block devices or optical tracks.
+- Reading data ranges.
+- Writing data ranges when supported.
+- Handling dynamic, sparse, or differencing structures.
+- Validating container consistency.
+- Reporting save capabilities.
+
+Examples:
+- Raw handler
+- VHD handler
+- VHDX handler
+- ISO handler
+- BIN/CUE handler
+
+
+7.3 PARTITION HANDLERS
+
+Partition handlers should be responsible for:
+- Detecting MBR or GPT structures.
+- Enumerating partitions.
+- Exposing each partition as a bounded block-device view.
+- Reporting partition type and metadata.
+- Detecting overlaps and invalid offsets.
+- Preserving unknown partition metadata when possible.
+
+
+7.4 FILESYSTEM HANDLERS
+
+Filesystem handlers should be responsible for:
+- Filesystem detection.
+- Directory enumeration.
+- File reading.
+- Metadata access.
+- File and directory modification where supported.
+- Allocation and deallocation.
+- Metadata consistency.
+- Flush and validation operations.
+- Reporting supported capabilities.
+
+Filesystem handlers must not directly depend on operating-system filesystem drivers.
+
+
+8. CAPABILITY MODEL
+
+The application must determine capabilities dynamically from the complete image structure.
+
+Capabilities may include:
+- CanBrowse
+- CanExtract
+- CanPreview
+- CanPlayAudioTrack
+- CanAddFiles
+- CanReplaceFiles
+- CanDeleteFiles
+- CanRenameFiles
+- CanCreateDirectories
+- CanEditMetadata
+- CanCommitInPlace
+- CanRebuild
+- CanSaveAs
+- CanPreserveBootability
+- CanPreserveExactLayout
+- CanValidate
+
+Example:
+
+A VHDX container may support writing, but if it contains a filesystem for which the application only has read support, the overall workspace must be treated as read-only.
+
+A BIN/CUE set may permit rebuilding a data track but may not permit safe modification if exact mixed-mode layout or unsupported subchannel data cannot be preserved.
+
+The UI must disable unsupported operations and clearly explain why an operation is unavailable.
+
+
+9. EDITING AND CHANGE-TRACKING MODEL
+
+The application should use staged or transactional editing rather than immediately modifying the source image after every user action.
+
+Conceptual Model:
+
+Original Image
+  -> Readable Base Layer
+  -> Pending Change Overlay
+  -> Workspace View
+  -> Validation
+  -> Commit In Place or Rebuild
+
+Pending operations should include:
+- Add
+- Replace
+- Delete
+- Rename
+- Create directory
+- Metadata change
+
+The change manager should support:
+- Ordered command execution.
+- Undo and redo where practical.
+- Conflict detection.
+- Capacity checks.
+- Duplicate-name detection.
+- Case-sensitivity rules.
+- Estimated output size.
+- Change review before commit.
+- Discarding all pending changes.
+
+The user should be able to select:
+- Commit Changes
+- Save as New Image
+- Rebuild Image
+- Discard Changes
+
+
+10. SAVE AND COMMIT MODES
+
+
+10.1 DIRECT COMMIT
+
+Direct commit may be available when both the container and contained filesystem safely support modification.
+
+Possible examples:
+- Raw IMG containing a supported FAT filesystem.
+- VHD containing a writable supported filesystem.
+- VHDX containing a writable supported filesystem.
+
+Direct commit must still use validation, flushing, locking, and recovery safeguards.
+
+
+10.2 REBUILD REQUIRED
+
+Rebuild mode will be used when safe or practical in-place modification is unavailable.
+
+Likely examples:
+- ISO images.
+- BIN/CUE images with modified data tracks.
+- Structured or compressed containers that cannot absorb arbitrary changes safely.
+- Images requiring layout regeneration.
+
+The application should clearly indicate:
+
+This image cannot be safely modified in place. Saving will create a rebuilt image.
+
+Rebuild output should normally be written to a temporary or new file, validated, and only then used to replace the original if the user requested replacement.
+
+
+10.3 READ-ONLY MODE
+
+A workspace must be read-only when:
+- The image or source file is not writable.
+- The format is recognized but no writer is available.
+- The filesystem is supported only for reading.
+- Required parent images are missing.
+- The image is encrypted and cannot be unlocked.
+- Structural corruption makes writing unsafe.
+- Exact reconstruction cannot be guaranteed.
+- Unsupported metadata would be destroyed by modification.
+
+Read-only mode should still permit browsing, previewing, extraction, metadata inspection, and conversion/export where possible.
+
+
+11. ISO HANDLING
+
+ISO images will generally be treated as rebuild-oriented media rather than normally writable filesystems.
+
+The application should support:
+- ISO structure detection.
+- ISO 9660 browsing.
+- Joliet names where present.
+- Rock Ridge support if provided by the selected storage implementation.
+- UDF support where available.
+- File extraction.
+- Queued additions, replacements, deletions, and renames.
+- Rebuilding to a new ISO.
+
+Special preservation concerns include:
+- El Torito boot catalog.
+- BIOS boot images.
+- UEFI boot images.
+- Hybrid MBR/GPT layouts.
+- Joliet metadata.
+- Rock Ridge metadata.
+- UDF structures.
+- Volume identifiers.
+- File ordering and alignment.
+
+The application must not claim that bootability or exact layout will be preserved unless the rebuild engine has explicitly confirmed that capability.
+
+
+12. BIN/CUE HANDLING
+
+BIN/CUE support will be treated as an advanced feature.
+
+The handler may need to represent:
+- Multiple sessions.
+- Multiple tracks.
+- Data tracks.
+- Audio tracks.
+- Mixed-mode discs.
+- Sector modes and sizes.
+- Pregaps and postgaps.
+- Track indexes.
+- Raw sector data.
+- Optional subchannel-related information.
+
+A data-only BIN/CUE image may expose its filesystem similarly to an ISO. A mixed-mode image must also expose tracks that do not contain an ordinary filesystem.
+
+CD audio tracks should be playable directly from the image when selected. Playback must not require extraction of the track to a separate file first. Audio playback is a read-only operation and should remain available even when the image workspace itself is read-only.
+
+Integrated CD audio playback should provide:
+- Play.
+- Pause.
+- Stop.
+- Seek within the selected track.
+- Previous and next audio track navigation.
+- Volume control.
+- Elapsed time and total track duration.
+
+The optical-media subsystem should expose CD-DA audio as a stream suitable for the application audio layer while preserving the original sector representation. Playback implementation may differ by platform, but playback capability and user-facing behavior should remain consistent.
+
+Possible workspace representation:
+
+Disc Image
+  Track 01 - Data
+    Filesystem contents
+  Track 02 - Audio [Playable]
+  Track 03 - Audio [Playable]
+
+Modification may require rebuilding a new BIN/CUE set. The application must report whether it can preserve:
+- Track order.
+- Exact indexes.
+- Gaps.
+- Sector mode.
+- Audio data.
+- Subchannel information.
+- Bootability.
+
+If exact preservation is not possible, modification should be disabled or require an explicit informed conversion/rebuild operation.
+
+
+13. SAFETY AND DATA INTEGRITY
+
+Data integrity is a primary requirement.
+
+The application must assume that image files may contain valuable, bootable, or irreplaceable data.
+
+Required safeguards:
+- Open source images read-only until modification is requested.
+- Obtain an exclusive or advisory lock before committing where supported.
+- Detect external source-file changes during an open session.
+- Prevent concurrent internal writers to the same image.
+- Validate all offsets, lengths, sector calculations, and allocations.
+- Refuse writes outside valid image boundaries.
+- Flush writes before reporting completion.
+- Validate rebuilt or modified output before replacing the original.
+- Preserve the original image until successful completion.
+- Use temporary files on the same filesystem when atomic replacement is needed.
+- Provide clear failure and recovery information.
+
+Recommended commit sequence:
+
+1. Verify source identity and modification time.
+2. Acquire write lock.
+3. Validate pending changes.
+4. Verify free space and temporary-storage requirements.
+5. Create backup, snapshot, overlay, or temporary output as required.
+6. Apply changes.
+7. Flush all writes.
+8. Reopen the result independently.
+9. Validate container, partition, and filesystem structures.
+10. Atomically replace the original only when requested and supported.
+11. Retain recovery information until completion is confirmed.
+
+A fast direct-write mode without backup may be considered later, but it should require explicit user selection and warnings.
+
+
+14. LARGE-FILE AND PERFORMANCE REQUIREMENTS
+
+Image files may range from kilobytes to multiple terabytes.
+
+The application must:
+- Avoid loading complete images into memory.
+- Use streaming and random-access I/O.
+- Use bounded buffers.
+- Support asynchronous operations.
+- Keep the UI responsive during long operations.
+- Report progress, throughput, and estimated completion when practical.
+- Permit cancellation when cancellation will not corrupt output.
+- Use memory mapping only behind an abstraction and only when beneficial.
+- Handle sparse files without unnecessarily expanding them.
+- Avoid unnecessary full-image copies when safe alternatives exist.
+
+The Raspberry Pi 5 will serve as a useful ARM64 performance baseline for the Linux desktop build. The UI and common browsing operations should remain responsive on this class of hardware.
+
+
+15. USER INTERFACE REQUIREMENTS
+
+The interface should use a consistent product identity across platforms rather than exactly copying each operating system's native control appearance.
+
+The interface must support:
+- Multiple image workspaces using tabs or document panels.
+- Directory tree and file list views.
+- Partition and track navigation.
+- Integrated playback controls when a selectable optical track contains CD audio.
+- Image and filesystem properties.
+- Pending-change review.
+- Progress and task monitoring.
+- Search and filtering.
+- Drag-and-drop where supported.
+- Keyboard navigation and shortcuts.
+- Light and dark themes.
+- High-DPI scaling.
+- Resizable panes and persistent layouts.
+- Clear read-only, writable, and rebuild-required indicators.
+
+Potential main layout:
+
+Application Menu / Toolbar
+Workspace Tabs
+  Navigation Pane
+    Image
+    Partitions
+    Tracks
+    Directory Tree
+  Main File View
+  Properties / Preview Pane
+Pending Changes Pane
+Task / Status Bar
+
+The UI must never imply that an operation is direct or in-place when the application will actually rebuild the image.
+
+
+16. APPLICATION ARCHITECTURE
+
+Suggested solution structure:
+
+Application.Core
+- Domain models
+- Commands
+- Workspace/session state
+- Capability model
+- Change tracking
+- Undo/redo
+- Validation contracts
+
+Application.Storage
+- Block-device abstractions
+- Container handlers
+- Partition handlers
+- Filesystem handlers
+- Optical-disc handlers
+- Format detection
+- Rebuild engines
+- Storage validation
+
+Application.Services
+- Configuration
+- Logging
+- Task scheduling
+- Recent files
+- Update services
+- Recovery management
+
+Application.Platform
+- Shared platform contracts
+- Windows platform services
+- Linux platform services
+- macOS platform services
+
+Application.UI
+- Views
+- View models
+- Controls
+- Themes
+- Dialogs
+- Workspace layout
+
+Application.Tests
+- Unit tests
+- Format fixtures
+- Corruption tests
+- Round-trip tests
+- Cross-platform integration tests
+
+
+17. DEPENDENCY POLICY
+
+Preferred Dependencies:
+- Pure managed .NET libraries.
+- Cross-platform libraries.
+- Libraries with active maintenance and clear licensing.
+- Libraries that expose streaming or random-access APIs.
+- Libraries with documented read/write limitations.
+
+Native dependencies may be used when justified, but must be reviewed for:
+- Windows x86-64
+- Windows ARM64
+- macOS x86-64
+- macOS ARM64
+- Linux x86-64
+- Linux ARM64
+
+Every storage dependency must be evaluated for:
+- Supported container formats.
+- Supported filesystems.
+- Read versus write capability.
+- Thread safety.
+- Large-image support.
+- Sparse-image support.
+- Error behavior on corrupt input.
+- Boot metadata preservation.
+- Licensing.
+- Maintenance activity.
+- Test coverage.
+
+DiscUtils or a maintained fork is a candidate for early feasibility testing because it provides managed .NET implementations for multiple image containers and filesystems. It must not be treated as automatically sufficient for production without targeted validation.
+
+Additional specialized libraries or internal implementations may be required for optical-disc formats, unusual filesystems, validation, and exact rebuild operations.
+
+
+18. BUILD AND DISTRIBUTION
+
+One source repository should produce platform-specific application packages.
+
+Expected runtime targets:
+- win-x64
+- win-arm64
+- osx-x64
+- osx-arm64
+- linux-x64
+- linux-arm64
+
+Build output should be self-contained where practical so the user does not need to install .NET separately.
+
+Final distribution formats are to be determined and may include:
+- Windows installer and portable package.
+- macOS signed application bundle and disk image/package.
+- Linux portable archive.
+- Debian/Ubuntu package.
+- Fedora/RPM package.
+- Arch package or PKGBUILD.
+- AppImage or Flatpak if suitable.
+
+Code signing, notarization, update delivery, package repositories, and installer behavior will be specified later.
+
+
+19. TESTING STRATEGY
+
+
+19.1 PLATFORM TESTING
+
+Representative release testing should include:
+- Windows 11 x86-64
+- Windows 11 ARM64
+- Windows 10 x86-64
+- Intel macOS
+- Apple Silicon macOS
+- Ubuntu x86-64
+- Linux Mint x86-64
+- Debian x86-64
+- Fedora x86-64
+- Arch x86-64
+- Debian or Ubuntu ARM64
+- Raspberry Pi OS 64-bit on Raspberry Pi 5
+- X11 session
+- Wayland session
+
+Windows 7 and 8 testing may be conducted periodically for information but must not block a release.
+
+
+19.2 STORAGE TESTING
+
+Each supported container/filesystem combination should be tested for:
+- Detection.
+- Normal browsing.
+- Empty images.
+- Large files.
+- Deep directory structures.
+- Unicode names.
+- Case-sensitive and case-insensitive names.
+- Full filesystems.
+- Sparse containers.
+- Truncated images.
+- Corrupt metadata.
+- Invalid partition tables.
+- Interrupted save/rebuild operations.
+- Add, replace, rename, and delete operations.
+- Reopen after modification.
+- Validation after modification.
+- Round-trip preservation.
+
+Golden test images should be maintained for known formats and edge cases.
+
+Write tests must operate on disposable copies, overlays, or generated fixtures rather than irreplaceable source images.
+
+
+19.3 ROUND-TRIP AND PRESERVATION TESTING
+
+Where the application claims preservation, tests must verify:
+- File contents.
+- Directory structure.
+- Filenames and encoding.
+- Timestamps.
+- Attributes and permissions where applicable.
+- Partition metadata.
+- Boot sectors.
+- Bootability where claimed.
+- ISO boot catalogs.
+- Optical track layout where claimed.
+- Unknown or opaque metadata where preservation is expected.
+
+
+20. SECURITY CONSIDERATIONS
+
+Image files are untrusted input.
+
+The application must defend against:
+- Invalid lengths and offsets.
+- Integer overflow.
+- Recursive directory cycles.
+- Excessive nesting.
+- Extremely large metadata counts.
+- Crafted filenames.
+- Path traversal during extraction.
+- Symbolic-link extraction attacks.
+- Decompression or allocation bombs.
+- Corrupt partition tables.
+- Malformed filesystem structures.
+- Malicious image metadata.
+
+Extraction must never write outside the user-selected destination.
+
+Preview handlers must be sandboxed or limited where practical. The application should not automatically execute content from an image.
+
+Storage parsing should use checked arithmetic and strict bounds validation.
+
+
+21. LOGGING AND RECOVERY
+
+The application should maintain structured logs for:
+- Image detection.
+- Workspace opening.
+- Capability decisions.
+- Validation warnings.
+- Pending operations.
+- Commit/rebuild stages.
+- Errors and recovery actions.
+
+Logs must avoid storing file contents unless explicitly enabled for diagnostics.
+
+For interrupted operations, the application should detect:
+- Incomplete temporary images.
+- Pending recovery journals.
+- Backups created by the application.
+- Source images changed during the previous session.
+
+The user should receive clear recovery choices without requiring knowledge of internal storage structures.
+
+
+22. OUT-OF-SCOPE FOR INITIAL DEVELOPMENT
+
+The following should not be assumed part of the first release:
+- Host operating-system drive mounting.
+- Kernel drivers.
+- General-purpose filesystem repair.
+- Partition movement and resizing.
+- Full forensic analysis.
+- Data recovery from severely damaged filesystems.
+- Guaranteed bit-identical BIN/CUE rebuilding.
+- Guaranteed preservation of every bootable ISO variation.
+- Encrypted-volume cracking or bypass.
+- Virtual-machine execution.
+- Network block-device hosting.
+- 32-bit operating systems or processors.
+
+These may be evaluated separately after the core workspace is stable.
+
+
+23. PROPOSED DEVELOPMENT PHASES
+
+Phase 1 - Read-Only Explorer
+- Establish Avalonia application shell.
+- Implement block-device abstractions.
+- Open raw IMG, VHD, VHDX, and ISO.
+- Detect MBR and GPT.
+- Browse FAT, NTFS, and ISO 9660 where supported.
+- Extract files and directories.
+- Display image, partition, and filesystem properties.
+
+Phase 2 - Staged File Modification
+- Add pending-change model.
+- Add file replacement, addition, deletion, and rename operations.
+- Add change review.
+- Implement save-as-new-image workflows.
+- Add output validation.
+
+Phase 3 - Safe Direct Commit
+- Add direct writes for tested container/filesystem combinations.
+- Add locking, backup, journaling, validation, and recovery.
+- Add external-change detection.
+
+Phase 4 - ISO Rebuild
+- Add controlled ISO rebuild.
+- Preserve supported naming extensions and metadata.
+- Add bootability capability detection and warnings.
+
+Phase 5 - Linux and ARM64 Hardening
+- Validate all core functions on Linux x86-64 and ARM64.
+- Optimize Raspberry Pi 5 performance.
+- Verify X11 and Wayland behavior.
+
+Phase 6 - BIN/CUE and Optical Expansion
+- Parse CUE sheets and track layouts.
+- Browse supported data tracks.
+- Represent audio and mixed-mode tracks.
+- Add direct playback of CD audio tracks from supported images.
+- Add rebuild workflows only where preservation requirements are understood.
+
+Phase 7 - Additional Formats and Filesystems
+- Evaluate VMDK, VDI, QCOW2, DMG, ext filesystems, exFAT, HFS+, and APFS.
+- Expand and qualify retro-floppy compatibility, prioritizing 360K and 720K PC images while retaining the existing read-only 720K subset.
+- Add formats incrementally according to testability and user value.
+
+
+24. FEASIBILITY PROTOTYPE
+
+Before committing to full application development, create a focused proof of concept that demonstrates:
+- One Avalonia UI codebase running on Windows, Linux, and macOS.
+- x86-64 and ARM64 builds.
+- Opening a raw IMG, VHD/VHDX, and ISO.
+- Detecting partition tables.
+- Browsing at least FAT and NTFS images.
+- Extracting files.
+- Queuing one replacement operation.
+- Saving to a new image.
+- Reopening and validating the output.
+- Running the ARM64 Linux build on a Raspberry Pi 5.
+
+The feasibility prototype should prioritize correctness and architecture validation rather than polished UI or broad format coverage.
+
+
+25. CURRENT BASELINE SUMMARY
+
+Product Type:
+- Cross-platform internal disk and optical-image workspace.
+
+Primary Functions:
+- Inspect, browse, extract, modify, rebuild, and validate images.
+- Play CD audio tracks directly from supported optical-media images.
+
+Language:
+- C#
+
+Runtime:
+- .NET
+
+UI Framework:
+- Avalonia UI with XAML
+
+Architecture Pattern:
+- MVVM with layered storage and platform abstractions
+
+CPU Architectures:
+- x86-64 and ARM64
+
+Primary Operating Systems:
+- Windows 10/11
+- macOS
+- Linux
+
+Linux Distribution Targets:
+- Ubuntu
+- Linux Mint
+- Debian
+- Fedora
+- Arch Linux
+- Raspberry Pi OS 64-bit
+
+Legacy Windows:
+- Windows 7/8 best effort only
+
+Image Access Model:
+- Internal application workspace, not host OS mounting
+
+Editing Model:
+- Staged changes with direct commit, rebuild, or read-only mode based on detected capabilities
+
+Initial Format Priorities:
+- IMG
+- ISO
+- VHD
+- VHDX
+
+Advanced Format Priority:
+- BIN/CUE
+
+Safety Priority:
+- Preserve source data until output has been successfully written and validated
+
+Cross-Platform Goal:
+- Consistent functionality, with platform-specific implementation where necessary

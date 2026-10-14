@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "DiscUtils.Fat": {
+        "type": "Direct",
+        "requested": "[0.16.13, )",
+        "resolved": "0.16.13",
+        "contentHash": "Ch29amFF0dMBwHuq4Tuu1ycXzRpNY+8K8BMvGyMjJyrYQaNh0y99MNYEDQJK7lG9f8ih+PEWljLyp5AjR/SDlw==",
+        "dependencies": {
+          "DiscUtils.Core": "0.16.13"
+        }
+      },
+      "DiscUtils.Iso9660": {
+        "type": "Direct",
+        "requested": "[0.16.13, )",
+        "resolved": "0.16.13",
+        "contentHash": "hT0DbN+sIqg5Bu3/sCQUuKLwIrceF9BZvn7AeRe+f2iY0p4mgN9xEmXpFWQshnBBxN9r75364agBHDeb5owiUA==",
+        "dependencies": {
+          "DiscUtils.Core": "0.16.13"
+        }
+      },
+      "DiscUtils.Ntfs": {
+        "type": "Direct",
+        "requested": "[0.16.13, )",
+        "resolved": "0.16.13",
+        "contentHash": "K7e2KJ7TjDI566SXBnLBfmRPWDqMjb/0T6UMdY+BzyWfiQJVpBQ0BMO89kuvknbz17zTSi1TDLiT9GOOJEpUCg==",
+        "dependencies": {
+          "DiscUtils.Core": "0.16.13"
+        }
+      },
+      "DiscUtils.Vhd": {
+        "type": "Direct",
+        "requested": "[0.16.13, )",
+        "resolved": "0.16.13",
+        "contentHash": "n1UIJU/9rYbkDTDGn6jQ23iKk9gGURoCzAKcQjVa3WZxWDqfhohgNh6BUc1B3gQN1WdP+vc6iCWfLrRCEODTGQ==",
+        "dependencies": {
+          "DiscUtils.Core": "0.16.13"
+        }
+      },
+      "DiscUtils.Vhdx": {
+        "type": "Direct",
+        "requested": "[0.16.13, )",
+        "resolved": "0.16.13",
+        "contentHash": "1i6FPceCsnHknc0nPT6uWWZQ2hfVOyhsft0gywWUMLBqZdHTct8+5fH0YfjPxGC89eaO2oeiUE0r4jsTjDZxGw==",
+        "dependencies": {
+          "DiscUtils.Core": "0.16.13"
+        }
+      },
+      "DiscUtils.Core": {
+        "type": "Transitive",
+        "resolved": "0.16.13",
+        "contentHash": "TU/Ns5RMa3060K7AsSDqG94/H7eaWaz1XoYuCUur40Mg+t0/ubtKqxCffkoiB1e/cFMGvHL0evFoY6uDL9Ocmw==",
+        "dependencies": {
+          "DiscUtils.Streams": "0.16.13"
+        }
+      },
+      "DiscUtils.Streams": {
+        "type": "Transitive",
+        "resolved": "0.16.13",
+        "contentHash": "BSrywAX2mmvt6j00u6VQYQLtxc6jDniK2aP4p0q20bbTGXImtW4N26eUZYKfkW9aj6XLaqISFgtWfssKURixeA=="
+      },
+      "sectorworks.core": {
+        "type": "Project"
+      }
+    },
+    "net10.0/linux-arm64": {},
+    "net10.0/linux-x64": {},
+    "net10.0/osx-arm64": {},
+    "net10.0/osx-x64": {},
+    "net10.0/win-arm64": {},
+    "net10.0/win-x64": {}
+  }
+}

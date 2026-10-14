@@ -1,0 +1,96 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SectorWorks.UI.App" RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="/Themes/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <SolidColorBrush x:Key="WorkbenchBackground">#0E151C</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchSurface">#151F29</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchHeader">#1B2935</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchBorder">#3D4A57</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchText">#E8EDF2</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchMuted">#AEB9C4</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchAccent">#399DF4</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchWarning">#F0BB56</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchError">#FF9292</SolidColorBrush>
+      <SolidColorBrush x:Key="WorkbenchSuccess">#73DB93</SolidColorBrush>
+    </ResourceDictionary>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource WorkbenchBackground}" />
+      <Setter Property="Foreground" Value="{DynamicResource WorkbenchText}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="Padding" Value="7,3" />
+      <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector="Button:disabled">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource WorkbenchMuted}" />
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource WorkbenchMuted}" />
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="8,5" />
+    </Style>
+    <Style Selector="TabControl">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+      </Setter>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <DockPanel>
+            <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+            </ScrollViewer>
+            <ContentPresenter Name="PART_SelectedContentHost"
+                              Content="{TemplateBinding SelectedContent}"
+                              ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+          </DockPanel>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="PathIcon">
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="Foreground" Value="{DynamicResource WorkbenchText}" />
+    </Style>
+    <Style Selector="TreeViewItem">
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="Padding" Value="2" />
+    </Style>
+    <Style Selector="DataGrid">
+      <Setter Property="Background" Value="{DynamicResource WorkbenchSurface}" />
+      <Setter Property="RowHeight" Value="28" />
+      <Setter Property="GridLinesVisibility" Value="Horizontal" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WorkbenchBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox.technical">
+      <Setter Property="FontFamily" Value="monospace" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="6" />
+      <Setter Property="IsReadOnly" Value="True" />
+    </Style>
+    <Style Selector="Border.pane">
+      <Setter Property="Background" Value="{DynamicResource WorkbenchSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WorkbenchBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+  </Application.Styles>
+</Application>

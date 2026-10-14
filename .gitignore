@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+.vs/
+.idea/
+*.user
+*.suo
+*.pfx
+*.snk
+old/
+# Local runtime data when the application-data path falls back to the working directory.
+/SectorWorks/
+/Compaq Portable Diagnostic Disk.img
+/LEVEL01.OPL

@@ -1,0 +1,536 @@
+SECTORWORKS AI DEVELOPMENT RULES
+Version 0.1
+
+PURPOSE
+
+This file defines mandatory working rules for AI development agents contributing to SectorWorks. Every agent must read this file before beginning work and must follow it throughout the task.
+
+These rules are intended to keep autonomous development bounded, reviewable, testable, and aligned with the SectorWorks technical specifications and checklist.
+
+
+============================================================
+1. REQUIRED READING BEFORE ANY WORK
+============================================================
+
+Before beginning a task, the agent must read the current versions of:
+
+1. rules.txt
+2. checklist.txt
+3. Cross_Platform_Disk_Image_Workspace_Tech_Spec_v0.3.txt, or its newer replacement
+4. SectorWorks_UI_Look_and_Feel_Spec_v0.2.txt, or its newer replacement, when UI work is involved
+5. Any additional design, test, format, or architecture documents relevant to the assigned work
+
+The agent must use the documents as the source of truth and must not substitute assumptions for requirements explicitly defined in them.
+
+If documents conflict, the agent must stop the conflicting work, document the conflict, and notify the user rather than silently choosing one interpretation.
+
+
+============================================================
+2. PHASE-BASED DEVELOPMENT AUTHORITY
+============================================================
+
+The user may authorize work by saying, for example:
+
+    Start Phase 1
+
+That authorization permits the agent to work through the tasks belonging to that phase, including reasonable supporting work required to complete those tasks.
+
+Authorization for one phase DOES NOT authorize work on any later phase.
+
+The agent must never begin the next phase automatically.
+
+When the authorized phase is believed complete, the agent must:
+
+1. Stop implementation work.
+2. Run the phase verification process.
+3. Review every checklist item and exit criterion for that phase.
+4. Update checklist.txt accurately.
+5. Summarize completed work, tests, limitations, deferred items, and outstanding concerns.
+6. Notify the user that the phase is ready for review.
+7. Wait for explicit user approval before starting another phase.
+
+The agent must not interpret successful tests, clean builds, or completed exit criteria as permission to continue into the next phase.
+
+ONLY THE USER CAN APPROVE ADVANCEMENT TO THE NEXT PHASE.
+
+
+============================================================
+3. CHECKLIST OWNERSHIP AND STATUS
+============================================================
+
+checklist.txt is the authoritative task tracker for implementation progress.
+
+Agents must keep checklist.txt synchronized with actual project state.
+
+Status meanings:
+
+[ ] Not started or not complete
+[x] Completed and verified
+[-] Intentionally not applicable or explicitly deferred
+[!] Blocked, uncertain, or requires a user decision
+
+An item must not be marked [x] merely because code was written. It may be marked [x] only when the implementation is present and the agent has performed reasonable verification appropriate to the item.
+
+Do not mark tests as complete unless the tests actually run and pass.
+
+Do not mark platform validation complete unless that platform was actually tested as required.
+
+Do not mark an unsupported feature complete simply because a library exposes an API for it.
+
+When an item is partially complete, leave the item incomplete and add a concise NOTE beneath it explaining the current state.
+
+Example:
+
+[ ] Implement VHDX differencing parent support.
+    NOTE: Fixed and dynamic VHDX are complete. Parent-chain resolution
+    requires work currently scheduled for a later phase.
+
+Checklist notes must be factual and concise.
+
+
+============================================================
+4. LATER-PHASE DEPENDENCIES DISCOVERED DURING WORK
+============================================================
+
+If the agent discovers that a task in the current phase requires functionality assigned to a later phase, the agent must NOT silently implement the later phase.
+
+The agent must:
+
+1. Stop the part of the task that crosses the phase boundary.
+2. Identify the specific later-phase dependency.
+3. Add a NOTE beneath the affected checklist item describing the dependency.
+4. Mark the item [!] if the dependency prevents completion of the current-phase requirement.
+5. Notify the user as part of the current work report, or immediately if the dependency blocks significant progress.
+6. Continue other tasks in the authorized phase that are not blocked.
+
+Example:
+
+[!] Preserve writable NTFS changes in-place.
+    NOTE: Reliable completion requires the direct-commit transaction
+    system scheduled for Phase 3. Phase 2 implementation is limited
+    to staged changes and Save As New Image.
+
+A later-phase dependency is NOT permission to start that later phase.
+
+If a small foundational interface or placeholder is reasonably necessary so current-phase code can compile or remain architecturally sound, the agent may create the minimum abstraction required, but must not implement the later-phase functionality behind it.
+
+
+============================================================
+5. PHASE SCOPE DISCIPLINE
+============================================================
+
+Agents should work broadly within the authorized phase rather than asking the user to approve every individual checklist item.
+
+The intended workflow is:
+
+    User authorizes phase
+            |
+            v
+    Agent works through phase checklist
+            |
+            v
+    Agent builds/tests/verifies repeatedly
+            |
+            v
+    Agent performs phase exit verification
+            |
+            v
+    Agent stops and requests user review
+
+Agents should make reasonable implementation decisions when the specifications provide sufficient direction.
+
+Agents should ask the user only when:
+
+- A major architectural decision is not covered by the specifications.
+- Requirements conflict.
+- A destructive or irreversible action involving non-test data would be required.
+- A licensing issue creates a material project decision.
+- A later-phase dependency blocks the authorized phase.
+- Multiple materially different implementations exist and the choice changes product behavior or long-term architecture.
+
+Minor implementation choices do not require user approval if they remain within the specifications and current phase.
+
+
+============================================================
+6. PHASE COMPLETION AND VERIFICATION
+============================================================
+
+Before declaring a phase complete, the agent must perform a dedicated verification pass rather than relying only on tests run during development.
+
+The verification pass must include, as applicable:
+
+- Restore/build of the solution.
+- Relevant unit tests.
+- Relevant fixture/integration tests.
+- Cross-target compilation/publish checks currently available from the development host.
+- Manual or automated verification of the phase's major workflows.
+- Review of security/error-handling requirements relevant to the phase.
+- Review of every checklist item in the phase.
+- Review of every phase exit criterion.
+- Review for TODOs, temporary stubs, disabled tests, and placeholder behavior that could falsely imply completion.
+
+If any exit criterion fails, the phase is not complete.
+
+The agent should fix failures that are within the authorized phase and re-run verification.
+
+If a failure requires later-phase work or a user decision, document the blocker and present the phase as incomplete/blocked rather than forcing completion.
+
+After verification, provide the user with a concise phase review containing:
+
+- Phase completed or phase blocked status.
+- Major functionality implemented.
+- Verification/tests performed.
+- Checklist items remaining incomplete.
+- Later-phase dependencies discovered.
+- Known limitations or risks.
+- Files or architecture areas that deserve human review.
+
+Then STOP and wait for user approval.
+
+
+============================================================
+7. DEVELOPMENT ENVIRONMENT AND BUILD TARGETS
+============================================================
+
+Primary development host:
+
+- Linux Mint 22 x86-64
+- Visual Studio Code
+- GitHub Copilot / coding agents
+- C#
+- .NET
+- Avalonia UI
+
+Target runtime families:
+
+- linux-x64
+- linux-arm64
+- win-x64
+- win-arm64
+- osx-x64
+- osx-arm64
+
+The primary development host is Linux. Do not assume Visual Studio for Windows is available or required.
+
+Build and verification procedures must be command-line friendly and callable by agents from the VS Code environment.
+
+Prefer repository-local scripts or documented dotnet commands over IDE-only build procedures.
+
+Do not require CI infrastructure as part of the normal development process.
+
+Cross-target build success does not equal physical platform validation. Checklist items requiring actual platform testing must remain incomplete until they have actually been tested on the relevant platform/environment.
+
+
+============================================================
+8. REPEATABLE AGENT-FRIENDLY VERIFICATION
+============================================================
+
+The repository should provide repeatable commands/scripts for agents to build and verify work.
+
+Prefer a small number of deterministic entry points such as:
+
+- restore
+- build
+- test
+- verify
+- publish/build target scripts
+
+Where practical, create a repository-level verification script that returns a nonzero exit code on failure and clearly reports which verification stage failed.
+
+Agents must not modify verification scripts merely to hide or bypass failures.
+
+Agents must not remove, weaken, skip, or rewrite valid tests simply to make a task pass.
+
+If a test is determined to be incorrect, the agent must explain why before changing the expectation, preferably in the task/phase report and relevant code/test comments when appropriate.
+
+
+============================================================
+9. ARCHITECTURAL BOUNDARIES
+============================================================
+
+Maintain the project separation defined by the technical specification.
+
+General rules:
+
+- Core application logic must not depend on Avalonia.
+- Storage parsing/writing must not depend on Avalonia.
+- Filesystem handlers must not depend on host OS filesystem drivers for core image functionality.
+- Platform-specific behavior must be behind platform service interfaces.
+- UI code must consume storage/core models through defined abstractions.
+- Avoid scattered OperatingSystem checks throughout shared code when a platform service is appropriate.
+- Container handling, partition parsing, filesystem access, workspace state, and UI presentation should remain separable concerns.
+
+Do not introduce shortcuts that make a single phase easier at the cost of breaking these boundaries without explicit user approval.
+
+
+============================================================
+10. CROSS-PLATFORM RULES
+============================================================
+
+Shared code must remain compatible with the intended targets unless a documented platform abstraction is being implemented.
+
+Do not introduce Windows-only dependencies into shared projects.
+
+Do not introduce Linux-only dependencies into shared projects.
+
+Do not introduce macOS-only dependencies into shared projects.
+
+Prefer managed .NET libraries when practical.
+
+Before adding a native dependency, verify its intended availability for relevant combinations of:
+
+- Linux x86-64
+- Linux ARM64
+- Windows x86-64
+- Windows ARM64
+- macOS x86-64
+- macOS ARM64
+
+If a dependency does not support all required targets, document the limitation and determine whether a platform-specific implementation or another dependency is appropriate.
+
+Functionality should remain consistent across platforms even when implementation differs.
+
+Windows 7/8 compatibility is best-effort only and must not drive architectural decisions unless the user explicitly changes that requirement.
+
+
+============================================================
+11. STORAGE AND DATA-INTEGRITY RULES
+============================================================
+
+Image files must always be treated as untrusted input.
+
+Agents must:
+
+- Validate offsets, lengths, counts, and boundaries.
+- Use checked arithmetic for storage calculations.
+- Reject reads/writes outside valid boundaries.
+- Avoid loading entire large images into memory when streaming/random access is possible.
+- Avoid modifying original test fixtures.
+- Use disposable copies/generated fixtures for write testing.
+- Preserve source data until output/commit validation succeeds.
+- Never report a write/rebuild as successful before required flush and validation steps complete.
+- Never enable write capability merely because an underlying library claims that it supports writing.
+- Add regression tests for serious parsing, corruption, and write bugs.
+
+Do not trade data integrity for implementation speed.
+
+
+============================================================
+12. FORMAT AND CAPABILITY TRUTHFULNESS
+============================================================
+
+SectorWorks uses capability-based support rather than extension-based claims.
+
+Do not describe an image format or filesystem as fully supported merely because it can be detected or opened.
+
+Track capabilities independently, including where applicable:
+
+- Detection
+- Browsing
+- Extraction
+- Preview
+- Modification
+- Direct commit
+- Rebuild
+- Validation
+- Bootability preservation
+- Exact-layout preservation
+- Audio playback
+
+The complete container -> partition -> filesystem stack determines the effective workspace capability.
+
+If the container is writable but the contained filesystem is read-only, the workspace remains read-only for filesystem modifications.
+
+The UI and documentation must accurately reflect these restrictions.
+
+
+============================================================
+13. TESTING RULES
+============================================================
+
+New storage functionality should include tests in the same phase in which the functionality is introduced.
+
+Tests should cover normal cases and meaningful failure/edge cases.
+
+Use representative golden fixtures where appropriate.
+
+Keep immutable fixture hashes where useful.
+
+Tests involving writes must run against disposable copies or generated images.
+
+For parsers, include malformed/truncated inputs.
+
+For writers/rebuilders, include reopen and round-trip validation.
+
+For security-sensitive extraction, include path traversal and hostile filename tests.
+
+For a serious bug discovered during development, add a regression test whenever practical before marking the related task complete.
+
+
+============================================================
+14. UI RULES
+============================================================
+
+When implementing UI work, follow the current SectorWorks UI specification.
+
+Key requirements include:
+
+- Modern professional desktop utility appearance.
+- Dark graphite/charcoal primary design.
+- Blue selection/accent color.
+- Moderately high information density.
+- Traditional menu and compact toolbar.
+- Workspace tabs.
+- Left image-structure tree.
+- Large center content browser.
+- Context-sensitive lower tool pane.
+- Right technical inspector.
+- Compact status bar.
+- Resizable panes.
+- Keyboard navigation.
+- High-DPI support.
+
+Avoid:
+
+- Generic Electron/SaaS dashboard appearance.
+- Oversized cards.
+- Excessive whitespace.
+- Mobile-style controls.
+- Excessive corner rounding.
+- Decorative UI that reduces technical information density.
+
+Functional UI icons should use reusable vector resources inside the application wherever practical.
+
+Prefer Avalonia PathIcon/StreamGeometry resources and a consistent licensed icon family.
+
+Theme/state colors should be applied through resources rather than baking colors into vector geometry.
+
+The SectorWorks application icon, logo, and wordmark are external branding assets and may be produced separately.
+
+
+============================================================
+15. PERFORMANCE AND RESPONSIVENESS
+============================================================
+
+Large image operations must not block the UI thread.
+
+Use streaming, bounded buffers, asynchronous operations, and random access where appropriate.
+
+Do not assume disk images fit in RAM.
+
+Progress reporting should be provided for long-running operations when practical.
+
+Cancellation must only be offered when it can leave the application and output in a valid state.
+
+Raspberry Pi 5 is an intended ARM64 Linux performance reference platform and should eventually remain responsive for normal browsing workflows.
+
+
+============================================================
+16. DEPENDENCY RULES
+============================================================
+
+Before adding a significant dependency, review:
+
+- Purpose and necessity
+- License
+- Maintenance activity
+- Managed versus native implementation
+- Supported OSes
+- Supported architectures
+- Thread-safety where relevant
+- Large-file support where relevant
+- Error behavior
+- Impact on trimming/AOT only if those deployment modes are later adopted
+
+Do not add multiple overlapping libraries without a clear reason.
+
+Do not add a native dependency solely for convenience when a reasonable managed alternative satisfies the requirement.
+
+Record important dependency decisions in project documentation when the choice affects long-term architecture or platform support.
+
+
+============================================================
+17. SOURCE CONTROL AND CHANGE HYGIENE
+============================================================
+
+Keep changes scoped to the authorized phase.
+
+Do not perform unrelated large refactors unless required to complete the phase safely.
+
+Do not silently delete existing functionality.
+
+Do not commit generated build output unless the repository explicitly requires it.
+
+Do not commit secrets, signing keys, credentials, tokens, private certificates, or local machine configuration.
+
+Keep temporary test artifacts out of source control unless intentionally promoted to documented fixtures.
+
+When changing public interfaces or architecture, update affected tests and documentation in the same phase.
+
+
+============================================================
+18. NO FALSE COMPLETION
+============================================================
+
+An agent must never claim a phase, task, format, platform, or feature is complete when verification does not support the claim.
+
+Examples of unacceptable completion claims:
+
+- "macOS support complete" when the project only cross-compiled and was never run on macOS.
+- "NTFS writing complete" when only the underlying library API was called but round-trip behavior was not tested.
+- "BIN/CUE support complete" when only simple single-track data CUE files were tested.
+- "Phase complete" when checklist exit criteria remain unresolved.
+
+Uncertainty must be reported as uncertainty.
+
+Blocked work must remain visibly blocked.
+
+Deferred work must remain visibly deferred.
+
+Honest incomplete status is preferred over false completion.
+
+
+============================================================
+19. USER REVIEW GATE
+============================================================
+
+At the end of every authorized phase, the agent must stop and explicitly request user review.
+
+The agent should provide enough information for the user to decide whether to approve the phase, request changes, or leave it incomplete.
+
+The expected termination state is:
+
+    PHASE IMPLEMENTATION COMPLETE
+            |
+            v
+    VERIFICATION COMPLETE
+            |
+            v
+    CHECKLIST UPDATED
+            |
+            v
+    USER REVIEW REQUESTED
+            |
+            v
+          STOP
+
+The next phase may begin only after explicit user authorization.
+
+
+============================================================
+20. FINAL OPERATING PRINCIPLE
+============================================================
+
+The agent's objective is not to finish the largest amount of code in the shortest time.
+
+The objective is to complete the CURRENT AUTHORIZED PHASE accurately, safely, testably, and in accordance with the specifications, then stop for human review.
+
+When in doubt:
+
+1. Stay inside the current phase.
+2. Preserve data integrity.
+3. Preserve architectural boundaries.
+4. Update the checklist honestly.
+5. Document later-phase dependencies instead of implementing them.
+6. Verify before claiming completion.
+7. Ask the user before crossing a phase boundary.

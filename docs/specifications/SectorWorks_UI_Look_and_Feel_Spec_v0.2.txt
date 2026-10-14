@@ -1,0 +1,555 @@
+SECTORWORKS
+USER INTERFACE LOOK AND FEEL SPECIFICATION
+Version 0.2
+Date: October 12, 2026
+Status: Initial UI Direction
+
+
+1. PURPOSE
+
+This document defines the initial visual language and interaction style for the SectorWorks desktop application. It supplements the main technical specification and is intended to preserve the approved UI direction as development begins.
+
+The reference direction is a modern, professional desktop utility with high information density and a clearly native workstation/tool character. The interface should avoid the common appearance of web applications packaged as desktop software.
+
+
+2. DESIGN GOALS
+
+The interface should feel:
+- Modern, but distinctly desktop-oriented.
+- Professional and technically capable.
+- Dense without becoming cluttered.
+- Familiar to users of file managers, IDEs, disk utilities, hex editors, and other professional tools.
+- Consistent across Windows, macOS, and Linux without requiring pixel-identical platform implementations.
+- Suitable for long working sessions.
+
+The interface should prioritize useful information and workspace area over decorative elements.
+
+
+3. VISUAL STYLE
+
+Primary Style:
+- Dark graphite / charcoal theme.
+- Cool blue used as the primary accent and selection color.
+- Neutral gray secondary surfaces.
+- High-contrast but not excessively bright text.
+- Thin separators and clearly defined pane boundaries.
+- Subtle borders rather than large shadows.
+- Restrained corner rounding, generally square or only slightly rounded.
+- Compact desktop typography.
+- Small, clear line-style toolbar icons.
+
+Avoid:
+- Oversized rounded cards.
+- Large empty margins and excessive whitespace.
+- Mobile-style controls.
+- Oversized buttons.
+- Floating web-dashboard panels.
+- Excessive gradients, shadows, translucency, or glass effects.
+- Layouts that resemble a browser-based SaaS dashboard.
+
+
+4. APPLICATION CHROME
+
+The primary window should use a traditional desktop application hierarchy:
+
+1. Title bar
+2. Menu bar
+3. Main toolbar
+4. Workspace/document tabs
+5. Main working area
+6. Status bar
+
+Suggested menu structure:
+- File
+- Edit
+- View
+- Image
+- Tools
+- Window
+- Help
+
+The toolbar should use compact icons with text labels where useful. Common actions may include:
+- Open
+- Close
+- Extract
+- Add
+- Replace
+- Delete
+- New Folder
+- Properties
+- Hex View
+- Play, when audio is available
+- Refresh
+
+Commands that are unavailable for the current image or read-only session should remain visible when appropriate but appear disabled rather than disappearing unexpectedly.
+
+File should include Preferences, opening an application preferences window.
+Initial preferences cover default directory sorting: sort field, direction,
+and whether folders are grouped before files. Changes are persisted when saved;
+Cancel leaves the active and stored preferences unchanged. Settings errors must
+be reported rather than silently ignored.
+
+
+5. WORKSPACE MODEL
+
+Each opened image should normally appear as a document/workspace tab.
+
+Example:
+
+[ Windows11.vhdx ] [ GameDisc.bin ] [ InstallMedia.iso ] [+]
+
+The selected workspace should retain its own navigation state, selected partition/track, selected directory, pane positions, and other relevant UI state.
+
+Multiple images may remain open simultaneously.
+
+
+6. PRIMARY LAYOUT
+
+The standard workspace should use three major vertical regions:
+
+LEFT PANE
+Image structure and navigation.
+
+CENTER WORKSPACE
+Primary content browser and context-sensitive lower tool/preview pane.
+
+RIGHT PANE
+Image, partition, filesystem, track, and capability information.
+
+A persistent status bar occupies the bottom of the application.
+
+Approximate layout concept:
+
++----------------+-----------------------------------+----------------+
+|                |                                   |                |
+| Image          | Main Content                     | Image / Track  |
+| Structure      | Browser                          | Details        |
+|                |                                   |                |
+|                +-----------------------------------+                |
+|                | Preview / Audio / Hex / Info     | Capabilities   |
+|                |                                   |                |
++----------------+-----------------------------------+----------------+
+| Status Bar                                                         |
++------------------------------------------------------------------------+
+
+Pane widths and heights should be user-resizable.
+
+
+7. IMAGE STRUCTURE PANE
+
+The left pane should display the logical structure of the currently selected image as a hierarchical tree.
+
+Possible nodes include:
+- Image information
+- Sessions
+- Tracks
+- Partition tables
+- Partitions
+- Filesystems
+- Directories
+- Boot structures
+- Unallocated space
+
+Examples:
+
+GameDisc.bin (Mixed Mode)
+  Image Information
+  Session 1
+    Track 1 - Data (ISO 9660)
+      GAME_FILES
+      DATA
+      MANUAL
+    Track 2 - Audio (CD-DA)
+    Track 3 - Audio (CD-DA)
+    Track 4 - Audio (CD-DA)
+
+or:
+
+Windows11.vhdx
+  GPT Partition Table
+    Partition 1 - EFI System
+      FAT32
+    Partition 2 - Windows
+      NTFS
+    Partition 3 - Recovery
+      NTFS
+
+The hierarchy should make the relationship between container, disk/disc structure, filesystem, and files visually obvious.
+
+Successful folder navigation in the content browser should select the same
+folder in the structure tree and expand its ancestors. This applies to folder
+activation, breadcrumbs, parent navigation and search-result navigation.
+Failed, cancelled or superseded navigation must not leave the tree highlighting
+a different directory from the one actually displayed.
+
+
+8. MAIN CONTENT BROWSER
+
+The center upper pane is the primary working area.
+
+For filesystem content, default to a dense Details view similar to a professional file manager.
+
+Possible columns:
+- Name
+- Size
+- Type
+- Modified
+- Attributes
+- LBA / offset when useful
+
+For optical disc layout, the same region may switch to a track-oriented table.
+
+Possible track columns:
+- Track number
+- Type
+- Title / description
+- Start LBA
+- Length
+- Size
+- Details
+
+Selection should use the application's blue accent while retaining readable foreground text.
+
+Breadcrumb navigation should appear above filesystem content where useful.
+
+The initial default directory sort groups folders first, alphabetically, then
+files alphabetically, using case-insensitive name comparison with deterministic
+ties. Preferences should offer common default sort fields such as Name, Size,
+Type and Modified, ascending/descending direction and optional folders-first
+grouping. Interactive column sorting remains available.
+
+Search should be available from a compact search field near the upper-right portion of the main application chrome.
+
+
+9. CONTEXT-SENSITIVE LOWER PANE
+
+The lower center region should adapt to selected content rather than requiring separate application windows for every tool.
+
+Possible tabs include:
+- Audio Player
+- Track Information
+- File Preview
+- Text View
+- Hex View
+- Image Map
+- Properties
+- Search Results
+- Validation
+
+Only relevant tabs need to be emphasized for a particular selection, but the overall tabbed tool-pane pattern should remain consistent.
+
+The lower pane should be collapsible and vertically resizable.
+
+
+10. CD AUDIO PLAYBACK UI
+
+Implementation scope: Phase 6 - BIN/CUE and Optical Expansion, following checklist.txt.
+Phase 1 reserves the Audio Player and Track Information pane structure without
+implementing playback or BIN/CUE track browsing. The requirements below describe
+the Phase 6 interface, not Phase 1 acceptance criteria.
+
+When the user selects a CD-DA audio track, the lower center pane should expose an integrated Audio Player.
+
+The player should visually remain part of the technical workspace rather than becoming a separate multimedia-style interface.
+
+Display:
+- Selected track number/title.
+- Audio type: CD-DA.
+- Sample rate and format information where useful.
+- Current elapsed time.
+- Total duration.
+- Seek/progress bar.
+- Volume level.
+
+Controls:
+- Previous audio track
+- Play / Pause
+- Next audio track
+- Stop
+- Seek
+- Volume
+
+The selected audio track should also remain highlighted in both the image structure tree and/or track table where appropriate.
+
+Audio playback controls should use the same compact icon style and blue accent as the rest of the application.
+
+Playback must feel integrated into image inspection rather than like an embedded consumer music player.
+
+
+11. RIGHT INSPECTOR PANE
+
+The right pane should provide detailed contextual information without forcing users through multiple dialogs.
+
+Information should be divided into compact sections and/or tabs such as:
+- Image Details
+- Track Details
+- Partition Details
+- Filesystem Details
+- Properties
+- Capabilities
+
+Example image information:
+- Format
+- Path
+- Image size
+- Sector size
+- Sessions
+- Tracks
+- Creation/modification information
+
+Example track information:
+- Track number
+- Data or audio type
+- Mode
+- Starting LBA
+- Length
+- Size
+- Audio format
+
+Example capability information:
+- Browse Files: Yes
+- Extract Files: Yes
+- Modify Files: No
+- Add/Delete/Rename: No
+- Commit In Place: No
+- Rebuild Image: Yes
+- Play Audio Tracks: Yes
+- Preserve Audio: Yes
+
+Capability information should be easy to scan and should clearly explain limitations of the selected image.
+
+
+12. STATUS BAR
+
+A compact status bar should remain visible along the bottom edge of the application.
+
+Possible information:
+- Ready / operation status
+- Current image name
+- Image size
+- Partition or track count
+- Filesystem type
+- Selected item count
+- Sector size
+- Read-only state
+- Validation/error indicator
+
+Do not turn the status bar into a large notification region. It should remain compact and information-dense.
+
+
+13. ICONOGRAPHY
+
+Icons should be:
+- Simple line or restrained filled icons.
+- Consistent in stroke weight and visual scale.
+- Immediately recognizable.
+- Used alongside text where ambiguity is possible.
+
+Suggested visual distinctions:
+- Disk image / physical-style disk icon for disk containers.
+- Optical disc icon for ISO/BIN/CUE media.
+- Folder and file icons for filesystem content.
+- Musical-note icon for CD audio tracks.
+- Partition/disk icon for partitions.
+- Information icon for metadata.
+- Hex/grid icon for low-level views.
+
+Avoid overly colorful icon sets. Most toolbar icons should remain neutral with accent colors used primarily for state, selection, or important semantic distinctions.
+
+
+14. INFORMATION DENSITY
+
+SectorWorks is a technical desktop utility and should favor moderately high information density.
+
+Guidelines:
+- Use compact rows in tables and trees.
+- Avoid excessive vertical padding.
+- Keep property labels and values close enough to scan quickly.
+- Use resizable panes instead of spreading related information across many separate screens.
+- Keep important image structure visible while browsing contents.
+- Allow advanced information to coexist with common file operations without overwhelming the user.
+
+The user should be able to understand the current image structure at a glance.
+
+
+15. THEMING
+
+Primary design target:
+- Dark theme.
+
+Recommended palette direction:
+- Main background: near-black charcoal.
+- Secondary surfaces: slightly lighter graphite.
+- Pane/header surfaces: dark blue-gray or graphite.
+- Primary accent: clear medium blue.
+- Primary text: soft white / very light gray.
+- Secondary text: medium-light gray.
+- Disabled controls: muted gray.
+- Success/valid state: restrained green.
+- Warning/rebuild-required state: amber/orange.
+- Error state: restrained red.
+- Audio distinction: cyan or blue-cyan where useful.
+
+A light theme may be provided later using the same layout, spacing, and component structure.
+
+Theme changes should alter colors rather than fundamentally changing the application layout.
+
+
+16. CROSS-PLATFORM UI POLICY
+
+The SectorWorks UI should maintain the same overall visual identity and workspace organization on Windows, macOS, and Linux.
+
+The application does not require pixel-identical rendering across platforms.
+
+Platform-specific differences are acceptable for:
+- Window chrome.
+- File dialogs.
+- System fonts where required.
+- Keyboard conventions.
+- Menu placement when appropriate.
+- Native notifications.
+- Accessibility integration.
+
+The following should remain conceptually consistent:
+- Workspace tabs.
+- Three-pane primary layout.
+- Image structure tree.
+- Main file/track browser.
+- Inspector pane.
+- Context-sensitive lower pane.
+- Status bar.
+- Color identity.
+- Information-density philosophy.
+
+The priority is consistent functionality and recognizable product identity, not forced platform uniformity.
+
+
+17. INTERACTION PHILOSOPHY
+
+SectorWorks should behave like a mature desktop utility.
+
+Prefer:
+- Right-click context menus.
+- Keyboard shortcuts.
+- Multi-selection.
+- Drag and drop.
+- Column sorting.
+- Resizable columns.
+- Docked/resizable panes.
+- Double-click navigation.
+- Persistent workspace layouts.
+- Tooltips for unfamiliar technical fields.
+
+Avoid hiding important operations behind minimalist interfaces purely for visual simplicity.
+
+Frequently used actions should remain discoverable and immediately accessible.
+
+
+18. PHASE 1 UI PRIORITIES
+
+The Phase 1 Read-Only Explorer should establish the permanent UI foundation.
+
+Phase 1 interface should include:
+- Main application shell.
+- Menu bar.
+- Compact toolbar.
+- Multiple image workspace tabs.
+- Image structure tree.
+- File and directory browser.
+- Reserved structure for the Phase 6 optical track browser, without BIN/CUE browsing.
+- Image/partition/filesystem inspector.
+- Extract operation.
+- Properties display.
+- Basic file preview.
+- Hex view where implemented.
+- Reserved Audio Player and Track Information tabs for Phase 6, without playback.
+- Search field or initial search framework.
+- Read-only capability indicators.
+- Status bar.
+
+Write-related commands may be displayed but disabled in Phase 1 where doing so helps establish the long-term interface layout.
+
+BIN/CUE browsing, mixed-mode track workflows, CD-DA streaming, audio backends,
+and functional playback controls belong to Phase 6 as defined in checklist.txt.
+The optical/audio mockup remains the approved visual direction for that phase.
+
+
+19. DESIGN SUMMARY
+
+SectorWorks should look like a modern evolution of a native professional storage utility rather than a web application placed inside a desktop window.
+
+The defining characteristics are:
+- Dark graphite technical aesthetic.
+- Blue accent color.
+- Dense file and metadata presentation.
+- Traditional menu and toolbar structure.
+- Multi-document workspace tabs.
+- Persistent image hierarchy on the left.
+- Large primary browser in the center.
+- Detailed inspector on the right.
+- Context-sensitive technical/audio tools below the browser.
+- Compact status information along the bottom.
+- Minimal decorative chrome.
+- Restrained rounding and shadows.
+- Strong emphasis on clarity, hierarchy, and technical information.
+
+The desired impression is a serious desktop workbench capable of handling complex disk and optical-media structures while remaining approachable for ordinary file-level operations.
+
+
+20. UI ICON AND GRAPHICS IMPLEMENTATION
+
+Functional interface icons should be implemented as scalable vector graphics wherever practical. Raster artwork should not be required for normal toolbar, menu, tree, status, navigation, playback, or command icons.
+
+Preferred Avalonia implementation:
+- Use Avalonia PathIcon controls with StreamGeometry/vector path resources for normal UI icons.
+- Store commonly used icon geometry in shared XAML resource dictionaries so the same icon definition can be reused throughout the application.
+- Prefer one coherent icon family across the application rather than mixing unrelated icon styles.
+- Existing appropriately licensed vector icon sets may be used where they visually match the SectorWorks design language.
+- Fluent-style vector geometry is an acceptable starting point, provided licensing and visual consistency are verified before distribution.
+
+Vector icons should be used for items such as:
+- Open and Close
+- Extract
+- Add / Replace / Delete
+- New Folder
+- Properties
+- Hex View
+- Search and Refresh
+- Play / Pause / Stop / Previous / Next
+- Volume
+- Disk image
+- Optical disc
+- Partition / filesystem
+- Folder / file
+- CD audio track
+- Information
+- Warning / error / validation success
+- Tree expand/collapse indicators
+
+Vector assets should normally inherit their color from theme resources rather than embedding fixed colors. This allows the same icon geometry to support:
+- Dark and light themes
+- Normal state
+- Hover state
+- Selected / active state
+- Disabled state
+- Semantic state colors such as audio, warning, error, and validation success
+
+Icons should be designed and tested at common compact desktop sizes such as 16, 18, 20, and 24 logical pixels. Vector rendering should remain clean under high-DPI scaling without requiring separate 1x, 2x, or other raster variants.
+
+Functional icons must include accessible names or be paired with labeled controls/tooltips where their meaning is not self-evident.
+
+External/custom artwork should generally be limited to branding assets, including:
+- SectorWorks application icon
+- SectorWorks product logo / wordmark
+- Installer and packaging branding
+- Website / repository branding
+- Optional About-screen artwork
+
+Brand assets should be prepared outside the application in a vector master format where possible and exported into the platform-specific formats and sizes required by Windows, macOS, and Linux.
+
+Raster graphics may still be used when they represent actual content, previews, thumbnails, scanned artwork, or another element for which a vector icon is not appropriate.
+
+Design rule:
+
+Functional UI graphics = reusable vector resources inside the application.
+Product identity / branding = externally produced custom artwork.

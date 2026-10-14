@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SectorWorks.UI.ViewModels"
+        xmlns:converters="using:Avalonia.Data.Converters"
+        x:Class="SectorWorks.UI.PreferencesWindow" x:DataType="vm:PreferencesViewModel"
+        Title="SectorWorks — Preferences" Width="480" Height="380"
+        MinWidth="420" MinHeight="360" CanResize="False" WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*" Margin="16" RowSpacing="12" ColumnSpacing="12">
+    <TextBlock Grid.ColumnSpan="2" Text="Application defaults — file browser" FontWeight="SemiBold" />
+    <TextBlock Grid.Row="1" Text="Sort by" VerticalAlignment="Center" />
+    <ComboBox x:Name="SortFieldBox" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding SortFields}"
+              SelectedItem="{Binding SortField}" IsEnabled="{Binding !IsSaving}" HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Default browser sort field" />
+    <TextBlock Grid.Row="2" Text="Direction" VerticalAlignment="Center" />
+    <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding SortDirections}"
+              SelectedItem="{Binding SortDirection}" IsEnabled="{Binding !IsSaving}" HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Default browser sort direction" />
+    <CheckBox Grid.Row="3" Grid.ColumnSpan="2" Content="Keep folders before files (in either direction)"
+              IsChecked="{Binding FoldersFirst}" IsEnabled="{Binding !IsSaving}" />
+    <StackPanel Grid.Row="4" Grid.ColumnSpan="2">
+      <TextBlock Text="Names are case-insensitive, with deterministic ties. Saving also re-sorts open tabs without clearing selection."
+                 TextWrapping="Wrap" Foreground="{DynamicResource WorkbenchMuted}" />
+      <TextBox x:Name="PreferencesError" Text="{Binding Error}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="70" BorderThickness="0"
+               Foreground="{DynamicResource WorkbenchError}" ScrollViewer.VerticalScrollBarVisibility="Auto"
+               IsVisible="{Binding Error, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"
+               AutomationProperties.Name="Preferences save error" />
+    </StackPanel>
+    <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancel" Command="{Binding CancelCommand}" IsEnabled="{Binding !IsSaving}" />
+      <Button Content="Save" Command="{Binding SaveCommand}" IsDefault="True" IsEnabled="{Binding !IsSaving}" />
+    </StackPanel>
+  </Grid>
+</Window>

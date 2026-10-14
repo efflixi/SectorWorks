@@ -1,0 +1,10 @@
+SectorWorks Compact vector icon family
+Copyright (c) 2026 SectorWorks contributors
+SPDX-License-Identifier: GPL-3.0-only
+
+These original, geometric functional icons were authored for SectorWorks.
+They are not copied or traced from the owner-provided mockups or any external
+icon library. They use a common 24-unit view box and restrained filled outlines.
+They are distributed under the GNU General Public License version 3 only.
+The complete license text is in the repository root LICENSE.
+No external branding, logo, or application icon is included.

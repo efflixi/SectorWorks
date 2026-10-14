@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SectorWorks.Core/SectorWorks.Core.csproj" />
+    <PackageReference Include="DiscUtils.Fat" Version="0.16.13" />
+    <PackageReference Include="DiscUtils.Ntfs" Version="0.16.13" />
+    <PackageReference Include="DiscUtils.Iso9660" Version="0.16.13" />
+    <PackageReference Include="DiscUtils.Vhd" Version="0.16.13" />
+    <PackageReference Include="DiscUtils.Vhdx" Version="0.16.13" />
+  </ItemGroup>
+</Project>

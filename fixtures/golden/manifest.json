@@ -1,0 +1,100 @@
+[
+  {
+    "Name": "fat12.img",
+    "Length": 1474560,
+    "Sha256": "d01ce11f7bb93a751aa4f2470a443e2ab9f74566c181ba8687c41225e3a87da6",
+    "CompressedLength": 1660,
+    "CompressedSha256": "e10e8b4b8af8e5005cca4c5fb6dae1bccf74628ebe0b01413c5d7f540ae5d670"
+  },
+  {
+    "Name": "fat16.img",
+    "Length": 16777216,
+    "Sha256": "ab94ac85431c7fa623db87f1ae981d61fd7b8c46f9739de9df6e610a6d31b95c",
+    "CompressedLength": 16526,
+    "CompressedSha256": "bd9106a2630ca64e5f436b7b178e1e2353417e0f159244bda154141d7ff16693"
+  },
+  {
+    "Name": "fat32.img",
+    "Length": 536870912,
+    "Sha256": "4691c056dac304c2e15efef8faf526154179440c28b3520a18042aafcd310125",
+    "CompressedLength": 522063,
+    "CompressedSha256": "07850f47d38028715e2907ae21ee92a1f624dfdb295158bdb615c16e102eb3b8"
+  },
+  {
+    "Name": "mbr.img",
+    "Length": 33554432,
+    "Sha256": "c2f9f471654cd971a67aeeb4ccc23ab9436e7c81f8698710a7ddade84cadf18d",
+    "CompressedLength": 32866,
+    "CompressedSha256": "56b7c11bf0a7b75a831b82a4936cc264d9206b618cf5c08b2cbd39ecdfeaaae0"
+  },
+  {
+    "Name": "gpt.img",
+    "Length": 33554432,
+    "Sha256": "16536cedfaf0d7bb7a0807f1a9eaea21e6049cc9a393835b3bab4cba472c915c",
+    "CompressedLength": 33177,
+    "CompressedSha256": "4313dda86608091b110fd9910b17da64250fef814a3cc20903465a0525827409"
+  },
+  {
+    "Name": "ntfs.img",
+    "Length": 33554432,
+    "Sha256": "32387eca91198698908cfb2852aa2355cc5212a910cde0c9993aeb99ddb0fdfc",
+    "CompressedLength": 155503,
+    "CompressedSha256": "e36abcc2e1dcae575b4505f1e08f8cd74ca19a48c4e38ab4203fed460a95ab84"
+  },
+  {
+    "Name": "joliet.iso",
+    "Length": 59392,
+    "Sha256": "b987c703ce143a8babba82e8f4a96a56f4dd8c3a7dc1ec3ed1f8171e8d98fbcf",
+    "CompressedLength": 573,
+    "CompressedSha256": "3fce9ab93c7845f254a00626a5de2d2eefa26528fe7a30e5693fc362e55d6aaa"
+  },
+  {
+    "Name": "dynamic.vhd",
+    "Length": 2100224,
+    "Sha256": "1a4e4f5707f87200f72946766b7dc2bcc15fff5454821e545d87c15b834661c6",
+    "CompressedLength": 2448,
+    "CompressedSha256": "b2e08fe87d27edd9a26a6afe169c941fe40ae6789655ae3fe0b4198bf6eccf58"
+  },
+  {
+    "Name": "dynamic.vhdx",
+    "Length": 37748736,
+    "Sha256": "35396346f37d0160eeeed2e2e9d6688549a65844616ee848e2dbf33a53c6821a",
+    "CompressedLength": 37393,
+    "CompressedSha256": "9d5a1553d75abe64c368f8b3d27face574449a05013c4ca6dd37c6d33586a367"
+  },
+  {
+    "Name": "truncated-fat.img",
+    "Length": 31,
+    "Sha256": "008886c1fc2a1f3c0663b378c6417d9dbb12c1ee5e6cb3de99d28cd4bed75221",
+    "CompressedLength": 51,
+    "CompressedSha256": "41c5c4459830eede50139692133d90fda0c0c06e09ad7c2825edc123a70bc80e"
+  },
+  {
+    "Name": "corrupt-fat.img",
+    "Length": 512,
+    "Sha256": "b2fbe403f011c4d17edc39ee0dd353f42af33837f9c098b1b4e3a38304c26297",
+    "CompressedLength": 81,
+    "CompressedSha256": "ae077e6dd9ea7682326b6aa42f529ab50a521e3c8530b7b38814edb6f371917b"
+  },
+  {
+    "Name": "truncated.iso",
+    "Length": 31,
+    "Sha256": "fd08be957bda07dc529ad8100df732f9ce12ae3e42bcda6acabe12c02dfd6989",
+    "CompressedLength": 23,
+    "CompressedSha256": "b43ba7818b9a2122255adbdc505465818f59235d121ea48ffca6c147562178e1"
+  },
+  {
+    "Name": "truncated.vhd",
+    "Length": 31,
+    "Sha256": "3c6f29aee56051c20d280121024379fee1dd9ba099cf8365dce3f75e7b55b034",
+    "CompressedLength": 45,
+    "CompressedSha256": "0e6900fa32893a2fe32fc29a30f9d6a142ade3342bc93b5d99e3f84d211bc197"
+  },
+  {
+    "Name": "truncated.vhdx",
+    "Length": 31,
+    "Sha256": "8671f1a349da5be93e8a5ef1bfa253465d9a12130dc712ad85793b50d5f3c1c3",
+    "CompressedLength": 51,
+    "CompressedSha256": "3b51868337e2c1584a251a81ccc6d393cb4e63303ac33815db2102417a2fcccf"
+  }
+]
