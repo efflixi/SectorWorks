@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SectorWorks
+Comment=Inspect disk images and stage supported file modifications
+Exec=SectorWorks.UI %F
+Icon=sectorworks
+Terminal=false
+Categories=System;

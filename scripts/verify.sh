@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
 stage shell-syntax bash -n scripts/common.sh scripts/restore.sh scripts/build.sh \
-    scripts/test.sh scripts/verify.sh scripts/publish.sh scripts/run.sh
+    scripts/test.sh scripts/verify.sh scripts/publish.sh scripts/run.sh \
+    scripts/appimage-tools.sh scripts/setup-appimage-tools.sh scripts/appimage.sh \
+    scripts/test-appimage.sh packaging/linux/AppRun
+stage appimage-contracts "$ROOT/scripts/test-appimage.sh"
 stage technical-spec-copy cmp Cross_Platform_Disk_Image_Workspace_Tech_Spec_v0.3.txt \
     docs/specifications/Cross_Platform_Disk_Image_Workspace_Tech_Spec_v0.3.txt
 stage ui-spec-copy cmp SectorWorks_UI_Look_and_Feel_Spec_v0.2.txt \

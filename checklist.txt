@@ -873,8 +873,19 @@ Deliberately validate major Linux environments and ARM64, using Raspberry Pi 5 a
 [ ] Optimize obvious bottlenecks without architecture debt.
 
 5.5 Packaging prototypes
-[ ] Produce portable archive.
+[x] Produce portable archive.
+    NOTE: Owner separately authorized six Phase 2 development release archives
+    on 2026-10-14, then Linux x64 AppImage packaging only. This does not authorize
+    the remaining Phase 5 hardening work or claim a production distribution.
+    NOTE: AppImage added to linux-x64/all publishes with explicit pinned-tool
+    prerequisite, offline packaging, bundled legal files and checksums. Original
+    release payload equality, FUSE/extracted resource checks, launcher/error
+    regressions and native Mint/X11 startup with spaced image path verified.
+    Generic existing disk glyph is a temporary launcher icon, not final branding.
 [ ] Evaluate DEB/RPM/Arch/AppImage/Flatpak options and sandbox implications.
+    NOTE: Only the requested Linux x64 AppImage prototype is implemented.
+    Compatible native desktop/system libraries remain required; it is not a
+    sandbox or a full distro/backend compatibility claim.
 [ ] Document packaging recommendation.
 
 ----------------------------------------

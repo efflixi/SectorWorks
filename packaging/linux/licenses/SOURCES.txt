@@ -1,0 +1,42 @@
+AppImage-only runtime notices and source references
+
+Embedded runtime: AppImage/type2-runtime commit
+8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa, MIT plus static-library notices.
+Runtime binary SHA-256:
+156f4bdbde9c52d01814600013e0a273f0118dc2de98975f3c8c63427ec79074
+Runtime.txt is copied verbatim from that commit's LICENSE.
+Source and build/patch recipes:
+https://github.com/AppImage/type2-runtime/tree/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa
+https://github.com/AppImage/type2-runtime/archive/8f39b89e2ac31e1640b3d3f7e9a5108e6ce805fa.tar.gz
+
+The runtime's build recipe identifies libfuse 3.15.0 (locally patched by
+the upstream runtime project) and squashfuse 0.5.2. It also statically links
+musl, zstd and zlib from its Alpine build environment. Full license texts
+are retained here; these notice-copy versions do not assert exact compiled
+versions for Alpine-provided dependencies.
+
+libfuse-LGPL2.txt:
+https://github.com/libfuse/libfuse/blob/fuse-3.15.0/LGPL2.txt
+Source: https://github.com/libfuse/libfuse/releases/tag/fuse-3.15.0
+squashfuse.txt:
+https://github.com/vasi/squashfuse/blob/0.5.2/LICENSE
+Source: https://github.com/vasi/squashfuse/tree/0.5.2
+musl.txt:
+https://git.musl-libc.org/cgit/musl/tree/COPYRIGHT?h=v1.2.5
+Source: https://git.musl-libc.org/cgit/musl/
+zstd.txt:
+https://github.com/facebook/zstd/blob/v1.5.6/LICENSE
+Source: https://github.com/facebook/zstd
+zlib.txt:
+https://github.com/madler/zlib/blob/v1.3.1/LICENSE
+Source: https://github.com/madler/zlib
+
+The application payload retains its own GPL and dependency notices separately.
+AppRun and the temporary disk launcher SVG are original SectorWorks GPL-3.0-only
+code/artwork. The SVG reuses IconDisk from Themes/Icons.axaml; it is not final
+product branding.
+
+Build-only appimagetool 1.9.1 is not shipped as application payload.
+Source/license: https://github.com/AppImage/appimagetool/tree/1.9.1
+No AppImage update service, signing keys, host configuration or owner samples
+are bundled.

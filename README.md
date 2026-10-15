@@ -72,6 +72,31 @@ Run from the repository root (scripts also work from other directories):
 ./scripts/publish.sh all
 ```
 
+Linux x64 publishes (including `all`) also produce
+`artifacts/publish/SectorWorks-linux-x64.AppImage` and its `.sha256` checksum.
+Packaging requires a Linux x86-64 host, `desktop-file-validate`, `file`, and the
+checksum-pinned appimagetool 1.9.1/runtime installation. Install the tools once
+with `./scripts/setup-appimage-tools.sh`; this downloads official binaries into
+the user-local SectorWorks tool directory, verifies SHA-256, and changes no
+system packages. Ordinary publishes never download/update tools and fail
+explicitly if tools are missing or modified. Other RID publishes are unchanged.
+Optional `SECTORWORKS_APPIMAGETOOL` / `SECTORWORKS_APPIMAGE_RUNTIME` paths must
+contain the same pinned bytes; deliberate pin updates require review.
+
+To package the existing Linux x64 publish without rebuilding:
+`./scripts/appimage.sh` (or pass an output `.AppImage` path).
+`SECTORWORKS_APPIMAGE_SOURCE` can select an extracted, already-verified Linux x64
+release tree instead of the default publish directory.
+Make the downloaded AppImage executable with `chmod +x`, then run it.
+If FUSE mounting is unavailable, use
+`APPIMAGE_EXTRACT_AND_RUN=1 ./SectorWorks-linux-x64.AppImage`.
+The launcher preserves the caller's directory and file arguments, including
+spaces. The image includes the .NET runtime, application/legal files and
+AppImage-runtime notices, but still requires compatible native desktop/system
+libraries. It is not a sandbox or a guarantee of portability across all
+distributions. The launcher SVG temporarily reuses the existing disk glyph;
+final product branding remains deferred.
+
 Restore uses committed dependency locks. Build/test use Release configuration.
 Verify compares authoritative document copies, checks shell syntax, and runs
 tests, formatting and noninteractive UI verification. Each failing stage is

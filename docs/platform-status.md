@@ -75,6 +75,45 @@ power-loss testing and other desktop environments remain unverified. These
 results do not establish bootability, exact-layout preservation, production
 readiness or Phase 3 recovery. See [qualified scope and reproduction](staged-editing.md).
 
+## Owner-authorized Linux x64 AppImage packaging
+
+On 2026-10-14 the owner separately authorized an AppImage for the current
+development build and normal Linux x64 publish artifacts, not the rest of
+Phase 5. Existing SquashFS/desktop tools were present; appimagetool was absent.
+With owner approval, official appimagetool 1.9.1 and an explicitly pinned
+type2-runtime were installed user-locally and SHA-256 checked.
+
+`publish.sh linux-x64` and `publish.sh all` now invoke AppImage packaging;
+other RID publishes do not require these tools. Packaging never downloads
+tools/runtime automatically. Missing or changed tools fail explicitly.
+The installer rejects an upstream runtime download if its bytes change from
+the reviewed pin; update pins deliberately rather than accepting a moving tag.
+
+The release AppImage retains all 277 original Linux x64 publish files
+byte-for-byte plus seven runtime notice/source-reference files. No owner
+images or diagnostic output is bundled. Compression is limited to two workers;
+host ownership/extended attributes are not copied. The temporary launcher
+SVG reuses the original disk glyph and is not final product branding.
+
+Verified on Mint 22/X11: FUSE execution and extraction-and-run UI resources,
+normal publish generation and checksum, argument/working-directory/exit-status
+contracts, missing/tampered-tool failures, and actual GUI startup with a
+synthetic image path containing spaces. The image opened, the GUI closed
+cleanly, and the synthetic source SHA-256 was unchanged. Local smoke artifacts:
+`artifacts/appimage-gui-smoke/`.
+
+AppImage is not a sandbox, a static GUI bundle or full distro/Wayland coverage.
+Native desktop/system libraries remain required. Runtime notices and upstream
+source/build references are included under `licenses/AppImage/` in the payload.
+See [commands and prerequisites](../README.md).
+
+The verified AppImage was added to the existing private
+[v0.2.0-phase2 prerelease](https://github.com/efflixi/SectorWorks/releases/tag/v0.2.0-phase2)
+without moving its source tag or replacing the six archives. The checksum
+manifest now covers seven packages; GitHub sizes/digests for all eight assets
+match local files. The downloaded AppImage is byte-identical and passes its
+resource check.
+
 ## Phase 1 evidence
 
 Verification date: 2026-10-14 (development host local date).
