@@ -184,6 +184,24 @@ in the structure tree. See the UI documentation for error/cancellation behavior.
 For an intentional package update, run an unlocked `dotnet restore SectorWorks.sln`,
 review resulting locks and licenses, then rerun verification and all publishes.
 
+## Windows testing access
+
+A physical Windows 11 Home x64 laptop is now reachable over LAN SSH as a
+dedicated standard testing account. On 2026-10-15 the agent verified a
+strict-host-checking, publickey-only unattended `whoami` command with exit
+code 0. This confirms remote command access only: Windows tool preparation,
+build/tests, security-reference execution, Windows-authored NTFS fixtures and
+GUI workflows remain pending. No Phase 2B qualification status changes.
+
+The [copyable Windows OpenSSH guide](docs/windows11-openssh-setup.txt) covers
+installation, LAN-only firewall configuration, separate server/client keys,
+standard-user public-key enrollment, permissions, verification and revocation.
+The host trust entry already existed; independent local fingerprint comparison
+remains unconfirmed. Keep machine-specific connection details and all private
+keys out of Git and synchronized storage. SSH does not provide an interactive
+Windows desktop; GUI testing requires separate setup. See
+[current platform evidence](docs/platform-status.md#windows-11-home-x64-ssh-access-2026-10-15).
+
 ## Documentation and task authority
 
 Read [AGENTS.md](AGENTS.md) and [rules.txt](rules.txt) before every task.
@@ -195,6 +213,7 @@ remain authoritative and documentation copies must remain synchronized.
 - [Dependency evaluation](docs/dependency-evaluation.md)
 - [Fixture provenance and verification](docs/fixtures.md)
 - [Build and physical-platform status](docs/platform-status.md)
+- [Windows 11 Home OpenSSH setup and unattended login](docs/windows11-openssh-setup.txt)
 - [Read-only explorer operations and extraction policy](docs/explorer-operations.md)
 - [Phase 1 read-only support matrix and limitations](docs/support-matrix.md)
 - [Phase 2 staged editing and Save As safety](docs/staged-editing.md)

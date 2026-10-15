@@ -902,6 +902,10 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
     383 total. Clean LFS 1.1 has bounded synthetic restart-page tests, not
     Windows-media/runtime evidence. LFS 2.0 remains safely disabled. Required
     NTFS writing stays in 1.0; no read-only scope reduction or future date promised.
+    NOTE: A physical Windows 11 Home x64 host now has verified unattended SSH
+    command access (2026-10-15). SDK/Git preparation, Windows tests/reference,
+    authored fixtures and interactive GUI verification have not been performed.
+    Access alone does not resolve this blocker or qualify modern-log safety.
 
 2B.7 Verification and coverage evidence
 [!] Add legal repeatable disposable fixtures for every required container/layout/filesystem row and meaningful naming/sector/allocation variants.
@@ -1487,6 +1491,17 @@ Logging
 [ ] Do not log file contents by default.
 
 Local testing infrastructure
+[x] Establish dedicated standard-user LAN SSH access to the available Windows 11 Home x64 laptop.
+    NOTE: 2026-10-15 explicit Ed25519 key, BatchMode/publickey-only/strict-host
+    checking/-T whoami probe returned expected swtest identity, exit 0.
+    Private key is outside repository/Dropbox with owner-only permissions;
+    enrolled public entry restricts source IP and PTY/forwarding. Password
+    authentication unchanged; independent local host-fingerprint comparison
+    unconfirmed. Generic setup: docs/windows11-openssh-setup.txt. Do not commit
+    machine-specific access details. This is not Windows application testing.
+[ ] Prepare Windows x64 tools and run applicable command-line build/tests, security reference and disposable Windows-authored NTFS qualification.
+    NOTE: SSH access verified only; no installation/test/fixture execution yet.
+[ ] Prepare and verify an interactive Windows desktop for GUI workflows separately from SSH.
 [ ] Unit tests run through repository-local verification.
 [ ] Read-only fixture tests run through repository-local verification.
 [ ] Disposable write/rebuild tests run locally where practical.

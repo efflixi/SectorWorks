@@ -13,6 +13,8 @@ when relevant. These are mandatory project instructions, not optional context.
 - [Disk/filesystem mockup](docs/design/UI02.png)
 - [Architecture and MVVM conventions](docs/architecture.md)
 - [Local commands and SDK](README.md)
+- [Windows 11 Home SSH setup and unattended access](docs/windows11-openssh-setup.txt)
+- [Current build and physical-platform evidence](docs/platform-status.md)
 
 The supplied root specifications remain authoritative; documentation copies must
 stay byte-identical. Do not silently edit specifications or mockups to resolve
@@ -56,6 +58,17 @@ evaluation/fixtures/tests remain required. Detection is not browsing/extraction;
 document exact reader blockers for owner review, never silently drop them.
 Apply read-only caps across containers and filesystems compositionally. Internal
 parsers determine support, not the host OS's native mounting capabilities.
+
+Windows 11 Home x64 unattended SSH command access was verified on 2026-10-15.
+This is infrastructure only, not Windows build/test, security-reference,
+Windows-authored NTFS or GUI qualification. Keep those checklist gates open.
+Keep private keys outside the repository/synchronized storage and connection
+addresses/key inventory in local-only records, not committed documentation.
+Use explicit-key, publickey-only BatchMode and strict host checking for finite
+remote commands; the enrolled restricted key requires no PTY (`-T`).
+Do not bypass a host-key mismatch or elevate the standard testing account.
+GUI smoke needs a separately prepared interactive desktop. This setup does not
+authorize Phase 3, real-disk operations or recurring automation.
 
 ## Learnings
 

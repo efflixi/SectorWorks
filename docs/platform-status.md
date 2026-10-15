@@ -1,5 +1,34 @@
 # Build and physical-platform status
 
+## Windows 11 Home x64 SSH access, 2026-10-15
+
+The owner prepared a physical Windows 11 Home x64 laptop with OpenSSH Server
+and reports working password SSH as the dedicated standard local `swtest`
+account. After the owner enrolled a dedicated Ed25519 public key, the agent
+verified unattended access with an explicit identity, `IdentitiesOnly=yes`,
+`BatchMode=yes`, publickey-only authentication, `StrictHostKeyChecking=yes`
+and `-T`: remote `whoami` returned the expected laptop/`swtest` identity,
+exit code 0. This is access evidence, not application runtime evidence.
+The existing client trust entry was used; independent local server-fingerprint
+comparison has not been confirmed. Do not bypass host-key verification.
+
+The owner selected a passphrase-free automation key stored outside the
+repository/Dropbox, in an owner-only directory with owner-only key files.
+The enrolled entry restricts the source to the Linux PC and disables PTY/
+forwarding. Password authentication remains unchanged. Connection addresses,
+hostname, key material and machine-specific enrollment are not committed.
+See the [copyable SSH setup and troubleshooting guide](windows11-openssh-setup.txt)
+for firewall/source restrictions, the distinct host/client keys, standard-user
+ACLs, enrollment, strict unattended verification and revocation.
+
+No SDK/Git installation, source transfer, Windows build/test run, Windows
+security-reference execution, Windows-authored NTFS qualification or GUI
+automation has been performed as part of this setup. Prepare/inspect tools,
+then run finite command-line verification separately. GUI smoke requires an
+interactive logged-in desktop, not just SSH. All Phase 2B Windows runtime and
+modern-log gaps below remain incomplete; Windows ARM64/macOS evidence is
+unchanged. No Phase 3 or recurring automation is authorized.
+
 ## Managed NTFS repair: current qualification and remaining gaps
 
 The owner authorized implementation after the bounded investigation. The
@@ -34,7 +63,8 @@ Evidence and app-window-only screenshots are local under
 `artifacts/ntfs-managed-x11-<ntfs-variant>/`; owner media is not used.
 
 **Phase 2B remains partial.** Actual Windows-authored NTFS fixtures and Windows
-security-reference execution remain unavailable, not passed. Clean LFS 1.1 has
+security-reference execution have not yet been prepared/run, not passed.
+A Windows x64 SSH host is now accessible as recorded above. Clean LFS 1.1 has
 synthetic structural coverage only; LFS 2.0/cached-metadata safety remains
 blocked. This is not a claim that normal Windows volumes are writable, nor an
 owner-approved NTFS read-only scope reduction for 1.0.

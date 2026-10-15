@@ -1,0 +1,343 @@
+WINDOWS 11 HOME - OPENSSH SERVER SETUP
+====================================
+
+Purpose: Allow the Linux Mint development PC to connect to the Windows laptop
+over your trusted local network for later SectorWorks testing.
+
+Windows 11 Home supports OpenSSH Server. You do not need Windows Pro, WSL,
+Visual Studio, or a third-party SSH server download. OpenSSH Server is an
+optional Windows component, normally downloaded through Windows Update.
+
+This is a guide, not a script. Copy only the commands for the current step.
+If a command fails, stop that step and retain the error message.
+
+
+1. SET YOUR HOME NETWORK TO PRIVATE
+----------------------------------
+
+On the Windows laptop:
+
+Settings > Network & internet > Wi-Fi or Ethernet > your connected network
+> Network profile type > Private
+
+Only do this for your trusted home network.
+
+
+2. INSTALL OPENSSH SERVER
+------------------------
+
+Right-click Start > Terminal (Admin), approve the prompt, and open a
+PowerShell tab. Run:
+
+Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+
+OpenSSH Client connects OUT to other machines. OpenSSH Server accepts
+connections IN to this laptop. We need the Server component.
+
+If OpenSSH.Server says NotPresent, run:
+
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+
+Installation can take several minutes and needs access to Windows Update.
+If the result says RestartNeeded : True, restart before continuing.
+After restarting, reopen an administrator PowerShell.
+
+GUI alternative:
+Search Start for Optional Features, select View features, search for
+OpenSSH Server, and install it. Menu wording can vary by Windows version.
+
+
+3. RESTRICT SSH ACCESS TO THE LINUX PC
+------------------------------------
+
+Find the Linux Mint PC's local IPv4 address in its network settings.
+For example, a home-network address might be 192.168.1.50.
+Use the Linux PC's address here, NOT the laptop's address.
+
+In the laptop's administrator PowerShell, run:
+
+$LinuxIP = Read-Host 'Enter the Linux Mint PC local IPv4 address'
+
+Enter the actual Linux PC address at the prompt.
+
+The installer normally creates a firewall rule. Restrict that rule:
+
+Set-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -Enabled True -Profile Private -RemoteAddress $LinuxIP -ErrorAction Stop
+
+ONLY if the error says that this firewall rule does not exist, create it:
+
+New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server - Linux testing PC only' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 22 -Profile Private -RemoteAddress $LinuxIP
+
+Do not continue past an unresolved firewall error.
+Do not disable Windows Firewall.
+Do not forward port 22 on your router.
+
+If the Linux PC's IP address changes, update this rule. A DHCP reservation
+in your router can keep the address stable.
+
+
+4. START SSH AND ENABLE IT AFTER REBOOT
+-------------------------------------
+
+Still in administrator PowerShell, run these commands one at a time:
+
+Set-Service -Name sshd -StartupType Automatic
+
+Start-Service sshd
+
+Get-Service sshd
+
+The service status should be Running.
+
+Check that it is listening:
+
+Get-NetTCPConnection -LocalPort 22 -State Listen
+
+This should display one or more listening entries for port 22.
+
+
+5. CREATE A DEDICATED TESTING ACCOUNT
+-----------------------------------
+
+Recommended: Create a standard local account named swtest with a strong
+password. Leave it as a Standard User, not an Administrator.
+
+Settings > Accounts > Other users > Add account
+> I don't have this person's sign-in information
+> Add a user without a Microsoft account
+
+Sign in to the new account once to initialize its profile. You can then
+return to your usual account.
+
+SSH password login uses this account's PASSWORD, not a Windows Hello PIN.
+Keep the password private. Do not send passwords or private keys in chat.
+
+
+6. FIND THE LAPTOP ADDRESS AND VERIFY ITS HOST KEY
+------------------------------------------------
+
+On the Windows laptop, run:
+
+ipconfig
+
+Find the IPv4 Address under the connected Wi-Fi or Ethernet adapter.
+This is the LAPTOP address to use in the next step.
+
+After the SSH service has started, open administrator PowerShell locally on
+the Windows laptop and display its public host-key fingerprint. Do not run
+this command in the standard swtest SSH session; that account may not have
+permission to read the server host-key file.
+
+& "$env:WINDIR\System32\OpenSSH\ssh-keygen.exe" -lf "$env:ProgramData\ssh\ssh_host_ed25519_key.pub"
+
+Keep the displayed SHA256 fingerprint available for comparison.
+This command reads the PUBLIC key, not the private key.
+Do not change the host-key file's permissions to make this command work.
+This checks the server identity; it does not install a client login key.
+
+
+7. TEST FROM LINUX MINT
+----------------------
+
+In a terminal on the Linux Mint PC, run:
+
+ssh swtest@LAPTOP_IP
+
+Replace LAPTOP_IP with the actual laptop IPv4 address.
+If you chose a different account name, replace swtest too.
+
+Before accepting the first connection, compare the displayed ED25519
+SHA256 host-key fingerprint with the fingerprint shown on the laptop.
+If they match, accept the connection.
+If they do not match, stop and investigate; do not bypass the warning.
+
+Enter the testing account's password in your terminal when prompted.
+Nothing appearing while you type the password is normal.
+
+A successful connection should give you a Windows command prompt.
+Run the following to confirm which account you connected as:
+
+whoami
+
+To disconnect:
+
+exit
+
+
+8. CREATE A DEDICATED CLIENT LOGIN KEY ON LINUX
+---------------------------------------------
+
+The server host key in step 6 identifies the LAPTOP. The client login key
+created here authorizes the LINUX PC to log in as swtest. These are different
+keys. Do not repeat the step 6 ssh-keygen.exe command inside the SSH session.
+
+Keep the working password SSH session open until key login is verified.
+On the Linux PC, open a SECOND terminal and run this whole block:
+
+(
+    set -eu
+    umask 077
+    key_dir="$HOME/.local/share/SectorWorks/ssh"
+    mkdir -p "$key_dir"
+    chmod 700 "$key_dir"
+    key="$key_dir/windows11-x64"
+    if [ -e "$key" ] || [ -e "$key.pub" ]; then
+        printf '%s\n' 'A key already exists; do not overwrite it.' >&2
+        exit 1
+    fi
+    ssh-keygen -t ed25519 -f "$key" -C 'SectorWorks Win11 x64 automation'
+    chmod 600 "$key" "$key.pub"
+    cat "$key.pub"
+)
+
+A passphrase protects a stolen private key; an unlocked SSH agent can supply
+it for automation during that agent's lifetime. An empty passphrase allows
+unattended use without an agent, but anyone who obtains the private key can
+use it. The owner explicitly selected a dedicated passphrase-free key for
+this setup; press Enter at both passphrase prompts only if making that choice.
+
+Keep the private key outside the repository, Dropbox and other synchronized
+folders, with owner-only permissions. The example assumes HOME is not synced.
+Only the one-line PUBLIC .pub contents may be copied to Windows.
+Never copy the private key to Windows, Git, chat, logs or release artifacts.
+
+
+9. ENROLL THE PUBLIC KEY AS THE STANDARD WINDOWS USER
+----------------------------------------------------
+
+In the EXISTING password SSH session, enter:
+
+powershell -NoProfile
+
+If the prompt already starts with PS, you are already in PowerShell; do not
+start another nested shell.
+
+Paste the entire following & { ... } block. At its prompts, enter the Linux
+PC's actual IPv4 address and the complete one-line public key from step 8.
+Do not enter the laptop's address, a fingerprint, or a private key.
+This block deliberately supports only the standard local swtest account.
+
+& {
+    $ErrorActionPreference = 'Stop'
+    $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    if (($identity.Name -split '\\')[-1] -ine 'swtest') {
+        throw 'Run this as swtest, not another account.'
+    }
+    if (@($identity.Groups | ForEach-Object { $_.Value }) -contains 'S-1-5-32-544') {
+        throw 'swtest must remain a standard user; administrator key setup differs.'
+    }
+    $LinuxIP = Read-Host 'Linux PC IPv4 address'
+    $address = [System.Net.IPAddress]::Parse($LinuxIP)
+    if ($address.AddressFamily -ne [System.Net.Sockets.AddressFamily]::InterNetwork) {
+        throw 'Enter an IPv4 address.'
+    }
+    $LinuxIP = $address.ToString()
+    $publicKey = Read-Host 'Complete one-line ssh-ed25519 public key'
+    if ($publicKey -notmatch '^ssh-ed25519 [A-Za-z0-9+/]+={0,2}( .*)?$') {
+        throw 'Expected a one-line Ed25519 public key, not a fingerprint or private key.'
+    }
+    $line = 'restrict,from="' + $LinuxIP + '" ' + $publicKey
+    $sshDir = Join-Path $env:USERPROFILE '.ssh'
+    if (!(Test-Path -LiteralPath $sshDir)) {
+        New-Item -ItemType Directory -Path $sshDir | Out-Null
+    }
+    $dir = Get-Item -LiteralPath $sshDir -Force
+    if (!$dir.PSIsContainer -or ($dir.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+        throw 'The .ssh path must be a real directory, not a link.'
+    }
+    $authorized = Join-Path $sshDir 'authorized_keys'
+    $text = ''
+    if (Test-Path -LiteralPath $authorized) {
+        $file = Get-Item -LiteralPath $authorized -Force
+        if ($file.PSIsContainer -or ($file.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+            throw 'authorized_keys must be a real file, not a link.'
+        }
+        $text = [System.IO.File]::ReadAllText($authorized)
+    }
+    if (@($text -split '\r?\n') -notcontains $line) {
+        $prefix = ''
+        if ($text.Length -gt 0 -and !$text.EndsWith("`n")) {
+            $prefix = "`r`n"
+        }
+        [System.IO.File]::AppendAllText($authorized, $prefix + $line + "`r`n", [System.Text.Encoding]::ASCII)
+    }
+    $acl = New-Object System.Security.AccessControl.FileSecurity
+    $acl.SetOwner($identity.User)
+    $acl.SetAccessRuleProtection($true, $false)
+    $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($identity.User, [System.Security.AccessControl.FileSystemRights]::FullControl, [System.Security.AccessControl.AccessControlType]::Allow))
+    $system = [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18')
+    $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($system, [System.Security.AccessControl.FileSystemRights]::FullControl, [System.Security.AccessControl.AccessControlType]::Allow))
+    Set-Acl -LiteralPath $authorized -AclObject $acl
+    Write-Output 'Public key installed successfully.'
+}
+
+This preserves existing key lines, avoids appending the identical entry twice,
+and sets authorized_keys access to swtest and SYSTEM only. Existing other key
+lines retain their own restrictions; this does not harden them automatically.
+Administrators use a different default key location under ProgramData; do not
+add swtest to Administrators or change server-key permissions as a workaround.
+
+The new entry's restrict option disables PTY allocation, forwarding and related
+SSH features, but still permits remote commands. Its from option limits this
+key to the specified Linux address. Neither option makes arbitrary remote
+commands harmless or replaces protecting the private key and Windows account.
+
+
+10. VERIFY UNATTENDED LOGIN FROM LINUX
+------------------------------------
+
+In the second Linux terminal, run the following, replacing LAPTOP_IP:
+
+ssh -T -i "$HOME/.local/share/SectorWorks/ssh/windows11-x64" -o IdentitiesOnly=yes -o BatchMode=yes -o PreferredAuthentications=publickey -o StrictHostKeyChecking=yes -o ConnectTimeout=10 -o ConnectionAttempts=1 swtest@LAPTOP_IP whoami
+
+Expected: exit code 0 and the laptop's swtest identity, without a password
+prompt. With a passphrase-protected key, first unlock it in your SSH agent.
+Use -T because this key intentionally cannot allocate an interactive PTY.
+A success message from step 9 alone is NOT proof of working key login.
+
+If permission is denied, retain the working password session and inspect the
+actual enrollment error, account, source-IP restriction and authorized_keys
+permissions. If a HOST KEY warning occurs, verify the server fingerprint
+locally as in step 6; never bypass strict checking or blindly delete trust.
+The initial setup's independent local fingerprint comparison has not yet been
+confirmed; the successful probe reused the client's existing trusted host entry.
+Do not claim that comparison was completed merely because SSH login succeeds.
+Do not disable password authentication as part of these instructions.
+
+If the Linux address changes, update BOTH the firewall rule and this key's
+from restriction using the existing password session/local access. A DHCP
+reservation avoids unexpected address changes. Keep the laptop awake and
+connected during finite test runs; no sleep-policy changes are assumed.
+To revoke access, remove the matching public-key entry from authorized_keys
+without removing other entries. If a private key is lost/exposed, revoke it
+and enroll a new dedicated key rather than reusing the exposed key.
+
+
+VERIFIED STATUS AND REMAINING WORK
+---------------------------------
+
+2026-10-15: The owner reports password SSH working on a Windows 11 Home x64
+laptop. After public-key enrollment reported success, the agent verified an
+explicit-key, BatchMode, publickey-only, strict-host-checking whoami command:
+exit code 0, expected standard swtest identity. Password login was not disabled.
+Machine addresses, hostname, key bytes/fingerprints and local access inventory
+are deliberately not recorded in Git. Keep connection-specific enrollment
+instructions local/ignored; keep the private key outside synchronized storage.
+
+No SDK/Git installation, repository transfer, Windows build/test execution,
+Windows-authored NTFS fixture qualification or GUI workflow follows from this
+access check. Preparation and testing remain separate work. Inspect installed
+tools before installing the pinned SDK/Git; use a disposable testing directory
+and generated fixtures only. Never format or test writes against real disks
+or personal data. Independent Windows fixture authoring/validation does not
+permit core application image access to depend on host mounting.
+
+SSH command execution is not an interactive Windows desktop. GUI automation
+requires a separately prepared logged-in desktop/interactive task and its own
+verification. Modern NTFS LFS 2.0/cache-safety gates remain unresolved; remote
+access alone does not qualify or enable these volumes. No Phase 3 work or
+recurring automation is authorized by this setup.
+
+Microsoft's official instructions:
+https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse
+https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement
