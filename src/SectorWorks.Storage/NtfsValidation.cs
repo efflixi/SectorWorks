@@ -110,7 +110,8 @@ internal static class NtfsValidation
         }
     }
 
-    internal static List<Attribute> ValidateRecord(byte[] raw, int sector, int cluster, long volumeLength)
+    internal static List<Attribute> ValidateRecord(byte[] raw, int sector, int cluster, long volumeLength,
+        bool allowExtensions = false)
     {
         var bytes = (byte[])raw.Clone();
         if (!bytes.AsSpan(0, 4).SequenceEqual("FILE"u8))
@@ -150,18 +151,18 @@ internal static class NtfsValidation
             {
                 throw new ImageFormatException("NTFS attribute name exceeds its bounded record.");
             }
-            if (type == 0x20)
+            if (type == 0x20 && !allowExtensions)
             {
-                throw new ImageFormatException("NTFS attribute-list/extension records are not supported in Phase 1.");
+                throw new ImageFormatException("NTFS attribute-list/extension records are outside the Phase 2B writer subset; Phase 3 qualification is required.");
             }
             if (nonresident)
             {
-                if (U64(attribute, 16) != 0 || U16(attribute, 34) > 4
+                if ((!allowExtensions && U64(attribute, 16) != 0) || U16(attribute, 34) > 4
                     || U64(attribute, 56) > U64(attribute, 48))
                 {
                     throw new ImageFormatException("Unsupported NTFS continuation/compression or inconsistent data length.");
                 }
-                _ = Runs(attribute, cluster, volumeLength, true);
+                _ = Runs(attribute, cluster, volumeLength, true, allowExtensions);
             }
             else
             {
@@ -199,7 +200,8 @@ internal static class NtfsValidation
         }
     }
 
-    internal static List<Run> Runs(byte[] attribute, int cluster, long volumeLength, bool allowSparse)
+    internal static List<Run> Runs(byte[] attribute, int cluster, long volumeLength, bool allowSparse,
+        bool allowContinuation = false)
     {
         int position = U16(attribute, 32);
         if (position < 64 || position >= attribute.Length)
@@ -214,7 +216,14 @@ internal static class NtfsValidation
             byte header = attribute[position++];
             if (header == 0)
             {
-                if (clusters == 0 || (ulong)(clusters - 1) != U64(attribute, 24))
+                ulong first = allowContinuation ? U64(attribute, 16) : 0;
+                ulong last = U64(attribute, 24);
+                if (allowContinuation && clusters == 0 && first == 0 && (last == 0 || last == ulong.MaxValue)
+                    && U64(attribute, 40) == 0 && U64(attribute, 48) == 0 && U64(attribute, 56) == 0)
+                {
+                    return runs;
+                }
+                if (clusters == 0 || last < first || (ulong)(clusters - 1) != last - first)
                 {
                     throw new ImageFormatException("NTFS mapping-pairs coverage disagrees with its VCN range.");
                 }
@@ -291,7 +300,7 @@ internal static class NtfsValidation
         throw new ImageFormatException("NTFS metadata stream is shorter than its declared initialized length.");
     }
 
-    private static List<long> ValidateIndex(ReadOnlySpan<byte> bytes, int header)
+    internal static List<long> ValidateIndex(ReadOnlySpan<byte> bytes, int header)
     {
         if (bytes.Length < header + 16)
         {
@@ -337,7 +346,7 @@ internal static class NtfsValidation
     internal static string AttributeName(byte[] attribute) => attribute[9] == 0 ? ""
         : System.Text.Encoding.Unicode.GetString(attribute, U16(attribute, 10), attribute[9] * 2);
 
-    private static void ValidateGraph(Dictionary<long, List<long>> graph, List<long> roots)
+    internal static void ValidateGraph(Dictionary<long, List<long>> graph, List<long> roots)
     {
         var visited = new HashSet<long>();
         var stack = new Stack<(long Node, int Depth)>();

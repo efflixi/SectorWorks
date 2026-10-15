@@ -31,6 +31,58 @@ Undo, redo and discard concern the in-session staged state. Save As creates a
 separate destination; it does not grant permission to overwrite the original.
 Direct commit, recovery journaling and ISO rebuilding remain later-phase work.
 
+### Phase 2C reader-only expansion and Phase 3 writer prerequisites
+
+The owner explicitly authorized Phase 2C and its roadmap/specification change
+on **2026-10-15**. This is an authorized/in-progress **reader qualification**
+milestone before Phase 3, not an expansion of the writer envelope below.
+Separate planned targets are **NTFS 1.2 (NT4), 3.0 (Windows 2000) and 3.1 (XP+)**,
+including bounded supported attribute-list/extension and legacy metadata reads.
+All new checklist **2C.1-2C.7**, **2C.V1-2C.V8** and **2C.E1-2C.E6** items began
+pending; implemented bounded reader tests/enumeration are now recorded separately in
+[platform evidence](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
+not full phase or writer qualification.
+The reader's current **49/49 focused tests (35 attribute-list + 14 version/layout/service)**
+include read workflows/source hashes, denial of staging/Save As for new variants,
+named-list guard, modern/legacy extension identity, empty nonresident
+index bitmap and GPT mixed-volume
+isolation: qualified FAT Save As preserves the read-only attribute-list NTFS
+partition byte hash without granting NTFS editing. Full verification passed
+1001 tests/one Windows-only skip, 1002 total; four later cases were added after
+that run's build. Current inventory 1006 including the skip is not a claimed
+full 1005-pass run.
+Final repeat all-six self-contained publish/local Linux AppImage passes on
+latest source, as does the bounded owner read-only probe. Legal notices are retained;
+no versioned release/GitHub publication changed. Cross-builds are not physical
+compatibility. Phase 2C remains partial/blocked on authentic legacy media and
+stops for owner review. These selections are not additive. Signed reader packages and
+strict `NtfsValidation.Validate` writer defaults remain unchanged; the writer
+diagnostic now names the Phase 2B subset/Phase 3. MFT bootstrap lists are explicitly
+unsupported, with exact [reader bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
+No authentic NT4 fixture exists; a synthetic version-field mutation is not
+authentic legacy qualification.
+
+**Preserve all existing qualified Phase 2B FAT/NTFS editing.** Newly readable
+attribute-list/legacy volumes remain noneditable, with per-volume reasons and
+composed caps; an editable sibling does not qualify them. Phase 3 must first
+qualify their staged add/replace/delete/rename/mkdir, overlay/history, capacity/
+naming checks and validated Save As/new-output NTFS writing under **3.0.1-3.0.5**,
+including authentic disposable fixtures, allocation/MFT/index/attribute-list/
+security/metadata preservation, source hashes and failure/independent-tool
+evidence. Only then may the corresponding **3.7** direct-commit row be qualified.
+Phase 3 remains unauthorized; reader success must not enable writes.
+
+The required actual Windows-authored NTFS/security-reference and LFS 2.0/
+cached-metadata write gates stay incomplete in **2B.6**. They are neither moved
+into Phase 2C nor demoted to read-only 1.0 scope.
+The approximately 8.42 GB raw Tower NTFS 3.0 owner image remains outside the
+repository and must not be copied, modified or distributed. Initial diagnosis
+is a live directory attribute list at MFT 26 referencing indexing extension
+8336. The native warning is now diagnosed as a native-tool whole-attribute
+size limit, not corruption evidence; initial in-place reader enumeration passes.
+It is not a write fixture or proof of safe editing after reader acceptance.
+See the [planned reader ledger](support-matrix.md#phase-2c-ntfs-reader-qualification-plan).
+
 ### Roadmap and authorization
 
 On 2026-10-15 the owner approved a separate **Phase 2B** before Phase 3 to close
@@ -49,8 +101,10 @@ Every variant/layout/filesystem row needs its own allocation, metadata,
 preservation and failure evidence; reader support and successful file hashes
 alone are insufficient.
 
-Phase 3 then qualifies direct commit per required disk stack, rather than
-stopping after one combination. ISO/Joliet/Rock Ridge and a declared UDF/bridge
+Phase 2C separately qualifies new NTFS reads before Phase 3. Phase 3 first
+qualifies its new-target staged/Save As/write prerequisites, then direct commit
+per required disk stack, rather than stopping after one combination.
+ISO/Joliet/Rock Ridge and a declared UDF/bridge
 subset receive shared staged/rebuild qualification in Phase 4. BIN/CUE receives
 staged data-track editing and safe output-set reconstruction in Phase 6.
 Conventional 360K/720K writing remains assigned to Phase 7 item 7.10.
@@ -360,7 +414,10 @@ allocation metadata and independently verified output. The approved dependency
 version is retained behind the replaceable writer boundary; the release-quality
 review remains required.
 
-## Managed NTFS final verification
+## Recorded Phase 2B managed NTFS final verification
+
+These are retained Phase 2B results, not a Phase 2C test run or new legacy/
+attribute-list qualification. The reader-only plan above begins pending.
 
 The owner-authorized repair's final `./scripts/verify.sh` passes **956 tests,
 one explicit Windows-only security-reference skip (957 total)**. Counts:
@@ -400,6 +457,11 @@ Final logs are local-only `artifacts/phase2b-final-verification.log`,
 `artifacts/phase2b-final-precommit-publish.log`, and
 `artifacts/phase2b-release-x11-<variant>.log`; screenshots and generated media
 are in the matching directories. Repeat only in a **new** artifact directory:
+
+The [2026-10-15 cleanup](platform-status.md#local-artifact-cleanup-2026-10-15)
+retains these final logs and release-workflow media, but removes superseded
+pre-freeze image copies and local build outputs. If the harness executable is
+absent, run `./scripts/build.sh` before the direct command below.
 
 ```sh
 source scripts/common.sh

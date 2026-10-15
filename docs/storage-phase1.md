@@ -4,6 +4,83 @@ This document describes the retained reader pipeline. Phase 2's separate
 overlay and Save As writer are documented in [staged editing](staged-editing.md);
 read support here never implies write qualification.
 
+## Implemented Phase 2C NTFS reader subset and open qualification
+
+On **2026-10-15** the owner authorized Phase 2C and the synchronized roadmap/
+specification change before Phase 3. **PARTIAL/BLOCKED on authentic legacy-media
+qualification, not phase complete; stop for owner review.** Implemented-subset evidence is recorded below,
+not full version/media qualification. The retained reader
+baseline below still describes prior evidence. Targets are separate bounded
+**NTFS 1.2 (NT4), 3.0 (Windows 2000) and 3.1 (XP+)** ordinary read subsets.
+No authentic NT4 fixture exists; synthetic version-field tests alone cannot
+establish authentic legacy support.
+
+Implemented reading covers bounded ordinary base/extension records, supported resident/
+nonresident attribute lists and split data/index streams, plus version-specific
+metadata layouts. A separate `NtfsReadValidation` preflight/resolver feeds the
+unchanged signed reader; strict `NtfsValidation.Validate` defaults remain unchanged
+for the writer. Its diagnostic now describes the Phase 2B writer subset/Phase 3,
+not the obsolete Phase 1 boundary. Reused
+`ValidateRecord`/`ValidateRuns` checks require explicit read-only extension-record
+opt-in, not a permissive shared default. Attribute-list-dependent MFT bootstrap
+is explicitly rejected: safe bootstrap mapping is not implemented, so extension
+resolution must not assume the MFT mapping it is trying to establish. This exact
+blocker excludes those images rather than claiming full bootstrap/list support. The observed
+version is exposed as `fs.Properties["NTFS version"]`, separately from authentic
+legacy fixture provenance. Resolution validates
+file-reference sequences, base ownership, attribute identity/type/name, list/
+run bounds, VCN ordering and complete supported extent coverage, with checked
+arithmetic and bounded reads/traversal. Cycles, stale references, duplicates,
+overlaps, missing extents and invalid metadata fail explicitly.
+Do not broaden sparse/compressed/encrypted/reparse/link/ADS claims merely by
+reading an attribute list, replay/reset a log, repair metadata or remove budgets.
+
+Checklist **2C.1-2C.7** requires legal normal/malformed fixtures, authentic
+provenance, browse/preview/hex/search/extraction with independent comparisons
+and unchanged source hashes, existing-writer regressions and per-volume caps.
+Latest focused **49/49 (35 attribute-list + 14 version/layout/service)** covers
+named-list guard, GPT mixed-volume isolation, modern/legacy extension identity
+and zero-length nonresident index-bitmap
+coverage on current code. Full verification passed **1001 tests/one Windows-only
+skip, 1002 total**. Four cases were added after that run's build:
+current inventory is 1006 including the skip, not a claimed full 1005-pass result.
+Final repeat all-six self-contained publish/local Linux AppImage passes on
+latest source with legal notices retained. No versioned release/
+GitHub publication changed.
+Cross-builds are not physical compatibility. Individual
+implemented/verified subitems are tracked in the checklist; authentic legacy,
+remaining platform and full-phase gates stay open.
+Newly readable legacy/attribute-list variants stay noneditable until Phase 3
+**3.0.1-3.0.5** staged/Save As/new-output writer qualification, before **3.7**
+direct commit. Existing qualified Phase 2B editing and incomplete **2B.6**
+Windows-authored-media/security-reference/LFS 2.0 gates are preserved.
+
+Tower's approximately 8.42 GB raw NTFS 3.0 image remains outside the repository
+and must not be copied, modified or distributed. Initial rejection concerns
+the live directory attribute list at MFT 26 referencing indexing extension 8336;
+the native index warning is now independently diagnosed under **2C.6/2C.V5**.
+ntfs-3g 2022.10.3 limits whole non-BITMAP attribute reads to 65536 bytes;
+Tower's in-bounds contiguous index is 344064 bytes. Initial in-place enumeration
+now succeeds for 905 directories/16199 files, zero directory failures, writing
+false, unchanged source size/mtime. Counts use retained hidden/system/metafile
+enumeration filters, not all on-disk entries. Three complete explicit-path
+streams match independent `ntfscat` hashes, and service ReadyReadOnly preview/
+hex/search works with enumerated ordinary entries. Initial hidden/system
+`boot.ini` service selection failed under unchanged filters; no filter UX change
+was made. No owner-image full source hash, extraction or content persistence
+has been performed in this evidence.
+The final latest-source owner probe repeats the same bounded results.
+Resident index-root compression flags represent default directory compression;
+compressed file data remains denied. Empty nonresident index streams are
+handled. These results do not certify health, whole-image hashes or extracted data.
+Modern extension-header record identity at offset 44 is checked only with USA
+offset >=48, not legacy USA offset 42. Empty nonresident index bitmaps are
+supported without attempting an empty-run read; final focused tests cover both.
+See [initial evidence and pinned sources](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15)
+and the [qualification ledger](support-matrix.md#phase-2c-ntfs-reader-qualification-plan).
+
+## Retained reader pipeline
+
 Composition entry point: `new SectorWorks.Storage.ImageOpener()` implements
 Core's `IImageOpener`. No DiscUtils types cross the Storage boundary. Opening,
 directory enumeration and reads should run on an application worker, not the UI
@@ -70,8 +147,9 @@ no opened adapter/volume, so it contributes no browse/extract/preview capability
   mapping-pair progress/extents and index-entry progress/child graphs are
   checked before dependency browsing. Unicode and independent file positions
   are tested. Compressed, sparse, encrypted and reparse-point/link content,
-  alternate data streams and attribute-list continuation records are explicitly
-  unsupported rather than returned as ordinary bytes. Link metadata is listed;
+  alternate data streams remain explicitly unsupported. Phase 2C's separate
+  bounded resolver above adds ordinary supported attribute-list continuations,
+  not unsupported content semantics or MFT bootstrap lists. Link metadata is listed;
   links and ancestor links are not followed.
 * ISO9660/Joliet and ordinary Rock Ridge directories/files are read-only.
   Joliet is selected only when a Joliet escape sequence is actually present;
@@ -82,6 +160,18 @@ no opened adapter/volume, so it contributes no browse/extract/preview capability
   names, link components and timestamps before invoking its parser.
   El Torito catalog LBA and volume/naming metadata are descriptive only:
   **bootability and exact-layout preservation are never guaranteed**.
+  Owner-authorized compatibility refinements on 2026-10-15 accept unused
+  out-of-range addresses only for zero-length file sections, with an opening
+  warning. Empty file streams return EOF without asking the dependency to seek
+  to those addresses; there is no filename whitelist or source rewriting.
+  Nonempty extents, directories, endian pairs and unsupported allocation/SUSP
+  features retain their checks. ISO9660/Joliet directory metadata is decoded in
+  bounded batches from the validated directory extents because the pinned VFS
+  repeatedly reparses parents for each entry property. Metadata reads still
+  pass through `DeviceStream` and the shared parser budget; no limit is raised.
+  Version hiding, case-insensitive duplicate detection, attributes and valid
+  UTC timestamps are retained; invalid names, Unicode or dates fail explicitly.
+  Rock Ridge keeps its existing SUSP-aware metadata path.
 * UDF volume recognition sequences are reported, but UDF browsing is not
   implemented and no extra dependency was added. An ISO/UDF bridge exposes
   only the independently recognized ISO view. BIN/CUE/CD-DA remain Phase 6.
@@ -108,11 +198,20 @@ unusual images rather than silently misinterpret them:
 | FAT/ISO directory | 16 MiB |
 | NTFS initialized MFT / aggregate allocated indexes | 128 MiB each |
 | Individual NTFS directory allocation | 16 MiB |
+| NTFS attribute list / all lists per open | 1 MiB / 32 MiB |
+| NTFS attribute-list entries / extension records per file | 4096 / 256 |
+| NTFS extension-record reads per open | 32 MiB |
+| NTFS index bitmap | 64 KiB |
 | NTFS MFT/index record | 64 KiB |
 | ISO total directory preflight | 128 MiB |
 | ISO SUSP continuation | 1 MiB / 32 hops per record |
 | Directory/path/index depth | 256 |
 | Dependency directory listing | 131072 entries |
+
+NTFS index bitmaps select active allocation blocks; unused blocks are skipped
+rather than interpreted as live indexes. All MFT records remain structurally
+validated, including inactive records, but inactive records do not trigger
+attribute-reference resolution. Index graph depth is bounded at 256.
 
 Open and directory enumeration accept cancellation; preflights and FAT
 walkers check it between bounded units. File streams support cancellation on

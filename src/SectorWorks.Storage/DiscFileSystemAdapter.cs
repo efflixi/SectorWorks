@@ -10,14 +10,16 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
 {
     private readonly DiscFileSystem _fileSystem;
     private readonly ParserContext _context;
+    private readonly IReadOnlyBlockDevice? _opticalDevice;
     private readonly HashSet<ParserFileStream> _streams = [];
     private bool _disposed;
 
     internal DiscFileSystemAdapter(DiscFileSystem fileSystem, ParserContext context, string name,
-        Dictionary<string, string> properties)
+        Dictionary<string, string> properties, IReadOnlyBlockDevice? opticalDevice = null)
     {
         _fileSystem = fileSystem;
         _context = context;
+        _opticalDevice = opticalDevice;
         Name = name;
         VolumeLabel = fileSystem.VolumeLabel;
         IsCaseSensitive = fileSystem is CDReader cd && cd.ActiveVariant == Iso9660Variant.RockRidge;
@@ -43,7 +45,7 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
         {
             throw new ImageFormatException("NTFS MFT/MFT mirror location exceeds volume bounds.");
         }
-        NtfsValidation.Validate(device, boot, sector, cluster, token);
+        NtfsReadInfo info = NtfsReadValidation.Validate(device, boot, sector, cluster, token);
         // Only ordinary data/metadata reads are used. Windows SID/ACL/format APIs are never called.
 #pragma warning disable CA1416
         var ntfs = new NtfsFileSystem(new DeviceStream(device, context));
@@ -51,8 +53,10 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
         return new(ntfs, context, "NTFS", new()
         {
             ["Access"] = "Read-only ordinary resident/nonresident file data.",
-            ["Unsupported features"] = "Compressed, sparse, encrypted, reparse/link files and alternate data streams are not opened. Attribute-list extensions are rejected.",
+            ["Unsupported features"] = "Compressed, sparse, encrypted, reparse/link files and alternate data streams are not opened. MFT bootstrap attribute lists remain unsupported.",
             ["Cluster size"] = cluster.ToString(),
+            ["NTFS version"] = info.Version,
+            ["Attribute lists"] = info.HasAttributeLists ? "Validated read-only; writing requires Phase 3 qualification." : "None detected.",
         });
     }
 
@@ -83,6 +87,17 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
             string parserPath = CheckPath(normalized);
             if (_fileSystem is CDReader cd)
             {
+                // The pinned VFS reparses parents for each entry property; batch ordinary ISO/Joliet metadata.
+                if (_opticalDevice is not null && !IsCaseSensitive)
+                {
+                    if ((_fileSystem.GetAttributes(parserPath) & FileAttributes.Directory) == 0)
+                    {
+                        throw new DirectoryNotFoundException($"Not an ISO directory: {normalized}");
+                    }
+                    using var stream = new DeviceStream(_opticalDevice, _context);
+                    return IsoDirectoryReader.Read(stream, cd.PathToExtents(parserPath), normalized,
+                        Properties["Active naming variant"] == "Joliet", cancellationToken);
+                }
                 ValidateIsoDirectory(cd, parserPath);
             }
             DiscFileSystemInfo[] entries = _fileSystem.GetDirectoryInfo(parserPath).GetFileSystemInfos();
@@ -129,7 +144,11 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
         {
             throw new ImageFormatException("NTFS compressed, sparse and encrypted file contents are not supported in Phase 1.");
         }
-        var stream = new ParserFileStream(this, _fileSystem.OpenFile(parserPath, FileMode.Open, FileAccess.Read));
+        // The pinned ISO extent stream seeks even when its length is zero.
+        Stream content = _fileSystem is CDReader && _fileSystem.GetFileLength(parserPath) == 0
+            ? new MemoryStream([], false)
+            : _fileSystem.OpenFile(parserPath, FileMode.Open, FileAccess.Read);
+        var stream = new ParserFileStream(this, content);
         _streams.Add(stream);
         return stream;
     });

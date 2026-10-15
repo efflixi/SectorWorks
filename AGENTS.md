@@ -45,10 +45,47 @@ ISO/UDF/bridge, BIN/CUE and conventional 360K/720K delivery is explicitly
 assigned to Phases 4, 6 and 7.10 respectively. See the checklist and
 [planned capability matrix](docs/support-matrix.md#required-editing-delivery-roadmap).
 Owner separately authorized Phase 2B implementation on 2026-10-15, after the
-1.0 scope correction; no later-phase implementation is authorized.
+1.0 scope correction. The subsequent Phase 2C authorization below does not
+authorize Phase 3 or any later phase.
 Keep historical Phase 2 completion limited to its verified envelope; required
 unverified rows stay incomplete/blocked unless the owner explicitly approves
 a scope decision with a named follow-up milestone.
+
+Owner explicitly authorized the Phase 2C roadmap/specification change and
+reader implementation on 2026-10-15, before Phase 3. Qualify NTFS 1.2 (NT4),
+3.0 (Windows 2000) and 3.1 (XP+) read-only subsets, including bounded supported
+attribute lists/extensions and legacy metadata. Status is PARTIAL/BLOCKED on authentic legacy-media qualification,
+not phase complete; stop for owner review. Checklist 2C.1-2C.7, 2C.V1-2C.V8 and 2C.E1-2C.E6 began
+pending. Implemented bounded attribute-list/version reading has 49/49 current
+focused passes (35 attribute-list, 14 version/layout/service).
+Full verification passed 1001/one Windows-only skip, 1002 total;
+four focused cases were added after the full run's build. That snapshot's inventory
+was 1006 including the skip, not a claimed full 1005-pass run. Final repeat all-six
+self-contained publish/local Linux AppImage passes on latest source, as does the
+bounded owner read-only probe. No versioned release or GitHub publication changed.
+Cross-publishes are not physical compatibility; 2C.V6a is verified and parent
+2C.V6 stays open.
+Exact checked subitems and open
+gates are tracked in the checklist/platform record. Synthetic version-field tests are not authentic legacy qualification;
+no authentic NT4 fixture exists yet.
+Newly readable attribute-list/legacy volumes must remain noneditable until
+Phase 3 items 3.0.1-3.0.5 qualify staged editing, Save As and new-output NTFS
+writing BEFORE direct commit under 3.7. Preserve ALL existing qualified Phase 2B
+editing; actual Windows-authored-media/security-reference and LFS 2.0/cache-safety
+write gates remain incomplete in 2B.6, not moved or scope-demoted.
+The approximately 8.42 GB raw Tower NTFS 3.0 owner image stays outside the
+repository: do not copy, modify or distribute it. Initial rejection concerns
+the live directory attribute list at MFT 26 referencing indexing extension 8336;
+the independent native index warning is now diagnosed as ntfs-3g's 65536-byte
+readall limit versus the 344064-byte index, not corruption evidence.
+Initial in-place enumeration succeeds, not full content/health qualification.
+Reader acceptance or a tool-limit diagnosis never establishes write safety.
+See [Phase 2C plan](docs/support-matrix.md#phase-2c-ntfs-reader-qualification-plan).
+Keep the signed reader and strict writer validation defaults unchanged.
+The separate read preflight resolves bounded ordinary lists/extensions; MFT
+bootstrap lists remain explicitly unsupported. Follow the documented list/
+extension/index budgets and bitmap-selected active-index traversal, while still
+structurally validating inactive MFT records without resolving their references.
 
 The current roadmap targets 1.0. VMDK/VDI/QCOW2/DMG/ext2/ext3/ext4/exFAT/HFS+/APFS
 target qualified read-only subsets where feasible. Their writers, modified Save
@@ -58,6 +95,13 @@ evaluation/fixtures/tests remain required. Detection is not browsing/extraction;
 document exact reader blockers for owner review, never silently drop them.
 Apply read-only caps across containers and filesystems compositionally. Internal
 parsers determine support, not the host OS's native mounting capabilities.
+
+Owner separately authorized both bounded ISO reader refinements on 2026-10-15:
+empty-file unused-extent compatibility and efficient ISO9660/Joliet directory
+enumeration without raising budgets. The Toshiba recovery ISO remains local,
+unmodified, untracked and undistributed, never a fixture or package input.
+No optical writing/rebuild, Phase 3 or release-publication authority follows.
+See [reader evidence](docs/platform-status.md#iso-reader-compatibility-refinement-2026-10-15).
 
 Windows 11 Home x64 unattended SSH command access was verified on 2026-10-15.
 This is infrastructure only, not Windows build/test, security-reference,
@@ -71,6 +115,15 @@ GUI smoke needs a separately prepared interactive desktop. This setup does not
 authorize Phase 3, real-disk operations or recurring automation.
 
 ## Learnings
+
+Zero-length ISO files can have unused out-of-range extent addresses: tolerate
+only the empty-file case, keep other structural checks, warn and return an
+empty stream without seeking. Never whitelist marker filenames or relax
+block-device bounds; the pinned ISO extent stream seeks even for an EOF read.
+The pinned VFS reconstructs parent directories for each path-based entry
+property, so large nested ISO/Joliet listings need bounded batch metadata
+decoding rather than increased parser budgets. Preserve the separate
+Rock Ridge/SUSP path and regress metadata, names, content, caps and cancellation.
 
 DiscUtils FAT writer success and reopened file hashes are insufficient write
 validation: Phase 2 exposed a truncation-related lost cluster and incomplete
@@ -118,6 +171,18 @@ scoped unchecked conversions; run lengths remain unsigned/bounded and header
 zero is a one-byte terminator. MFT mirror extent is
 `max(4 * recordSize, clusterSize)`, not always four records; regress large-cluster
 fixtures and native backward/full-volume runs before broadening the writer.
+
+Pre-XP NTFS FILE records with USA at 42/attributes at 48 use bytes 44..47 as
+fixup slots, not NTFS 3.1 MFT identity; check header offset 44 only with the
+extended layout (USA offset >=48).
+Resident `INDEX_ROOT` compression flags can mean directory defaults, and empty
+nonresident metadata may have no runs/highest VCN 0 or maximum only when
+allocation/data/initialized lengths are all zero; never widen writer defaults.
+The pinned `ntfsinfo` 2022.10.3 readall 64 KiB guard can mislabel a large
+`INDEX_ALLOCATION` corrupt; compare bounded index graphs and independent native
+directory/stream reads rather than assume corruption.
+See [reader bounds](docs/storage-phase1.md#resource-cancellation-and-concurrency-policy)
+and [pinned evidence](docs/platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15).
 
 DiscUtils VHDX ContentStream.Flush is unimplemented. The qualified writer uses
 synchronous payload/BAT writes, disposes the container, flushes the underlying

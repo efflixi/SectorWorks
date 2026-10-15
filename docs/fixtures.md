@@ -5,6 +5,137 @@ They contain the text `SectorWorks foundation sentinel v1\n` in `SENTINEL.TXT`.
 They are **not bootable** and establish no SectorWorks application support.
 No source image is mounted. All writes target generated or disposable images.
 
+## ISO reader compatibility regressions
+
+`IsoCompatibilityTests` authors disposable media with the unchanged DiscUtils
+`CDBuilder`; no owner recovery-disc content is included. Builder paths use
+backslashes even on Linux. Separate ISO9660/Joliet trees exercise empty markers
+and unrelated empty filenames with unused out-of-range addresses, ordinary text,
+directories, hidden attributes, timezone offsets and mixed-case Unicode.
+Malformed derivatives cover nonempty/out-of-range extents, empty directories,
+endian/identifier mismatches, multi-extent/interleaved/extended allocation,
+duplicate/unsafe names, invalid Joliet encoding and invalid dates.
+
+Two nested 1600-file directories per naming variant reproduce repeated-parent
+metadata I/O. Counting-device assertions require at most 4 MiB and 4096 reads
+per listing, at most 1 MiB per request, without changing production budgets.
+Selected metadata/content is compared with the signed reader. Direct synthetic
+directory records test the 16 MiB and 131072-entry caps without a large image.
+Empty streams exercise sync/async/EOF/seek/cancellation, and shared Services
+exercise preview/hex/search/extraction with staging denied. Source hashes are
+checked. All **20 new cases** pass in the **102-case selected reader run**;
+see [exact verification and owner-image results](platform-status.md#iso-reader-compatibility-refinement-2026-10-15).
+
+The local owner Toshiba ISO is neither a fixture nor a release/package input.
+It must remain unmodified, untracked and undistributed; its reader verification
+streams data in place without copying the image or persisting its contents.
+
+## Phase 2C NTFS reader fixtures and open authentic-media gates
+
+Owner authorization **2026-10-15** adds Phase 2C before Phase 3 for separate
+**NTFS 1.2 (NT4), 3.0 (Windows 2000) and 3.1 (XP+)** read-only qualification.
+Checklist **2C.5** fixture work and **2C.V2/2C.V3/2C.E1/2C.E6** evidence gates
+began **pending**. Completed structural version and attribute-list fixture work
+below qualifies the bounded synthetic subset, not authentic historical media.
+No authentic NT4-authored fixture exists yet. Synthetic version-field
+mutations can test parser branching but are not authentic legacy qualification.
+Record authoring provenance/version/layout separately from a synthetic claim.
+
+Legal disposable synthetic fixtures cover resident/nonresident attribute lists,
+base/extension identity and sequence references, directory index continuations,
+MFT-bootstrap boundary cases, ordinary content and Unicode metadata.
+Rejected bootstrap-list layouts have explicit negative tests and exact blockers;
+their presence does not imply bootstrap-list support. Keep observed version
+metadata and structural synthetic evidence separate from authentic legacy
+authoring qualification.
+Malformed companions cover truncated lists/runs, cycles, stale/mismatched
+references, duplicate/overlapping/missing VCN extents, overflow and bounds.
+Each advertised version needs independent read comparisons and shared service
+workflow/source-hash evidence. Keep immutable goldens unchanged and separate
+reader fixtures from any subsequently qualified disposable writer fixtures.
+
+The owner's approximately 8.42 GB raw Tower NTFS 3.0 image remains **outside
+the repository and must not be copied, modified or distributed**, including
+into ignored artifacts, fixtures or packages. Initial diagnosis: live directory
+attribute list at MFT 26 references indexing extension 8336; an independent
+native index warning is now diagnosed as a whole-attribute native-tool size
+limit (**2C.6/2C.V5**), not corruption or health certification. Initial in-place
+enumeration succeeds; full extraction/source-hash qualification remains pending. Do not
+promote owner content into synthetic fixtures or infer successful qualification.
+
+Newly readable legacy/attribute-list variants remain noneditable until Phase 3
+**3.0.1-3.0.5** qualifies staged editing, validated Save As and new-output NTFS
+writing before **3.7** direct commit. Existing Phase 2B fixtures/results and
+required actual Windows-authored/security-reference/LFS 2.0 gaps under **2B.6**
+remain unchanged; reader fixtures cannot close writer gates.
+
+### Verified structural version fixtures
+
+`NtfsCompatibilityFixtures` creates runtime synthetic
+derivatives of the lawful 32 MiB `mkntfs`/`ntfscp` golden in a disposable
+`WorkDirectory`; the immutable compressed golden remains unchanged.
+The existing-volume managed backend authors `Legacy`, resident `NOTE.TXT` and
+16 KiB nonresident `PAYLOAD.BIN` before structural reconstruction:
+
+| Synthetic target | Structural changes under test |
+| --- | --- |
+| NTFS 1.2 | All standard-information records truncated to 48 bytes; valid per-file self-relative security descriptors without shared Security IDs; pre-XP MFT USA at 42/attributes at 48, no record-number field |
+| NTFS 3.0 | Lawful mixture of 48/72-byte standard information/shared security metadata retained; ordinary added files have 72-byte records; pre-XP MFT USA at 42/attributes at 48, no record-number field |
+| NTFS 3.1 | Modern MFT USA at 48/attributes at 56; lawful baseline mixture includes ten 48-byte standard-information records |
+
+The NTFS 1.2 descriptors contain separate owner/group `S-1-5-18` SID copies and
+an empty DACL. MFT USA protection and the mirror are regenerated. Expected observed metadata
+is `NTFS version` = `1.2`, `3.0` or `3.1`. These are more than version-byte
+mutations, but **are not genuine NT4-, Windows 2000- or XP-authored fixtures**:
+baseline modern hidden metadata remains. They establish neither a full
+historical-format image nor native-OS interoperability.
+
+The completed fixture work now passes targeted **`NtfsCompatibilityVersionTests`:
+14 passed** against the updated reader: public browse, resident/
+nonresident content hashes and read-only/writer gates for 1.2/3.0/3.1, serialized
+layout assertions and rejection of five unsupported versions. Routine tests
+derive fixtures from the golden without invoking native authoring tools.
+Shared-service cases cover browse/preview/hex/search/extraction, staging and
+Save As denial, plus unchanged source hashes for all three versions.
+Scoped formatting passes; immutable goldens remain unchanged. These tests
+**exclude attribute lists**, whose separate reader fixtures/results must be
+recorded independently.
+This is structural synthetic evidence, not authentic NT4/2000/XP authoring or
+runtime qualification. The latest focused selection is
+**49/49 (35 attribute-list + 14 version/layout/service)**, adding named-list
+guard, GPT mixed-volume isolation, modern/legacy extension identity and empty
+nonresident index-bitmap cases.
+The latter proves qualified FAT staging/Save As retains the unqualified NTFS
+partition byte hash and never grants it editing capabilities.
+See [canonical verification chronology/logs](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15)
+for the earlier full run and final focused coverage.
+
+Executed selector: `dotnet test --configuration Release --no-restore --filter
+FullyQualifiedName~NtfsCompatibilityVersionTests` in the storage-test project.
+Scoped `dotnet format --verify-no-changes` passes for both new files.
+
+The installed `mkntfs` offers no version-selection option. The isolated managed
+formatter is excluded/throws and is not an established portable fixture-authoring
+solution. No proprietary media or downloaded historical OS image is used.
+Authentic legacy provenance remains a separate open **2C.5/2C.E1/2C.E6** gate.
+
+### Verified bounded attribute-list fixtures
+
+`NtfsAttributeListTests` now passes **35/35**, including named-list guard,
+GPT mixed-volume isolation, modern/legacy extension identity and empty
+nonresident index-bitmap tests, using legal disposable fixtures,
+not Tower or modified immutable goldens. Cases include a moved directory index,
+resident/nonresident attribute lists, split ordinary data, 15 malformed cases,
+unsupported flags, explicit 1 MiB list-cap rejection and explicitly unsupported
+MFT bootstrap lists. Resident `INDEX_ROOT` flags for default directory compression,
+zero-length nonresident index streams and cancellation are covered; compressed
+file contents remain unsupported. List/reference/VCN and bitmap-driven active
+index checks are structural validation, not filesystem repair or certification.
+The extension identity guard checks header offset 44 only when USA offset is
+at least 48; legacy offset 42 is not misread as a record number. Empty nonresident
+index bitmaps do not trigger a spurious empty-run read failure.
+See [reader resource bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
+
 ## Immutable golden catalog
 
 `fixtures/golden/manifest.json` lists every image's expanded byte length and

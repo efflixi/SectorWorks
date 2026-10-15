@@ -12,6 +12,7 @@ WORKFLOW AUTHORITY
 - A later-phase dependency discovered during current work must be noted under the affected item and reported to the user.
 - At the end of every phase, the agent must perform verification, update this checklist truthfully, request user review, and STOP.
 - Phase 2B is a separate owner-approved roadmap milestone between Phase 2 and Phase 3. It requires explicit implementation authorization; documentation approval is not authorization to start it.
+- Phase 2C is the owner-authorized NTFS reader-compatibility milestone before Phase 3 (2026-10-15). Newly readable attribute-list/legacy variants remain noneditable until separate Phase 3 staged-editing, Save As and NTFS-write qualification precedes their direct-commit qualification.
 
 STATUS KEY
 [ ] Not started / incomplete
@@ -277,6 +278,18 @@ Establish the permanent UI foundation and a safe read-only storage pipeline capa
 [x] Add ISO extraction/naming tests.
     NOTE: Joliet Unicode, ordinary Rock Ridge and boot catalog metadata tested.
     Multi-extent/interleaved/relocated optical layouts explicitly unsupported.
+[x] Qualify the owner-authorized empty-file ISO compatibility refinement without rewriting source data or exempting filenames.
+    NOTE: 2026-10-15: unused out-of-range addresses on zero-length files
+    produce a warning and empty streams without seeks. Nonempty files,
+    directories, endian mismatches and unsupported allocation remain checked.
+[x] Resolve the owner recovery ISO's large-directory failures without raising parser budgets.
+    NOTE: Bounded batch ISO9660/Joliet metadata avoids repeated parent reads;
+    Rock Ridge retains its existing SUSP-aware path. Twenty synthetic cases
+    and 102 selected reader regressions pass. The unchanged owner ISO's 164
+    directories/5755 files/542516531 content bytes read successfully, including
+    five empty markers; full source SHA-256 matches before/after. All six
+    local publishes/AppImage pass; no bootability, physical-platform, Phase 3,
+    ISO writing/rebuild or release-publication qualification follows.
 
 1.5 MBR support
 [x] Detect MBR signature.
@@ -343,7 +356,8 @@ Establish the permanent UI foundation and a safe read-only storage pipeline capa
 [x] Handle resident/non-resident files.
 [ ] Handle sparse/compressed files when supported.
     NOTE: Sparse/compressed/encrypted/link content, ADS and attribute-list
-    extensions explicitly rejected in current adapter; no such read claim.
+    extensions explicitly rejected in the retained Phase 1 baseline; Phase 2C
+    separately schedules attribute-list/legacy read qualification, initially pending.
 [x] Report unsupported features rather than returning incorrect data.
 [x] Add browsing/large-file/Unicode tests.
     NOTE: Ordinary resident/nonresident files and synthetic Unicode rename
@@ -976,15 +990,202 @@ PHASE 2B EXIT CRITERIA
 
 
 ============================================================
+PHASE 2C - NTFS READ-ONLY COMPATIBILITY QUALIFICATION
+============================================================
+
+GOAL:
+Expand and independently qualify safe NTFS reading before Phase 3, without
+expanding the qualified Phase 2B writer.
+
+    NOTE: Owner explicitly authorized this roadmap/specification change and
+    Phase 2C implementation on 2026-10-15. Qualification targets are NTFS 1.2
+    (Windows NT 4.0), 3.0 (Windows 2000) and 3.1 (Windows XP and later), each
+    with an explicitly bounded feature subset, not blanket OS/media support.
+    Status: PARTIAL/BLOCKED on authentic legacy-media qualification; every
+    new task and gate below began
+    pending. Implemented bounded-reader and targeted-test evidence is recorded
+    below, not full
+    phase completion or authentic legacy qualification. MFT bootstrap lists
+    remain an explicit unsupported subset. Stop for owner review; no Phase 3.
+    Newly readable attribute-list/legacy variants remain noneditable until
+    Phase 3 items 3.0.1-3.0.5 qualify staged editing/Save As/new NTFS writing
+    BEFORE direct commit under 3.7. Phase 3 is not authorized.
+    Existing qualified Phase 2B FAT/NTFS editing remains enabled within its
+    verified envelope. Required Windows-authored media/security-reference and
+    LFS 2.0/cached-metadata write gates in 2B.6 remain incomplete; Phase 2C
+    neither completes, moves nor scope-demotes those requirements.
+
+2C.1 Explicit version and feature qualification
+[x] Declare separate NTFS 1.2/3.0/3.1 read qualification rows, metadata layouts, resource bounds and exact unsupported-feature reasons.
+[x] Validate version-dependent on-disk metadata rather than assuming modern record layouts or inferring support from a version-field mutation.
+    NOTE: Structural synthetic layouts/service reads pass, not authentic
+    NT4/Windows 2000/XP authoring or native-runtime qualification.
+[x] Preserve existing qualified ordinary NTFS and FAT reader/writer behavior; recognize unknown/unsupported NTFS variants without guessing or enabling writes.
+    NOTE: Full verification passes 1001 tests/one Windows-only skip; the
+    subsequent four cases pass in the latest 49-case focused run.
+
+2C.2 Bounded attribute-list and extension-record reading
+[x] Resolve bounded ordinary base/extension records, resident/nonresident attribute lists and split data/directory-index streams through a separate read-only resolver.
+[x] Keep strict NtfsValidation.Validate unchanged for writer qualification; any shared ValidateRecord/ValidateRuns extension-record opt-in must be explicit and read-only.
+[x] Evaluate attribute-list-dependent MFT bootstrap mapping; safely reject it with an exact blocker if mapping cannot be established without circular assumptions, and document that excluded subset rather than claim complete bootstrap support.
+[x] Validate list lengths/names, type/name/attribute identity, base/extension ownership, file-reference sequence numbers and VCN ordering/coverage before using referenced data.
+[x] Reject stale/mismatched references, duplicate/overlapping/missing extents, cycles, truncated lists/runs and out-of-volume addresses with checked arithmetic and bounded traversal/I/O.
+[x] Keep sparse/compressed/encrypted/reparse/link/ADS and other unqualified content features explicitly gated; attribute-list support alone does not qualify them.
+    NOTE: Separate NtfsReadValidation preflight, unchanged signed reader and
+    strict writer defaults. Current 35 attribute-list tests pass, including
+    moved directory indexes, split data, resident/nonresident lists, 15 malformed
+    cases, unsupported flags, explicit caps/bootstrap rejection and cancellation.
+    MFT bootstrap lists remain unsupported, not safely resolved or repaired.
+    Resident INDEX_ROOT default-directory compression flags and empty
+    nonresident index streams are handled; compressed file data stays denied.
+    Bounds: initialized MFT 128 MiB; each list 1 MiB/aggregate 32 MiB;
+    4096 list entries/file; 256 extension records/file; extension reads
+    32 MiB/open; index allocation 16 MiB/stream, 128 MiB aggregate;
+    index bitmap 64 KiB; index graph depth 256. Bitmaps select active index
+    blocks; unused blocks are skipped. All MFT records still get structural
+    validation; inactive records do not trigger reference resolution.
+    Modern extension header record identity at offset 44 is checked only
+    when USA offset >=48; legacy USA offset 42 is not misread as record identity.
+    Zero-length nonresident index bitmaps are supported without reading empty runs.
+
+2C.3 Legacy metadata and ordinary-content access
+[ ] Qualify ordinary resident/nonresident files, directory indexes, Unicode names, timestamps and version-specific metadata/security interpretation for each declared target.
+[x] Expose the detected version in filesystem Properties under "NTFS version"; distinguish observed version metadata from authentic authoring provenance.
+[x] Exercise browse, bounded preview/hex, search and extraction through the existing shared read-only service contracts, without host mounting or source modification.
+    NOTE: Fourteen version/layout tests now include shared-service workflows,
+    staging/Save As denial and unchanged synthetic-source hashes. Authentic
+    historical/native-platform qualification remains pending.
+[x] Report unsupported metadata and native-tool disagreements explicitly; do not silently repair, replay/reset logs, normalize metadata or claim filesystem certification.
+
+2C.4 Capability isolation and writer regression
+[x] Keep newly readable attribute-list/legacy volumes noneditable at per-volume qualification and composed workspace capability boundaries, with a concrete reason.
+[x] Verify mixed qualified/unqualified volumes cannot transfer editing permission; retain existing Phase 2B qualified staged operations and Save As.
+[x] Retain independent source-hash, allocation/metadata and output checks for existing qualified FAT/NTFS writes; no global NTFS read-only demotion.
+    NOTE: Full verification passed 1001/one skip;
+    latest focused 49/49 includes GPT qualified-FAT staging/Save As with
+    attribute-list NTFS partition byte-hash preservation and no NTFS caps.
+    Full-run/final-focused chronology is recorded under 2C.V2.
+
+2C.5 Legal fixtures and authentic legacy provenance
+[x] Add legal repeatable synthetic attribute-list/extension/MFT/index fixtures and malformed-input regressions, separate from immutable read goldens and writer fixtures.
+[ ] Obtain an authentic, legally usable NTFS 1.2/NT4-authored fixture and record provenance, structure and independent read evidence.
+    NOTE: No authentic NT4 fixture exists yet. Synthetic version-field tests
+    are useful parser regressions, not authentic legacy qualification.
+[ ] Obtain/qualify legal NTFS 3.0/Windows 2000 and 3.1/XP+ reference coverage; distinguish authentic authoring from synthetic metadata mutations.
+    NOTE: NtfsCompatibilityVersionTests now reports 14/14 passing for structurally
+    reconstructed synthetic 1.2/3.0/3.1 browse/content hashes/writer gates,
+    serialized layouts and five unsupported versions. No authentic NT4/2000/XP
+    authoring/runtime interoperability follows; provenance in docs/fixtures.md.
+[ ] Record hashes and exact supported layouts/features; do not redistribute proprietary OS/owner content or promote it into fixtures.
+
+2C.6 Owner Tower-image diagnosis and independent index warning
+[ ] Reproduce the supplied initial rejection through read-only diagnostics with explicit bounds and unchanged source hash.
+    NOTE: Initial diagnosis only: approximately 8.42 GB raw NTFS 3.0; live
+    directory attribute list at MFT record 26 references indexing extension
+    record 8336. Initial native index warning was investigated separately below;
+    fixing the attribute-list rejection alone did not resolve that question.
+    NOTE: Native root listing succeeds. Per-directory ntfsinfo reports a
+    "Value too large" warning despite an in-bounds single contiguous index run.
+    Subsequent in-place reader probe opens NTFS 3.0 and enumerates 905
+    directories/16199 files with zero directory failures; root has 24 entries,
+    native /WINNT/system32 has 1851. Writing is false; size/mtime unchanged.
+    Counts follow unchanged hidden/system/metafile enumeration filters,
+    not all on-disk entries. Three complete explicit-path streams match native
+    ntfscat SHA-256: boot.ini 191 bytes, ntdll.dll 491792, kernel32.dll 743184.
+    Service ReadyReadOnly text preview/hex/search pass for ordinary enumerated
+    entries (45 chars/20480 chars/one hit); hidden boot.ini service selection
+    initially failed under retained filters. No owner content extracted/persisted.
+    This is not a full-image source-hash or volume-health check.
+[x] Investigate the native index warning separately and document its exact implications for safe browse/extraction, unsupported/corrupt metadata and remaining limits.
+    NOTE: Pinned ntfs-3g 2022.10.3 ntfs_attr_readall rejects non-BITMAP
+    attributes over 65536 bytes; ntfsinfo uses it for INDEX_ALLOCATION.
+    Tower's in-bounds contiguous index is 344064 bytes. Warning resolved as
+    a native-tool limit, not evidence of corruption or volume-health certification.
+    Public pinned source inspected; references in docs/platform-status.md.
+[ ] Verify supported Tower browse/extraction locally only when safe, without copying, modifying or distributing the owner image.
+    NOTE: Tower remains outside the repository. Do not copy it into artifacts,
+    fixtures or packages; no content distribution, source repair or write test.
+
+2C.7 Evidence and documentation
+[x] Publish exact delivered version/feature rows, authentic-fixture gaps, independent-tool disagreements and resource/capability limitations.
+[x] Keep 2B.6 Windows/security-reference/LFS 2.0 gates and new-target Phase 3 writer prerequisites visibly separate from Phase 2C reader results.
+
+----------------------------------------
+PHASE 2C VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[ ] 2C.V1 Re-read mandatory rules, full checklist and synchronized technical specifications; review all 2C tasks.
+[ ] 2C.V2 Run restore/build/verify with new reader, malformed-reference and authentic-version tests; record pass/skip/blocker counts, not synthetic-only legacy completion.
+    NOTE: scripts/verify.sh passed: 1001 passed/one Windows-only security-
+    reference skip, 1002 total (14 foundation, 27 dependency, 68 UI,
+    156 Services, 736 storage passes/one skip; storage 10m50s).
+    Zero-warning/error build, formatting, five reference-copy pairs,
+    UI resources and AppRun contracts pass. artifacts/phase2c-verify.log.
+    Four cases were added after that full run's build: named-list guard,
+    GPT mixed-volume isolation, modern/legacy extension-header identity and
+    zero-length nonresident index bitmap. Latest focused run passes 49/49,
+    covering current code; current inventory is 1006 including the skip.
+    Do NOT claim a full 1005-pass run: those four cases were not included.
+    Focused log/TRX: artifacts/phase2c-targeted.log and
+    artifacts/phase2c-tests/phase2c-targeted.trx. Cross-publish evidence
+    passed again for all six RIDs/new local Linux AppImage on final source,
+    with legal notices retained. Final owner probe repeats the same filtered
+    enumeration, three native stream hashes, read-only service workflows
+    and unchanged size/mtime; no full-image hash or extraction.
+    No versioned release assets or GitHub publication changed.
+    Current focused split: 35 attribute-list + 14 version/layout/service tests.
+    Authentic legacy and owner-image full source hashes/extraction remain pending.
+[ ] 2C.V3 Exercise browse/preview/hex/search/extraction and unchanged source hashes for each claimed version/feature row with independent read comparisons where available.
+[x] 2C.V4 Regress existing Phase 2B FAT/managed-NTFS staged operations, history, Save As, allocation/metadata checks and mixed-volume capability isolation.
+    NOTE: Full verification retains existing writer checks; latest 49/49 adds
+    GPT qualified FAT Save As/unchanged attribute-list NTFS partition hash.
+[x] 2C.V5 Investigate Tower's native index warning independently; report remaining warnings and local-only results without copying/distributing its image.
+    NOTE: 65536-byte native readall limit explains the 344064-byte index
+    warning; this is a tool limitation, not whole-volume health certification.
+[ ] 2C.V6 Run available cross-target builds and representative physical read workflows; keep Windows/ARM64/macOS and authentic-fixture gaps explicit.
+[x] 2C.V6a Available cross-build subwork: verify all six self-contained RID publishes and new local Linux AppImage on final code; retain licenses/notices.
+    NOTE: Final all-six/AppImage rerun passes on latest source, recorded in
+    artifacts/phase2c-publish.log.
+    Not physical compatibility, new native
+    GUI testing, authentic legacy-media qualification or release publication.
+    The parent 2C.V6 gate stays open for remaining physical/authentic gaps.
+[ ] 2C.V7 Review safety bounds, TODOs/stubs/skips, all exit criteria and documentation; verify technical-spec copies remain byte-identical.
+[ ] 2C.V8 Prepare owner review summary and STOP. Phase 3 requires explicit separate authorization; do not implement new-target editing or direct commit.
+
+PHASE 2C EXIT CRITERIA
+[ ] 2C.E1 Each claimed NTFS 1.2/3.0/3.1 row has reproducible supported-feature and authentic-provenance evidence, or its incomplete qualification is explicit for owner review.
+[x] 2C.E2 Supported attribute lists/extensions and version-specific ordinary-content reads pass bounded normal/malformed/reference tests without incorrect bytes or hangs.
+    NOTE: Exact bounded synthetic subset, latest 49/49 focused tests; MFT bootstrap lists
+    explicitly rejected. This does not complete authentic legacy/phase gates.
+[x] 2C.E3 Newly readable attribute-list/legacy variants remain noneditable; existing qualified Phase 2B editing and its incomplete mandatory gates are unchanged.
+[ ] 2C.E4 Tower's rejection and independent native index warning have documented read-only outcomes/remaining blockers; owner media stays unchanged, outside the repository and undistributed.
+[ ] 2C.E5 Reader workflows, source integrity, existing-writer regressions and available build/platform checks pass for advertised rows; no blanket legacy or physical-platform claim.
+    NOTE: Local automated/targeted checks and final-source six publishes/AppImage
+    pass. Authentic media and remaining
+    physical gates stay open.
+[ ] 2C.E6 Checklist/support/fixture/platform/dependency documentation agrees with evidence; unresolved authentic NT4 and other required reader gates prevent full qualification without explicit owner decision.
+
+
+============================================================
 PHASE 3 - SAFE DIRECT COMMIT
 ============================================================
 
 GOAL:
 Commit staged changes directly to tested mutable images with locking, recovery, validation, and external-change protection.
 
-    NOTE: Phase 2B must pass review before Phase 3 begins. Phase 3 adds safe
-    source commit to its qualified stacks; it does not silently broaden their
-    naming/filesystem/container envelope or treat one stack as full coverage.
+    NOTE: Phase 2B and Phase 2C must pass owner review before Phase 3 begins;
+    incomplete gates require explicit owner direction, not silent waiver.
+    Phase 3 first qualifies newly readable Phase 2C attribute-list/legacy NTFS
+    variants for staged editing, Save As and new-output writing under 3.0,
+    then qualifies source commit under 3.7. Existing Phase 2B capabilities and
+    mandatory Windows/LFS 2.0 gaps remain intact. No Phase 3 work is authorized
+    by the 2026-10-15 Phase 2C decision.
+
+3.0 Phase 2C new-target staged editing, Save As and NTFS-write qualification
+[ ] 3.0.1 Enumerate required NTFS 1.2/3.0/3.1 legacy/attribute-list writer rows across structurally valid raw/fixed-dynamic VHD/fixed-dynamic VHDX filesystem-only/primary MBR/GPT stacks, with supported sector/metadata/security/log subsets.
+[ ] 3.0.2 Implement and independently qualify add/replace/delete/rename/create-directory, naming/capacity validation, overlay browse/preview/hex/search/extraction, Pending Changes and undo/redo/discard for each new writable subset.
+[ ] 3.0.3 Qualify validated Save As/new-output NTFS writing before any source commit: flush/dispose, independent reopen, exact tree/content and allocation/MFT/index/attribute-list/security/metadata preservation, unchanged volumes and source hashes.
+[ ] 3.0.4 Add legal authentic-version disposable writer fixtures, independent-tool interoperability and low-space/cancellation/I/O/flush/validation/source-race failures; retain read-only caps until each row passes.
+[ ] 3.0.5 Review every new writer row and unresolved Phase 2B Windows/security-reference/LFS 2.0 gate; publish separate staged/Save As/write evidence before considering that row for 3.7 direct commit.
 
 3.1 External change detection
 [ ] Record source path/identity/size/time and optional lightweight fingerprint.
@@ -1024,6 +1225,7 @@ Commit staged changes directly to tested mutable images with locking, recovery, 
 [ ] Verify recoverability and no false success.
 
 3.7 Explicit per-stack direct-commit qualification
+[ ] Qualify newly editable Phase 2C legacy/attribute-list NTFS rows only after 3.0.1-3.0.5 staged/Save As/new-output writer gates pass; a successful reader is not writer or commit qualification.
 [ ] Qualify raw filesystem-only, primary MBR and GPT layouts independently for Phase 2B FAT12/16/32 (including LFN) and ordinary NTFS operations.
 [ ] Qualify fixed VHD and dynamic VHD separately with Phase 2B filesystem/layout coverage, including dynamic allocation/container-metadata failure recovery.
 [ ] Qualify fixed VHDX and dynamic VHDX separately with Phase 2B filesystem/layout/sector-size coverage, including allocation/header/log-state recovery.
@@ -1040,6 +1242,7 @@ PHASE 3 VERIFICATION AND USER REVIEW GATE
 [ ] Run restore/build/verify.
 [ ] Run all Phase 3 tests/failure injection and available cross-target builds.
 [ ] Exercise direct commit/recovery workflows on disposable images.
+[ ] Review all 3.0 staged/Save As/new-NTFS-write prerequisites before the corresponding 3.7 direct-commit evidence.
 [ ] Review all 3.7 coverage rows and their recovery evidence; do not close the phase on one successful combination.
 [ ] Update checklist and later-phase NOTES honestly.
 [ ] Review exit criteria.
@@ -1047,6 +1250,7 @@ PHASE 3 VERIFICATION AND USER REVIEW GATE
 [ ] STOP and request user approval. Do not begin Phase 4.
 
 PHASE 3 EXIT CRITERIA
+[ ] New Phase 2C NTFS writer rows pass 3.0 staged editing/validated Save As/new-output qualification before direct commit, or have explicit owner-approved scope decisions and named follow-up milestones.
 [ ] Every required 3.7 row supports tested direct commit, or has an explicit owner-approved scope decision and named follow-up milestone.
 [ ] External changes/concurrent writers are detected/prevented.
 [ ] Backup/recovery is operational.
@@ -1474,7 +1678,8 @@ Storage dependency production-readiness review
     integration behind replaceable storage interfaces.
 
 Editing roadmap closure
-[ ] Audit required editing stacks against Phase 2B/3/4/6/7.10, and Phase 7 additions against the owner-approved 1.0 read-only boundary, not merely the initial feasibility milestone.
+[ ] Audit required editing stacks against Phase 2B/3/4/6/7.10, including Phase 2C-derived NTFS writer prerequisites in 3.0 before 3.7 direct commit, and Phase 7 additions against the owner-approved 1.0 read-only boundary, not merely the initial feasibility milestone.
+[ ] Review Phase 2C version/feature reader evidence and authentic-fixture blockers independently from existing Phase 2B writer gaps; never equate synthetic legacy tests, detection or reader success with authentic qualification or safe writing.
 [ ] Confirm required editing has been delivered or explicitly scope-approved; do not classify intentional 1.0 read-only additions as unassigned writer gaps or invent future writer milestones.
 [ ] Resolve or obtain explicit owner decisions on concrete Phase 7 reader blockers; do not silently drop infeasible reader requirements or advertise detection-only as browsing/extraction.
 [ ] Keep format creation/formatting, conversion, bootability and exact-layout promises separate from existing-volume file editing, with independent evidence wherever advertised.

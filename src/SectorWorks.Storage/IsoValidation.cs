@@ -7,8 +7,9 @@ namespace SectorWorks.Storage;
 
 internal static class IsoValidation
 {
-    internal static void Validate(IReadOnlyBlockDevice device, CancellationToken token)
+    internal static bool Validate(IReadOnlyBlockDevice device, CancellationToken token)
     {
+        bool unusedExtent = false;
         long budget = 128L * 1024 * 1024;
         var roots = new List<(uint Block, uint Length)>();
         for (int i = 16; i < 272 && (i + 1L) * 2048 <= device.Length; i++)
@@ -72,12 +73,15 @@ internal static class IsoValidation
                     }
                     uint extent = U32(record, 2);
                     uint bytes = U32(record, 10);
+                    bool outside = checked((long)extent * 2048 + bytes) > device.Length;
+                    bool emptyFile = bytes == 0 && (record[25] & 2) == 0;
                     if (extent != BinaryPrimitives.ReadUInt32BigEndian(record.AsSpan(6))
                         || bytes != BinaryPrimitives.ReadUInt32BigEndian(record.AsSpan(14))
-                        || checked((long)extent * 2048 + bytes) > device.Length)
+                        || outside && !emptyFile)
                     {
                         throw new ImageFormatException("ISO directory entry has inconsistent endian fields or out-of-range extent.");
                     }
+                    unusedExtent |= outside && emptyFile;
                     if ((record[25] & 0x80) != 0)
                     {
                         throw new ImageFormatException("ISO multi-extent files are not supported in Phase 1.");
@@ -104,6 +108,7 @@ internal static class IsoValidation
                 }
             }
         }
+        return unusedExtent;
     }
 
     private static void ValidateSusp(IReadOnlyBlockDevice device, ReadOnlySpan<byte> data, HashSet<long> continuations,

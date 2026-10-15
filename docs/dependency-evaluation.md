@@ -41,6 +41,63 @@ them; postponing the dependency-choice review does not establish write support.
 The subsequently owner-authorized isolated NTFS source repair is documented
 below; it does not substitute NuGet assembly identities or change package versions.
 
+### Phase 2C implemented NTFS reader subset and open qualification, 2026-10-15
+
+The owner explicitly authorized Phase 2C and its synchronized roadmap/
+specification change before Phase 3. **Authorized/in progress; new qualification
+is PARTIAL/BLOCKED on authentic legacy media, not phase complete**.
+Implemented-subset results are now
+tracked in [platform status](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
+not full version/media qualification. Targets are
+separate bounded **NTFS 1.2 (NT4), 3.0 (Windows 2000), 3.1 (XP+)** ordinary-read
+subsets, including supported attribute lists/extensions and version-dependent
+metadata. Existing ordinary reads and qualified managed Phase 2B writes below
+remain the retained baseline, not evidence that legacy/attribute-list expansion
+already works.
+
+The implemented separate `NtfsReadValidation` preflight/resolver handles bounded
+ordinary continuation/index/version metadata behind Storage contracts before the
+unchanged signed reader. Shared record/run validation has explicit read-only
+extension opt-in; strict writer `NtfsValidation.Validate` defaults remain
+unchanged. Only its diagnostic now names the Phase 2B writer subset/Phase 3,
+not the obsolete Phase 1 boundary. No package version, signed-reader assembly,
+runtime dependency or source-repair assembly identity changed.
+List/base/sequence/attribute and VCN checks reject malformed references and
+unsupported content. MFT bootstrap lists remain explicitly blocked: safe
+bootstrap mapping is not implemented. Resource caps and active-index/inactive-MFT
+rules are documented in [storage bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
+Full verification passed 1001/one Windows-only skip, 1002 total. Four cases added
+after that full run's build (named-list guard, mixed-volume isolation,
+modern/legacy extension identity and empty nonresident index bitmap) pass in
+the latest focused 49/49 run on current code (35 attribute-list,
+14 version/layout/service). Current inventory 1006 including the skip is not a
+claimed full 1005-pass run. Final repeat all-six
+self-contained publish/local Linux AppImage passes on latest source, as does
+the bounded owner read-only probe. Versioned
+releases/GitHub publication are unchanged. Cross-builds are not physical
+compatibility. Authentic historical media/physical gates stay open; stop for
+owner review.
+
+No authentic NT4 fixture exists. Synthetic version-field tests are regression
+inputs, not authentic legacy qualification. Legal synthetic fixtures, content
+hashes and service workflows pass for the bounded subset; authentic provenance,
+full verification/platform and owner-image source-hash/extraction gates stay
+open under **2C.1-2C.7**, **2C.V1-2C.V8**, **2C.E1-2C.E6**.
+Tower's approximately 8.42 GB raw NTFS 3.0 owner image stays outside the
+repository: do not copy, modify or distribute it. Initial rejection concerns
+the live directory attribute list at MFT 26 referencing indexing extension 8336;
+the separate native warning is now explained by the pinned ntfs-3g whole-attribute
+65536-byte limit versus the 344064-byte index. Initial reader enumeration succeeds,
+not content/health certification; pinned references are in platform status.
+
+Newly readable attribute-list/legacy variants remain noneditable until Phase 3
+**3.0.1-3.0.5** qualifies staged editing, Save As and new-output NTFS writes
+before **3.7** direct commit. Preserve existing Phase 2B qualified editing and
+the required incomplete **2B.6** Windows-authored-media/security-reference and
+LFS 2.0/cached-metadata write gates. Reader acceptance cannot close them or
+demote NTFS writing to read-only 1.0 scope. No Phase 3 implementation follows.
+See the [planned reader ledger](support-matrix.md#phase-2c-ntfs-reader-qualification-plan).
+
 Sources reviewed:
 
 - [Upstream README](https://github.com/DiscUtils/DiscUtils/blob/59d7cadab839c6d8dfcf52f8be5efe6d2ced190f/README.md):
@@ -452,7 +509,10 @@ Internal parsers, not native host mounting support, determine capability.
   delivery cannot be marked complete after evaluation alone.
 - Phase 3 owns locking, identity checks, journaling/recovery and safe direct
   commit. DiscUtils provides no complete SectorWorks transactional safety layer.
-  Direct commit needs per-stack qualification for the required Phase 2B rows.
+  Phase 2C first adds independently qualified NTFS 1.2/3.0/3.1 reader subsets;
+  newly readable legacy/attribute-list variants stay noneditable until Phase 3
+  3.0.1-3.0.5 qualifies staged/Save As/new-output NTFS writing. Direct commit
+  then needs 3.7 per-stack qualification for required Phase 2B and new writer rows.
 - Phase 4 needs a preservation-aware ISO rebuild planner and independent
   validation/boot testing; CDBuilder is not proof of source-layout preservation.
   Declared UDF and ISO/UDF bridge read/staged/rebuild delivery also needs explicit

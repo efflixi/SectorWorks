@@ -5,6 +5,64 @@ pipeline and Avalonia explorer. Phase 2 adds staged modifications and Save As
 through separate editing contracts. Direct commit, rebuild and audio remain
 later-phase work. See [staged editing](staged-editing.md).
 
+## Phase 2C implemented reader boundary and open qualification
+
+The owner authorized the Phase 2C roadmap/specification change and reader work
+on **2026-10-15**, before Phase 3. Qualification is **PARTIAL/BLOCKED on authentic
+legacy media, not phase complete; stop for owner review**. Reader evidence is tracked in
+[platform status](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
+not full version/media or writer qualification.
+Targets are bounded read-only NTFS **1.2 (NT4), 3.0 (Windows 2000), 3.1 (XP+)**
+subsets with supported attribute lists/extensions and version-specific ordinary
+metadata/content reads. Keep dependency-specific parsing behind Storage and
+the existing Core read contracts; do not expose library types or use host
+mounting. No UI redesign or new source-commit contract belongs to this work.
+
+Implemented resolution checks bounded references, base/sequence/attribute
+identity, VCN coverage and cycle/overlap checks before dependency consumption.
+The reader design keeps strict `NtfsValidation.Validate` unchanged for writer
+qualification and adds a separate `NtfsReadValidation` preflight/resolver before
+the unchanged signed reader. Only the writer diagnostic now names the Phase 2B
+writer subset/Phase 3 instead of Phase 1; strict defaults stay unchanged.
+Shared `ValidateRecord`/`ValidateRuns` checks have explicit read-only extension-record
+opt-in, never a relaxed writer default. Implemented coverage is bounded ordinary
+base/extension records, resident/nonresident attribute lists and split data/index
+streams. MFT bootstrap lists are explicitly blocked because safe bootstrap
+mapping is not implemented; the resolver cannot assume its own unresolved MFT
+mapping. This is an exact excluded subset, not blanket attribute-list
+compatibility. Filesystem metadata reports
+the observed version through `fs.Properties["NTFS version"]`; this does not
+establish authentic legacy authoring provenance.
+Browse/preview/hex/search/extraction continue through shared Services contracts.
+The latest 49 focused tests (35 attribute-list, 14 version/layout/service)
+include read workflows/source hashes, cancellation,
+staging/Save As denial, malformed references and GPT FAT/NTFS capability isolation.
+Resource caps and bitmap-driven
+live-index traversal are documented in [storage bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
+The completed full verification and four later-case count chronology are
+recorded in platform status. Final repeat all-six publish/local AppImage and the
+bounded owner read-only probe pass on latest source. These are not physical
+compatibility or release publication. Authentic
+historical-media and full-phase qualification remain open.
+Per-volume writer qualification remains independent: newly readable legacy/
+attribute-list variants stay noneditable, while existing qualified Phase 2B
+FAT/NTFS workflows and mixed-volume isolation must regress unchanged.
+Phase 3 **3.0.1-3.0.5** must qualify their staged/Save As/new-output NTFS writer
+rows before **3.7** direct commit. No Phase 3 work is authorized.
+Phase 2B's actual Windows-media/security-reference and LFS 2.0/cache-safety
+write gates remain incomplete in **2B.6**, not scope-demoted by reader expansion.
+
+Authentic NT4 provenance is absent; synthetic version-field tests are not
+authentic legacy qualification. Tower's external owner image must not be
+copied/modified/distributed; its initial directory-attribute-list rejection and
+native index warning have separate bounded read-only evidence: initial
+enumeration succeeds, and the warning is a native whole-attribute size limit,
+not proof of corruption or health.
+See [planned reader gates](support-matrix.md#phase-2c-ntfs-reader-qualification-plan)
+and checklist **2C.1-2C.7**, **2C.V1-2C.V8**, **2C.E1-2C.E6**.
+
+## Retained Phase 2B editing architecture
+
 Phase 2B adds per-volume qualification (`IStagedImageWriter.QualifyVolume`) and
 production `DiskImageWriter` composition. Workspace editing capability means
 at least one volume qualifies; it never grants editing to an unqualified

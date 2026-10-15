@@ -5,8 +5,9 @@ in C# with Avalonia and MVVM. It will inspect, browse, extract and, when safely
 supported, stage modifications and commit or rebuild images without host-OS
 mounting. Source data integrity and capability-based support are central.
 
-**Status: Phase 2B partially delivered; managed NTFS writing implemented for a
-qualified subset, with Windows-media interoperability still incomplete.** The supported
+**Status: Phase 2B partially delivered; Phase 2C's bounded reader is implemented,
+but authentic legacy-media qualification is PARTIAL/BLOCKED.** Managed NTFS writing is implemented
+for a qualified Phase 2B subset; Windows-media interoperability remains incomplete. The supported
 reader subset was implemented and verified on Linux Mint 22 x64/X11. Owner-reported
 physical testing on 2026-10-14 also found Phase 1 working on Linux x64, Windows
 x64 and Linux ARM64 (Raspberry Pi 500). Windows 7 x64 reportedly runs the current
@@ -23,6 +24,15 @@ new image for individually qualified FAT and ordinary NTFS volumes in raw, fixed
 fixed/dynamic VHDX; source images remain read-only.
 See [staged editing and safety](docs/staged-editing.md). Direct commit
 (Phase 3), ISO rebuild (Phase 4) and audio workflows (Phase 6) are not enabled.
+
+Owner-authorized ISO reader refinements now handle zero-length files with
+unused out-of-range sector addresses without seeking or rewriting the image,
+and batch ISO9660/Joliet directory metadata without raising safety budgets.
+The supplied Toshiba recovery ISO's complete tree and file streams read with
+unchanged source SHA-256; **102 selected reader tests pass**, including 20 new
+synthetic ISO cases. All six local publishes/AppImage are refreshed.
+See [exact evidence and boundaries](docs/platform-status.md#iso-reader-compatibility-refinement-2026-10-15);
+this does not enable optical editing, Phase 3 or new physical-platform claims.
 
 The Phase 2B FAT envelope includes filesystem-only, primary MBR and consistent
 GPT layouts, per-volume capabilities and independent multi-volume staging.
@@ -53,7 +63,7 @@ disabled. See the
 and [current verification/platform evidence](docs/platform-status.md).
 Physical Mint/X11 workflows and independent FAT/container checks are distinct
 from six-target cross-publishing; Windows/ARM64 Phase 2B runtime is unverified.
-Current final verification: **956 tests passed, one Windows-only reference
+Latest recorded Phase 2B final verification: **956 tests passed, one Windows-only reference
 test skipped (957 total)**, zero-warning Release build, locked restore,
 formatting/resources/reference-copy checks, all six self-contained publishes
 and the Linux x64 AppImage prototype. Six actual Mint/X11 NTFS workflows and
@@ -80,23 +90,75 @@ Core disk, optical and retro write milestones below are unchanged.
 
 ### Planned editing coverage
 
-The owner approved a documentation-only roadmap correction on 2026-10-15:
-**Phase 2B now precedes Phase 3**. It explicitly schedules staged editing and
+The owner approved the editing-roadmap correction on 2026-10-15:
+**Phase 2B and the subsequently authorized Phase 2C precede Phase 3**.
+Phase 2B explicitly schedules staged editing and
 validated Save As for partitioned raw images, fixed/dynamic VHD and VHDX,
 broader FAT naming (LFN/mixed case/Unicode), and ordinary existing-volume NTFS.
-Phase 3 must then qualify direct commit per required disk stack, not just one
-combination. Phase 4 covers shared ISO/UDF/bridge staging and rebuilding;
+Phase 2C adds read-only NTFS compatibility qualification, not a writer expansion.
+Phase 3 must first qualify staged editing/validated Save As/new-output NTFS
+writing for newly readable attribute-list/legacy targets (3.0.1-3.0.5), then
+direct commit per required disk stack (3.7), not just one combination.
+Phase 4 covers shared ISO/UDF/bridge staging and rebuilding;
 Phase 6 covers BIN/CUE staging and safe output-set rebuilding; Phase 7 item 7.10
 covers conventional 360K/720K editing/Save As/direct-commit qualification.
 
 The qualified FAT and managed NTFS subsets above are implemented; remaining
-Windows-media qualification is blocked and later milestones remain unimplemented. The owner
+Windows-media qualification is blocked; new Phase 2C qualification is pending and
+Phase 3/later milestones remain unimplemented. The bounded Phase 2C reader
+subset is implemented with targeted evidence, not full phase qualification. The owner
 separately authorized Phase 2B implementation on 2026-10-15; no Phase 3 work
 is authorized. Existing Phase 2 completion remains historical and does not
 complete the expanded Phase 2B requirements. See the
 [capability delivery matrix](docs/support-matrix.md#required-editing-delivery-roadmap)
 and [checklist](checklist.txt) for explicit tasks, preservation/failure gates
 and the owner-review requirement for unresolved scope.
+
+### Phase 2C implemented read-only NTFS subset and open qualification
+
+On **2026-10-15** the owner explicitly authorized Phase 2C and synchronized
+roadmap/specification changes. The separate qualification targets are **NTFS 1.2
+(NT4), 3.0 (Windows 2000) and 3.1 (XP+)**, with bounded supported attribute lists,
+extension records and version-specific ordinary metadata/content access.
+New tasks/tests/exit gates began pending. The separate read preflight now supports
+bounded ordinary attribute lists/extensions, resident/nonresident lists and split
+data/index streams before the unchanged signed reader. **49 current focused
+tests pass (35 attribute-list + 14 version/layout/service)**, including named-list
+guard, mixed-volume isolation, modern/legacy extension identity and empty
+nonresident index-bitmap cases. Coverage includes malformed references,
+read workflows/source hashes and staging/Save As denial.
+See [canonical verification chronology and logs](docs/platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15)
+for the earlier full run and final focused coverage. Final repeat all-six
+self-contained publish/local Linux AppImage passes on latest source with legal
+notices retained. No versioned release assets changed and no GitHub
+publication occurred; cross-builds are not physical compatibility. MFT bootstrap lists are explicitly
+unsupported; see [exact resource/feature bounds](docs/storage-phase1.md#implemented-phase-2c-ntfs-reader-subset-and-open-qualification).
+No authentic NT4 fixture exists;
+synthetic version-field tests alone cannot qualify authentic legacy media.
+
+Newly readable attribute-list/legacy volumes remain **noneditable until Phase 3
+writer qualification**. Existing qualified Phase 2B editing is preserved; its
+Windows-authored NTFS/security-reference and LFS 2.0/cache-safety requirements
+remain incomplete, not scope-demoted.
+The owner's approximately 8.42 GB raw Tower NTFS 3.0 image stays outside the
+repository and must not be copied, modified or distributed. Initial diagnosis
+is rejection of a live directory attribute list at MFT 26 referencing indexing
+extension 8336. The new reader enumerates 905 directories/16199 files through
+retained hidden/system/metafile filters, without directory failures, with writing
+false and unchanged source size/mtime. Three complete stream hashes match native
+`ntfscat`; service read-only preview/hex/search passes with ordinary enumerated
+entries. No filter behavior was changed, owner content extracted/persisted or
+full-image hash calculated.
+The latest-source owner-probe repeat passes the same bounded checks.
+The native index warning is explained by ntfs-3g's 65536-byte whole-attribute
+read limit versus the 344064-byte index; this is not volume-health certification
+or complete extraction/source-hash qualification.
+See the [planned version/feature ledger](docs/support-matrix.md#phase-2c-ntfs-reader-qualification-plan)
+and checklist **2C.1-2C.7**, **2C.V1-2C.V8**, **2C.E1-2C.E6**.
+Phase 2C remains partial/blocked for authentic legacy-media evidence; stop for
+owner review. No Phase 3 implementation, direct commit, repair or release is authorized.
+The signed reader and strict writer-validation defaults are unchanged; only the
+writer diagnostic now names its Phase 2B subset/Phase 3, not obsolete Phase 1 scope.
 
 ## Prerequisites
 
@@ -224,8 +286,10 @@ Dependency decision, 2026-10-13: keep DiscUtils 0.16.13 for development, accepti
 its maintenance risk and possible later replacement/rework. Re-evaluate in the
 checklist's release-quality section once other production-readiness work has
 matured, before production release. NTFS formatting fails on Linux because of
-Windows principal/SID APIs; ordinary NTFS reads passed, but portable NTFS
-writes/formatting are not established. Capability and safety testing remain
+Windows principal/SID APIs; ordinary reads and the isolated managed Phase 2B
+writer subset are qualified as documented above, not blanket NTFS writing or
+formatting. Full Phase 2C legacy/attribute-list qualification remains pending.
+Capability and safety testing remain
 mandatory throughout development.
 
 Audio scope was resolved by the owner on 2026-10-13:

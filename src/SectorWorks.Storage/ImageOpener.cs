@@ -176,12 +176,15 @@ public sealed class ImageOpener : IImageOpener
         }
         if (iso)
         {
-            IsoValidation.Validate(device, token);
+            if (IsoValidation.Validate(device, token))
+            {
+                warnings.Add("ISO zero-length files have unused out-of-range extent addresses. They are read as empty without seeking to those addresses; no source data is rewritten.");
+            }
             bool joliet = optical.ContainsKey("Joliet");
             var reader = new CDReader(new DeviceStream(device, context), joliet, true);
             optical["Active naming variant"] = joliet ? "Joliet" : reader.ActiveVariant.ToString();
             optical["Bootability"] = "Read-only metadata only; not guaranteed.";
-            return new DiscFileSystemAdapter(reader, context, "ISO9660", optical);
+            return new DiscFileSystemAdapter(reader, context, "ISO9660", optical, device);
         }
         return null;
     }

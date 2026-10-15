@@ -1,5 +1,200 @@
 # Build and physical-platform status
 
+## ISO reader compatibility refinement, 2026-10-15
+
+The owner separately authorized both bounded read-only fixes found while
+investigating an old Toshiba recovery ISO. This is existing-reader compatibility
+work, not Phase 3 or Phase 4 implementation. No source rewriting, optical
+editing/rebuild, bootability claim or release publication is authorized.
+
+Five zero-length identification files have unused out-of-range extent addresses
+in both ISO9660 and Joliet. Opening now warns about that specific quirk; empty
+streams do not seek to their unused addresses. Filename-based exemptions and
+relaxed block-device bounds are not used. Nonempty files, directory extents,
+endian fields and unsupported allocation remain checked.
+Two large clip-art directories also exposed repeated parent-directory parsing
+in the pinned VFS's per-entry metadata lookups. Bounded batch ISO9660/Joliet
+enumeration removes that repeated I/O without raising the 128 MiB/131072-operation
+budget, 16 MiB directory cap or 131072-entry cap. Rock Ridge retains its existing
+SUSP-aware metadata path; signed dependency packages remain unchanged.
+See [reader details](storage-phase1.md) and [synthetic provenance](fixtures.md#iso-reader-compatibility-regressions).
+
+**102 selected storage tests passed, zero skipped**, including **20 new ISO
+cases**, existing malformed/container/Rock Ridge readers and all 49 focused
+Phase 2C NTFS cases. The synthetic large-directory tests use two nested
+1600-file directories for each of ISO9660 and Joliet and require each listing
+to read at most 4 MiB in at most 4096 device calls, with at most 1 MiB/request.
+They compare attributes, timestamps and content against the signed reader.
+Other cases cover empty-file sync/async/EOF/seek/cancellation, bounds and
+allocation rejection, directory size/entry caps, Unicode/duplicate/invalid
+metadata and shared-service preview/hex/search/extraction with writes denied.
+Evidence: `artifacts/iso-reader-targeted.log` and
+`artifacts/iso-reader-tests/iso-reader-targeted.trx`.
+This is targeted verification, not a new full-suite result; the Phase 2C
+full-run chronology below is historical and its authentic/platform gates stay open.
+
+The unmodified owner ISO was opened through the normal production reader
+without bypassing preflight. Every directory and ordinary stream read:
+**164 directories excluding root, 5755 files, five empty files and 542516531
+content bytes**, matching independent `isoinfo`/7-Zip totals. Both formerly
+failing directories now enumerate. All content was streamed and discarded,
+not extracted to files, copied into fixtures, executed or redistributed.
+The complete 550324224-byte source SHA-256 matches before/after:
+`6736138d36deb7c4f0f5db74772656732ac434ce6ac91fa59dc9a4a5d2755e26`.
+Its size and original modification time are unchanged. Successful reads do not
+certify original-disc integrity or prove the mastering software's intent.
+Final-source probe evidence: `artifacts/iso-reader-owner.log`; the complete
+tree/content read took approximately 5.4 seconds on this host, not a portable
+performance guarantee.
+
+All six self-contained development publishes and the local Linux x64 AppImage
+were refreshed successfully; architecture/legal checks passed. Evidence:
+`artifacts/iso-reader-publish.log`. Solution-wide formatting passes.
+Final solution build passes with zero warnings/errors
+(`artifacts/iso-reader-build.log`); the published Linux executable and
+extract-and-run AppImage both pass `--verify-ui` resource checks without
+starting a desktop. All five authoritative reference-copy pairs match.
+Versioned releases and GitHub publication are untouched. Cross-publishing is
+not physical Windows/ARM64/macOS or new GUI qualification.
+
+## Phase 2C authorization and initial reader evidence, 2026-10-15
+
+The owner explicitly authorized Phase 2C reader work and the matching roadmap/
+specification change before Phase 3. **PARTIAL/BLOCKED on authentic legacy-media
+qualification, not phase complete; stop for owner review.** Separate targets are **NTFS 1.2 (NT4), 3.0 (Windows
+2000), 3.1 (XP+)** ordinary read subsets with bounded supported attribute lists/
+extensions and version-specific metadata. New checklist **2C.1-2C.7**,
+verification **2C.V1-2C.V8** and exits **2C.E1-2C.E6** began pending.
+Focused tests cover normal/malformed lists and
+extensions, split streams, version-dependent layouts, public browse/content
+hashes/read-only gates and shared-service browse/preview/hex/search/extraction,
+staging/Save As denial and unchanged synthetic-source hashes.
+**`./scripts/verify.sh` passed: 1001 passed, one Windows-only security-reference
+skip, 1002 total**. Counts: 14 foundation, 27 dependency, 68 UI, 156 Services,
+736 storage passes/one skip. Storage took 10m50s. The build has zero warnings/
+errors; formatting, all five reference-copy pairs, UI resources and AppRun
+contracts pass. Log: local-only `artifacts/phase2c-verify.log`.
+
+Four cases were added after that full run's build: named-list guard, GPT
+mixed-volume isolation, modern/legacy extension-header identity and zero-length
+nonresident index bitmap. The latest focused run passes
+**49/49 on current code (35 attribute-list + 14 version/layout/service)**.
+That Phase 2C verification snapshot's inventory was **1006 including the skip**, but **a full
+1005-pass run is not claimed**: those four cases were not included in the
+completed 1002-case run. Focused evidence:
+`artifacts/phase2c-targeted.log` and
+`artifacts/phase2c-tests/phase2c-targeted.trx`.
+The new mixed-volume case proves qualified FAT staging/Save As preserves the
+attribute-list NTFS partition's byte hash and never grants that NTFS volume
+editing capabilities.
+
+The final repeat **`./scripts/publish.sh all` passed on latest source** for all six self-contained RID targets and
+a new local Linux AppImage, with licenses/notices retained. Log:
+`artifacts/phase2c-publish.log`. This includes the last two production fixes. No
+versioned release assets were touched and no GitHub publication occurred.
+Final checks confirm all 40 protected fixture/versioned-release hashes match
+the original pre-cleanup baseline, all five reference-copy pairs match and
+final solution formatting passes.
+Cross-build subwork **2C.V6a** is verified; parent **2C.V6**
+physical/authentic requirements stay open. Cross-publishing does not establish physical
+compatibility. Authentic NT4/Windows 2000/XP authoring/runtime evidence remains
+open, and MFT bootstrap lists remain an explicitly blocked reader subset.
+No new physical GUI/platform-matrix qualification follows from these commands.
+Version fixtures are reconstructed legal modern-golden derivatives, not authentic
+NT4/2000/XP-authored or native-runtime evidence;
+[fixture provenance and exact SI/security layouts](fixtures.md#verified-structural-version-fixtures).
+The version cases exclude attribute lists; the separate 35-case attribute-list
+suite covers those. Scoped formatting passes and immutable goldens remain unchanged.
+Phase 2B results below remain historical.
+
+No authentic NT4 fixture exists yet; synthetic version-field tests alone are
+not authentic legacy qualification. Tower's approximately 8.42 GB raw NTFS 3.0
+owner image remains outside the repository and must not be copied, modified
+or distributed. Initial diagnosis is rejection at a live directory attribute
+list in MFT 26 referencing indexing extension 8336.
+
+The new reader now opens Tower **in place as NTFS 3.0**, recursively enumerating
+**905 directories and 16,199 files with zero directory failures** through the
+retained signed-reader enumeration filters, not every on-disk entry. Root has 24
+entries; native `/WINNT/system32` listing has 1851 entries. Writing remains false;
+source size and mtime are unchanged. Complete streams for three explicit paths
+match independent `ntfscat` SHA-256 results:
+
+| Owner-image stream | Bytes | Independent full-stream SHA-256 comparison |
+| --- | --- | --- |
+| `/boot.ini` | 191 | Match |
+| `/WINNT/system32/ntdll.dll` | 491792 | Match |
+| `/WINNT/system32/kernel32.dll` | 743184 | Match |
+
+The service opens `ReadyReadOnly`, with a visible 45-character text preview,
+20480-character hex result and one search hit. An initial service selection of
+hidden/system `boot.ini` failed because existing DiscUtils hidden/system/metafile
+enumeration filters were retained. Repeating with enumerated ordinary entries
+succeeded; no filter or pre-existing presentation behavior was changed.
+The low-level explicit-path stream probes above are not a claim that every
+on-disk entry appears in service listings.
+
+No owner content was extracted or persisted; the private image was not copied.
+Source size/mtime remain unchanged, **not a full-image hash comparison**.
+The local session JSON `phase2c-owner-result.json` records the stream hashes and
+service metrics; its `SourceUnchanged` flag represents the size/mtime check,
+not whole-image SHA-256. The observed owner-image writer rejection also reports
+BPB hidden-sector/absolute-offset mismatch, with no source normalization.
+These are bounded local read results, not authentic authoring provenance,
+physical-platform matrix completion, full extraction or volume-health certification.
+The final owner probe on latest source repeats the same counts, three native
+stream hashes, service workflows and source size/mtime checks successfully.
+No full-image hash, extraction/content persistence or filter behavior change
+was introduced by that repeat.
+
+The independent per-directory `ntfsinfo` "Value too large" warning is
+**resolved as a tool-size limitation** (**2C.6/2C.V5**), not corruption evidence:
+the pinned public ntfs-3g **2022.10.3**
+[`ntfs_attr_readall`](https://github.com/tuxera/ntfs-3g/blob/2022.10.3/libntfs-3g/attrib.c#L6988-L7000)
+rejects non-BITMAP attributes larger than **65536 bytes** with `EOVERFLOW`;
+[`ntfsinfo`](https://github.com/tuxera/ntfs-3g/blob/2022.10.3/ntfsprogs/ntfsinfo.c#L1955-L1959)
+calls that helper for the whole `INDEX_ALLOCATION`. Tower's in-bounds single
+contiguous index is **344064 bytes**, exceeding that limit. Native root listing
+succeeds independently. These pinned source paths explain that warning only:
+neither corruption nor complete volume
+health follows from a native-tool warning or its explanation.
+
+The initial reader also handles a resident `INDEX_ROOT` compression flag as the
+directory's default compression setting, and zero-length nonresident index
+streams. Compressed file contents remain denied; these cases do not broaden
+writer qualification. A separate `NtfsReadValidation` preflight/resolver is
+implemented; signed reader packages stay unchanged. Strict writer validation
+retains its old default path; only its diagnostic now names the Phase 2B writer
+subset/Phase 3 instead of Phase 1. MFT bootstrap lists remain explicitly rejected.
+Final review checks the modern extension record identity at offset 44 only when
+USA offset is at least 48; legacy offset 42 must not be misread as a record number.
+Zero-length nonresident index bitmaps now avoid an invalid empty-run read.
+Both tightly coupled fixes have current focused regression coverage.
+Resource caps and active-index/inactive-MFT handling are recorded in the
+[reader bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
+
+Newly readable legacy/attribute-list variants remain noneditable until Phase 3
+**3.0.1-3.0.5** staged/Save As/new-output writer qualification precedes **3.7**
+direct commit. Existing qualified Phase 2B editing remains intact; actual
+Windows-authored-media/security-reference and LFS 2.0/cached-metadata write
+gates remain incomplete in **2B.6**, not moved or scope-demoted.
+SSH access below is infrastructure only. Windows/ARM64 runtime gaps and
+deferred macOS runtime/signing are unchanged. No Phase 3 or release is authorized.
+See [planned reader ledger](support-matrix.md#phase-2c-ntfs-reader-qualification-plan).
+
+## Local artifact cleanup, 2026-10-15
+
+Owner-authorized cleanup removed reproducible project `bin`/`obj` trees,
+byte-identical release-download checks, empty test/inspection directories and
+superseded pre-freeze Phase 2B synthetic image/conversion files. Earlier-run
+screenshots, small inputs and logs remain; final FAT
+`artifacts/phase2b-release-x11-<variant>/` and managed NTFS
+`artifacts/ntfs-managed-x11-<ntfs-variant>/` evidence remains intact.
+All six current publish trees, AppImage, versioned release assets, immutable
+goldens, owner samples, source/provenance materials and local access records
+were retained. Cleanup does not rerun or change historical qualification.
+Build the test harness again before using its direct executable commands.
+
 ## Windows 11 Home x64 SSH access, 2026-10-15
 
 The owner prepared a physical Windows 11 Home x64 laptop with OpenSSH Server
