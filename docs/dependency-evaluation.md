@@ -44,8 +44,14 @@ below; it does not substitute NuGet assembly identities or change package versio
 ### Phase 2C implemented NTFS reader subset and open qualification, 2026-10-15
 
 The owner explicitly authorized Phase 2C and its synchronized roadmap/
-specification change before Phase 3. **Authorized/in progress; new qualification
-is PARTIAL/BLOCKED on authentic legacy media, not phase complete**.
+specification change before Phase 3. **Bounded reader implemented; remaining 1.0
+verification/review gates open, not phase complete**. The owner subsequently
+deferred authentic NT4/Windows 2000/XP-created-media qualification and dependent
+checks to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the [checklist](../checklist.txt).
+These are incomplete follow-ups, not 1.0 blockers. VM-authored fixtures suffice;
+vintage hardware is not required. Automated tests, bounds, source integrity and
+general platform verification remain required, with the existing separate
+macOS runtime deferral unchanged.
 Implemented-subset results are now
 tracked in [platform status](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
 not full version/media qualification. Targets are
@@ -75,14 +81,15 @@ claimed full 1005-pass run. Final repeat all-six
 self-contained publish/local Linux AppImage passes on latest source, as does
 the bounded owner read-only probe. Versioned
 releases/GitHub publication are unchanged. Cross-builds are not physical
-compatibility. Authentic historical media/physical gates stay open; stop for
-owner review.
+compatibility. Authentic historical media moves to **P1.NTFS**; remaining general
+physical gates stay open. Stop for owner review.
 
 No authentic NT4 fixture exists. Synthetic version-field tests are regression
 inputs, not authentic legacy qualification. Legal synthetic fixtures, content
-hashes and service workflows pass for the bounded subset; authentic provenance,
-full verification/platform and owner-image source-hash/extraction gates stay
-open under **2C.1-2C.7**, **2C.V1-2C.V8**, **2C.E1-2C.E6**.
+hashes and service workflows pass for the bounded subset; authentic provenance
+remains incomplete under post-1.0 **P1.NTFS**. Full verification/platform and
+owner-image source-hash/extraction gates stay open under **2C.1-2C.7**,
+**2C.V1-2C.V8**, **2C.E1-2C.E6**.
 Tower's approximately 8.42 GB raw NTFS 3.0 owner image stays outside the
 repository: do not copy, modify or distribute it. Initial rejection concerns
 the live directory attribute list at MFT 26 referencing indexing extension 8336;

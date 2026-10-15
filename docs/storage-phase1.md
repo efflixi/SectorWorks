@@ -7,8 +7,15 @@ read support here never implies write qualification.
 ## Implemented Phase 2C NTFS reader subset and open qualification
 
 On **2026-10-15** the owner authorized Phase 2C and the synchronized roadmap/
-specification change before Phase 3. **PARTIAL/BLOCKED on authentic legacy-media
-qualification, not phase complete; stop for owner review.** Implemented-subset evidence is recorded below,
+specification change before Phase 3. **Bounded reader implemented; remaining
+1.0 verification/review gates open, not phase complete; stop for owner review.**
+The owner subsequently deferred authentic NT4/Windows 2000/XP-created-media
+qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
+[checklist](../checklist.txt). These are not passed tests or 1.0 blockers;
+VM-authored fixtures suffice, without vintage hardware. Automated tests, safety
+bounds, source integrity and general platform verification remain required,
+with the existing separate macOS runtime deferral unchanged.
+Implemented-subset evidence is recorded below,
 not full version/media qualification. The retained reader
 baseline below still describes prior evidence. Targets are separate bounded
 **NTFS 1.2 (NT4), 3.0 (Windows 2000) and 3.1 (XP+)** ordinary read subsets.
@@ -35,8 +42,8 @@ overlaps, missing extents and invalid metadata fail explicitly.
 Do not broaden sparse/compressed/encrypted/reparse/link/ADS claims merely by
 reading an attribute list, replay/reset a log, repair metadata or remove budgets.
 
-Checklist **2C.1-2C.7** requires legal normal/malformed fixtures, authentic
-provenance, browse/preview/hex/search/extraction with independent comparisons
+Checklist **2C.1-2C.7** requires legal normal/malformed fixtures, accurate synthetic/
+observed provenance, browse/preview/hex/search/extraction with independent comparisons
 and unchanged source hashes, existing-writer regressions and per-volume caps.
 Latest focused **49/49 (35 attribute-list + 14 version/layout/service)** covers
 named-list guard, GPT mixed-volume isolation, modern/legacy extension identity
@@ -48,8 +55,9 @@ Final repeat all-six self-contained publish/local Linux AppImage passes on
 latest source with legal notices retained. No versioned release/
 GitHub publication changed.
 Cross-builds are not physical compatibility. Individual
-implemented/verified subitems are tracked in the checklist; authentic legacy,
-remaining platform and full-phase gates stay open.
+implemented/verified subitems are tracked in the checklist; authentic legacy
+qualification is deferred to **P1.NTFS**, while remaining platform and 1.0
+full-phase gates stay open.
 Newly readable legacy/attribute-list variants stay noneditable until Phase 3
 **3.0.1-3.0.5** staged/Save As/new-output writer qualification, before **3.7**
 direct commit. Existing qualified Phase 2B editing and incomplete **2B.6**

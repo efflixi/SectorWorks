@@ -4,7 +4,9 @@ This matrix describes the implemented reader subset, not blanket support for
 every variant, feature or corrupt image. Partial Phase 2B staged editing/Save As is
 qualified separately below; direct commit and rebuild remain disabled.
 Phase 2C implements a separately bounded NTFS reader subset with targeted
-evidence below; authentic legacy and full-phase qualification remain open.
+evidence below; authentic historical-media qualification is deferred to post-1.0
+**P1.NTFS.1-P1.NTFS.6** in the [checklist](../checklist.txt), while remaining
+1.0 verification/review gates stay open.
 Reader safety limits and detailed exclusions are documented
 in [storage implementation](storage-phase1.md) and [explorer operations](explorer-operations.md).
 
@@ -121,20 +123,27 @@ The earlier launch report remains unresolved.
 
 Owner authorization **2026-10-15** adds Phase 2C before Phase 3 and approves the
 matching technical-specification roadmap change. **Implemented bounded subset;
-Phase 2C is PARTIAL/BLOCKED on authentic legacy-media qualification and needs
-owner review**. This ledger separates qualification from reader
+remaining 1.0 verification/review gates stay open, not phase complete**.
+The owner subsequently moved authentic NT4/Windows 2000/XP-created-media
+qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6**.
+These are incomplete follow-ups, not passed tests or 1.0 blockers. VM-authored
+media suffices; vintage hardware is unnecessary. Automated tests, safety bounds,
+source integrity and general platform checks remain required, with the existing
+separate macOS runtime deferral unchanged. This ledger separates qualification from reader
 evidence below. Preserve the existing reader and qualified Phase 2B
 writer rows above.
 
 | Version / authoring target | Bounded reader subset | Current evidence / gate | Newly readable editing |
 | --- | --- | --- | --- |
-| NTFS 1.2 / Windows NT 4.0 | Version-specific ordinary metadata/files/indexes and bounded supported attribute lists/extensions | Structural synthetic layout and shared-service tests pass; no authentic NT4 fixture exists; authentic legacy qualification open | Disabled until Phase 3 3.0.1-3.0.5 |
-| NTFS 3.0 / Windows 2000 | Ordinary file/directory access including supported live index continuation records | Initial in-place Tower enumeration passes; authentic authoring/full read qualification pending; native index warning diagnosed as tool-size limit | Disabled until Phase 3 3.0.1-3.0.5 |
-| NTFS 3.1 / Windows XP and later | Existing ordinary reads plus separately bounded attribute-list/extensions | Structural synthetic and new reader tests pass; authentic XP+ authoring/runtime qualification open, not blanket media support | Existing qualified Phase 2B subset retained; new variants disabled until 3.0.1-3.0.5 |
+| NTFS 1.2 / Windows NT 4.0 | Version-specific ordinary metadata/files/indexes and bounded supported attribute lists/extensions | Structural synthetic layout and shared-service tests pass; no authentic NT4 fixture exists; authentic qualification deferred to P1.NTFS | Disabled until Phase 3 3.0.1-3.0.5 |
+| NTFS 3.0 / Windows 2000 | Ordinary file/directory access including supported live index continuation records | Initial in-place Tower enumeration passes; full Tower read/integrity checks remain open; authentic authoring qualification deferred to P1.NTFS; native index warning is a tool-size limit | Disabled until Phase 3 3.0.1-3.0.5 |
+| NTFS 3.1 / Windows XP and later | Existing ordinary reads plus separately bounded attribute-list/extensions | Structural synthetic and new reader tests pass; authentic historical XP authoring/runtime qualification deferred to P1.NTFS, not blanket media support | Existing qualified Phase 2B subset retained; new variants disabled until 3.0.1-3.0.5 |
 
 Per-version rows require exact feature/layout/provenance, bounded reference/VCN/
 extent validation, normal/malformed fixtures, shared browse/preview/hex/search/
-extraction, independent comparisons and unchanged source hashes.
+extraction, independent comparisons and unchanged source hashes. Authentic
+historical-media provenance/comparisons are deferred to **P1.NTFS.2-P1.NTFS.4**;
+accurate synthetic/observed provenance and bounded qualification remain required.
 Attribute lists do not imply sparse/compressed/encrypted/reparse/link/ADS support.
 Ordinary base/extension and split data/index reads use a separate reader
 resolver; strict writer defaults stay unchanged. Attribute-list-dependent MFT
@@ -176,11 +185,15 @@ No authentic NT4 or full Tower qualification is claimed.
 The exact implemented/verified subitems, bounded synthetic read-test exit
 **2C.E2**, preserved-writer/capability **2C.E3**, regression **2C.V4**,
 and native-warning **2C.V5** are checked; cross-build subwork **2C.V6a** is
-verified on final source. Parent **2C.V6**, authentic legacy, remaining
-verification/platform and full-phase exit gates stay open.
+verified on final source. Parent **2C.V6** and remaining 1.0
+verification/platform/full-phase exit gates stay open. Authentic historical
+qualification is separately deferred under **P1.NTFS**, not a 1.0 blocker.
 Newly readable attribute-list/legacy volumes remain noneditable until Phase 3
 qualifies staged operations/history, validated Save As and new-output NTFS
 writing under **3.0.1-3.0.5**, BEFORE **3.7** direct commit.
+Only historical-OS-authored writer-media interoperability moves to
+**P1.NTFS.5**; required disposable version/layout/feature writer fixtures,
+independent safety checks and failure tests remain in **3.0.4** for 1.0.
 All existing qualified Phase 2B FAT/NTFS editing remains intact. Actual
 Windows-authored-media/security-reference and LFS 2.0/cached-metadata write
 gates remain incomplete and required under **2B.6**, not replaced by reader
@@ -273,7 +286,7 @@ section 6.6 records the same delivery policy.
 | Fixed VHD and dynamic VHD, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS subsets per variant; Windows-media gaps, items 2B.4/2B.6 | Phase 3 item 3.7 | Normally not needed; retain variant/virtual size |
 | Fixed VHDX and dynamic VHDX, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS per variant/sector subset; Windows-media gaps, items 2B.5/2B.6 | Phase 3 item 3.7 | Normally not needed; validate container metadata/log state |
 | Ordinary NTFS in filesystem-only raw | Managed subset delivered; Windows reference/LFS 2.0 gaps, item 2B.6 | Phase 3 item 3.7 | Normally not needed; formatting is separate |
-| Newly readable NTFS 1.2/3.0/3.1 legacy/attribute-list subsets across required disk stacks | Phase 2C bounded reads implemented; authentic qualification open; Phase 3 3.0.1-3.0.5 must qualify staged editing/validated Save As/new-output NTFS writes before commit | Phase 3 item 3.7 only after 3.0 writer gates | Normally not needed for qualified disk edits; preservation must be proved |
+| Newly readable NTFS 1.2/3.0/3.1 legacy/attribute-list subsets across required disk stacks | Phase 2C bounded reads implemented; authentic historical-media qualification deferred to post-1.0 P1.NTFS; Phase 3 3.0.1-3.0.5 must still qualify staged editing/validated Save As/new-output NTFS writes before commit | Phase 3 item 3.7 only after 3.0 writer gates | Normally not needed for qualified disk edits; preservation must be proved |
 | ISO 9660/Joliet/supported Rock Ridge | Phase 4 items 4.2/4.5 | Not an in-place filesystem-write target | Phase 4 validated rebuild; source replacement requires Phase 3 safeguards |
 | Declared UDF and ISO/UDF bridge subsets | Phase 4 item 4.6, including UDF reads beyond detection | Not an in-place filesystem-write target | Phase 4; preserve consistent bridge namespaces |
 | Qualified BIN/CUE data and mixed-mode layouts | Phase 6 items 6.8-6.9 | Not an in-place track-write target | Phase 6 validated new output sets; source-set replacement requires recovery safeguards |

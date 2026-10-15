@@ -8,8 +8,15 @@ later-phase work. See [staged editing](staged-editing.md).
 ## Phase 2C implemented reader boundary and open qualification
 
 The owner authorized the Phase 2C roadmap/specification change and reader work
-on **2026-10-15**, before Phase 3. Qualification is **PARTIAL/BLOCKED on authentic
-legacy media, not phase complete; stop for owner review**. Reader evidence is tracked in
+on **2026-10-15**, before Phase 3. The bounded reader is implemented;
+**remaining 1.0 verification/review gates stay open, not phase complete**.
+The owner subsequently deferred authentic NT4/Windows 2000/XP-created-media
+qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
+[checklist](../checklist.txt); these are not 1.0 blockers or passed tests.
+VM-authored fixtures suffice, without vintage hardware. Automated tests, bounds,
+source integrity and general platform checks remain required, with the existing
+separate macOS runtime deferral unchanged. Stop for owner review.
+Reader evidence is tracked in
 [platform status](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
 not full version/media or writer qualification.
 Targets are bounded read-only NTFS **1.2 (NT4), 3.0 (Windows 2000), 3.1 (XP+)**
@@ -42,8 +49,8 @@ live-index traversal are documented in [storage bounds](storage-phase1.md#resour
 The completed full verification and four later-case count chronology are
 recorded in platform status. Final repeat all-six publish/local AppImage and the
 bounded owner read-only probe pass on latest source. These are not physical
-compatibility or release publication. Authentic
-historical-media and full-phase qualification remain open.
+compatibility or release publication. Authentic historical-media qualification
+is deferred to P1.NTFS; remaining 1.0 full-phase gates stay open.
 Per-volume writer qualification remains independent: newly readable legacy/
 attribute-list variants stay noneditable, while existing qualified Phase 2B
 FAT/NTFS workflows and mixed-volume isolation must regress unchanged.

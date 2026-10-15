@@ -31,7 +31,8 @@ metadata and shared-service preview/hex/search/extraction with writes denied.
 Evidence: `artifacts/iso-reader-targeted.log` and
 `artifacts/iso-reader-tests/iso-reader-targeted.trx`.
 This is targeted verification, not a new full-suite result; the Phase 2C
-full-run chronology below is historical and its authentic/platform gates stay open.
+full-run chronology below is historical. Authentic historical-media checks are
+now deferred as described below; remaining general platform gates stay open.
 
 The unmodified owner ISO was opened through the normal production reader
 without bypassing preflight. Every directory and ordinary stream read:
@@ -60,8 +61,19 @@ not physical Windows/ARM64/macOS or new GUI qualification.
 ## Phase 2C authorization and initial reader evidence, 2026-10-15
 
 The owner explicitly authorized Phase 2C reader work and the matching roadmap/
-specification change before Phase 3. **PARTIAL/BLOCKED on authentic legacy-media
-qualification, not phase complete; stop for owner review.** Separate targets are **NTFS 1.2 (NT4), 3.0 (Windows
+specification change before Phase 3. **Bounded reader implemented; remaining
+1.0 verification/review gates open, not phase complete.** On 2026-10-15 the owner
+subsequently deferred authentic NT4/Windows 2000/XP-created-media qualification
+and dependent reader/writer interoperability checks to post-1.0
+**P1.NTFS.1-P1.NTFS.6** in the [checklist](../checklist.txt).
+This is a scope decision, not new testing or a passed authentic qualification.
+VM-authored fixtures suffice; vintage hardware is not required. Automated
+tests, resource bounds, Tower source-hash/extraction tasks, general platform
+verification and Phase 3 writer/commit safety remain required for 1.0, with the
+existing separate macOS runtime deferral unchanged. Required **2B.6** current
+Windows-media/security-reference/LFS 2.0 checks are not moved.
+Stop for owner review; no Phase 3 authorization follows.
+Separate targets are **NTFS 1.2 (NT4), 3.0 (Windows
 2000), 3.1 (XP+)** ordinary read subsets with bounded supported attribute lists/
 extensions and version-specific metadata. New checklist **2C.1-2C.7**,
 verification **2C.V1-2C.V8** and exits **2C.E1-2C.E6** began pending.
@@ -96,9 +108,10 @@ Final checks confirm all 40 protected fixture/versioned-release hashes match
 the original pre-cleanup baseline, all five reference-copy pairs match and
 final solution formatting passes.
 Cross-build subwork **2C.V6a** is verified; parent **2C.V6**
-physical/authentic requirements stay open. Cross-publishing does not establish physical
+general physical requirements stay open. Cross-publishing does not establish physical
 compatibility. Authentic NT4/Windows 2000/XP authoring/runtime evidence remains
-open, and MFT bootstrap lists remain an explicitly blocked reader subset.
+incomplete in post-1.0 **P1.NTFS**, not a 1.0 blocker; MFT bootstrap lists
+remain an explicitly blocked reader subset.
 No new physical GUI/platform-matrix qualification follows from these commands.
 Version fixtures are reconstructed legal modern-golden derivatives, not authentic
 NT4/2000/XP-authored or native-runtime evidence;

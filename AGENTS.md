@@ -54,8 +54,17 @@ a scope decision with a named follow-up milestone.
 Owner explicitly authorized the Phase 2C roadmap/specification change and
 reader implementation on 2026-10-15, before Phase 3. Qualify NTFS 1.2 (NT4),
 3.0 (Windows 2000) and 3.1 (XP+) read-only subsets, including bounded supported
-attribute lists/extensions and legacy metadata. Status is PARTIAL/BLOCKED on authentic legacy-media qualification,
-not phase complete; stop for owner review. Checklist 2C.1-2C.7, 2C.V1-2C.V8 and 2C.E1-2C.E6 began
+attribute lists/extensions and legacy metadata. The bounded reader is implemented;
+remaining 1.0 verification/review gates stay open, not phase complete.
+Owner explicitly deferred authentic NT4/Windows 2000/XP-created-media
+qualification and dependent reader/writer interoperability checks on 2026-10-15
+to the checklist's post-1.0 P1.NTFS.1-P1.NTFS.6 milestone. These are not 1.0
+blockers or passed tests; VM-authored media suffices, without vintage hardware.
+Keep automated tests, safety bounds, Tower source-integrity tasks, general
+platform testing and Phase 3 writer/commit safety in 1.0, with the existing
+separate macOS runtime deferral unchanged. Do not waive 2B.6 current Windows-
+authored-media/security-reference/LFS 2.0 gates or infer Phase 3 authorization.
+Stop for owner review. Checklist 2C.1-2C.7, 2C.V1-2C.V8 and 2C.E1-2C.E6 began
 pending. Implemented bounded attribute-list/version reading has 49/49 current
 focused passes (35 attribute-list, 14 version/layout/service).
 Full verification passed 1001/one Windows-only skip, 1002 total;

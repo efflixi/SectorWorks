@@ -54,8 +54,14 @@ full 1005-pass run.
 Final repeat all-six self-contained publish/local Linux AppImage passes on
 latest source, as does the bounded owner read-only probe. Legal notices are retained;
 no versioned release/GitHub publication changed. Cross-builds are not physical
-compatibility. Phase 2C remains partial/blocked on authentic legacy media and
-stops for owner review. These selections are not additive. Signed reader packages and
+compatibility. Remaining Phase 2C verification/review gates stay open; authentic
+NT4/Windows 2000/XP-created-media qualification and dependent checks are
+owner-deferred to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
+[checklist](../checklist.txt), not passed or 1.0-blocking. VM-authored disks suffice,
+without vintage hardware. Automated tests, bounds, Tower source integrity and
+general platform checks remain required, with the existing separate macOS
+runtime deferral unchanged. Stop for owner review.
+These selections are not additive. Signed reader packages and
 strict `NtfsValidation.Validate` writer defaults remain unchanged; the writer
 diagnostic now names the Phase 2B subset/Phase 3. MFT bootstrap lists are explicitly
 unsupported, with exact [reader bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
@@ -67,9 +73,11 @@ attribute-list/legacy volumes remain noneditable, with per-volume reasons and
 composed caps; an editable sibling does not qualify them. Phase 3 must first
 qualify their staged add/replace/delete/rename/mkdir, overlay/history, capacity/
 naming checks and validated Save As/new-output NTFS writing under **3.0.1-3.0.5**,
-including authentic disposable fixtures, allocation/MFT/index/attribute-list/
+including legal disposable version/layout/feature fixtures, allocation/MFT/index/attribute-list/
 security/metadata preservation, source hashes and failure/independent-tool
 evidence. Only then may the corresponding **3.7** direct-commit row be qualified.
+Historical-OS-authored writer-media interoperability moves only to post-1.0
+**P1.NTFS.5**; independent writer/failure qualification remains required for 1.0.
 Phase 3 remains unauthorized; reader success must not enable writes.
 
 The required actual Windows-authored NTFS/security-reference and LFS 2.0/

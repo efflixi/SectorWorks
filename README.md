@@ -6,7 +6,9 @@ supported, stage modifications and commit or rebuild images without host-OS
 mounting. Source data integrity and capability-based support are central.
 
 **Status: Phase 2B partially delivered; Phase 2C's bounded reader is implemented,
-but authentic legacy-media qualification is PARTIAL/BLOCKED.** Managed NTFS writing is implemented
+with remaining 1.0 verification/review gates open.** Authentic NT4/Windows
+2000/XP-created-media qualification is owner-deferred to a tracked post-1.0
+update, not a 1.0 blocker or a passed qualification. Managed NTFS writing is implemented
 for a qualified Phase 2B subset; Windows-media interoperability remains incomplete. The supported
 reader subset was implemented and verified on Linux Mint 22 x64/X11. Owner-reported
 physical testing on 2026-10-14 also found Phase 1 working on Linux x64, Windows
@@ -155,8 +157,16 @@ read limit versus the 344064-byte index; this is not volume-health certification
 or complete extraction/source-hash qualification.
 See the [planned version/feature ledger](docs/support-matrix.md#phase-2c-ntfs-reader-qualification-plan)
 and checklist **2C.1-2C.7**, **2C.V1-2C.V8**, **2C.E1-2C.E6**.
-Phase 2C remains partial/blocked for authentic legacy-media evidence; stop for
-owner review. No Phase 3 implementation, direct commit, repair or release is authorized.
+On 2026-10-15 the owner moved authentic NT4/Windows 2000/XP-created-media
+qualification and dependent checks to **post-1.0 P1.NTFS.1-P1.NTFS.6** in the
+[checklist](checklist.txt). Disposable VM-authored disks count; vintage physical
+hardware is not required. Synthetic/observed-version evidence is not authentic
+historical-OS interoperability. Automated reader tests, safety bounds, Tower
+source-hash/extraction tasks, general platform checks and Phase 3 writer/commit
+safety remain required for 1.0, with the existing separate macOS runtime deferral
+unchanged. Phase 2B current Windows-media/security-reference/LFS 2.0 gates are
+not moved. Phase 2C is not automatically complete; remaining verification and
+owner review stay open. No Phase 3 implementation, direct commit or repair is authorized.
 The signed reader and strict writer-validation defaults are unchanged; only the
 writer diagnostic now names its Phase 2B subset/Phase 3, not obsolete Phase 1 scope.
 

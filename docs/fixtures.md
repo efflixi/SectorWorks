@@ -30,12 +30,18 @@ The local owner Toshiba ISO is neither a fixture nor a release/package input.
 It must remain unmodified, untracked and undistributed; its reader verification
 streams data in place without copying the image or persisting its contents.
 
-## Phase 2C NTFS reader fixtures and open authentic-media gates
+## Phase 2C NTFS reader fixtures and deferred authentic-media qualification
 
 Owner authorization **2026-10-15** adds Phase 2C before Phase 3 for separate
 **NTFS 1.2 (NT4), 3.0 (Windows 2000) and 3.1 (XP+)** read-only qualification.
-Checklist **2C.5** fixture work and **2C.V2/2C.V3/2C.E1/2C.E6** evidence gates
-began **pending**. Completed structural version and attribute-list fixture work
+The owner subsequently moved authentic historical-media qualification and
+dependent **2C.3/2C.5/2C.V2/2C.V3/2C.V6/2C.E1/2C.E5/2C.E6** checks to the
+[checklist's post-1.0 milestone](../checklist.txt), **P1.NTFS.1-P1.NTFS.6**.
+These are incomplete follow-ups, not 1.0 blockers. A disposable disk formatted
+and populated by the historical OS in a VM is sufficient; vintage hardware is
+not required. Current automated/safety/source-integrity/general-platform and
+writer checks remain in 1.0, with the existing separate macOS deferral unchanged.
+Completed structural version and attribute-list fixture work
 below qualifies the bounded synthetic subset, not authentic historical media.
 No authentic NT4-authored fixture exists yet. Synthetic version-field
 mutations can test parser branching but are not authentic legacy qualification.
@@ -50,8 +56,9 @@ metadata and structural synthetic evidence separate from authentic legacy
 authoring qualification.
 Malformed companions cover truncated lists/runs, cycles, stale/mismatched
 references, duplicate/overlapping/missing VCN extents, overflow and bounds.
-Each advertised version needs independent read comparisons and shared service
-workflow/source-hash evidence. Keep immutable goldens unchanged and separate
+Each advertised bounded structural subset still needs independent read comparisons
+and shared service workflow/source-hash evidence. Authentic-media repetitions
+are deferred under **P1.NTFS.3-P1.NTFS.4**. Keep immutable goldens unchanged and separate
 reader fixtures from any subsequently qualified disposable writer fixtures.
 
 The owner's approximately 8.42 GB raw Tower NTFS 3.0 image remains **outside
@@ -117,7 +124,10 @@ Scoped `dotnet format --verify-no-changes` passes for both new files.
 The installed `mkntfs` offers no version-selection option. The isolated managed
 formatter is excluded/throws and is not an established portable fixture-authoring
 solution. No proprietary media or downloaded historical OS image is used.
-Authentic legacy provenance remains a separate open **2C.5/2C.E1/2C.E6** gate.
+Authentic legacy provenance remains incomplete under post-1.0
+**P1.NTFS.1-P1.NTFS.2**, not a current **2C.5/2C.E1/2C.E6** release blocker.
+Historical writer-media interoperability is separately tracked in **P1.NTFS.5**;
+required disposable writer safety tests and **2B.6** Windows-media checks remain.
 
 ### Verified bounded attribute-list fixtures
 
