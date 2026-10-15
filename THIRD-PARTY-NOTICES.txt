@@ -37,14 +37,15 @@ SDK/self-contained runtime:
   https://github.com/dotnet/runtime
   Runtime-provided licenses/notices are explicitly retained in licenses/.
 
-Storage dependencies used by the Phase 1 read-only application:
+Storage dependencies used by readers and qualified staged/Save As writers:
   DiscUtils.Fat, DiscUtils.Ntfs, DiscUtils.Iso9660, DiscUtils.Vhd,
   DiscUtils.Vhdx, DiscUtils.Core, DiscUtils.Streams - all 0.16.13 / MIT
   Copyright (c) 2008-2011 Kenneth Bell; (c) 2014 Quamotion
   https://github.com/DiscUtils/DiscUtils
   Full text: docs/licenses/DiscUtils.txt (licenses/DiscUtils.txt in publishes).
   Development use approved by owner; production-readiness re-evaluation is
-  tracked in checklist.txt. No write support follows from the library APIs.
+  tracked in checklist.txt. Product writes require per-stack qualification;
+  no write support follows from the library APIs alone.
 
 Development/test-only:
   Avalonia.Headless 12.1.4 - MIT - Avalonia contributors
@@ -54,6 +55,8 @@ Development/test-only:
   packages.lock.json, copied package metadata and license files.
   The separate DiscUtils dependency-probe executable and its disposable
   write experiments are not included in the application output.
+  qemu-img, dosfstools/mtools and ntfs-3g utilities are external test/fixture
+  tools only, not bundled application dependencies.
 
 Original functional vector icons:
   SectorWorks Compact - GPL-3.0-only, part of SectorWorks original artwork.

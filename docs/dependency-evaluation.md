@@ -97,6 +97,41 @@ native package or CLI is required to run the probe, materializer, or tests.
 
 ## Executed error and streaming behavior
 
+### Phase 2B existing-volume NTFS blocker (2026-10-15)
+
+This is new **modification** evidence, not the historical formatter limitation.
+`ExistingNtfsVolumeProbe` operates only on create-new disposable copies of an
+existing independently authored NTFS volume. Seven creation/security cases
+(resident/nonresident Add, Add without short names, explicit uncompressed Add,
+ordinary/without-short-names mkdir, and GetSecurity) fail on Linux .NET 10 with
+`PlatformNotSupportedException`: Access Control List (ACL) APIs are unsupported.
+The stack is `NtfsFileSystem.DoGetSecurity -> RawSecurityDescriptor..ctor`,
+with `CreateNewFile`/`CreateDirectory` for creation, not `NtfsFormatter`.
+A freshly authored `mkntfs` volume reproduces the failure, ruling out only a
+peculiarity of the immutable golden or formatter.
+
+Creation can allocate and index an empty file before throwing; independent
+`ntfsinfo` reports Security ID 0 and the MFT bitmap gains a record.
+`ntfsfix -n` still passes, so that command alone is not a safe success gate.
+No partially modified copy is published by the product.
+
+Existing resident/nonresident replacement (including grow/shrink transitions),
+deletion and Unicode rename experiments succeed. Tests verify content, retained
+security bytes, creation time/attributes, cluster and MFT bitmaps, and independent
+`ntfsinfo`/`ntfscluster`/`ntfscat`/`ntfsls` checks where installed. These narrower
+successes do **not** qualify the required five-operation writer or establish
+general NTFS consistency/security preservation.
+
+Sixteen new regressions and 33 targeted NTFS/reader tests passed locally.
+Detailed executed output is retained locally in
+`artifacts/ntfs-existing-volume/regression.log`; repeat with the
+`NtfsExistingVolumeTests` selector in the storage-test project.
+NTFS staging/Save As remains disabled across raw/VHD/VHDX.
+**Owner decision required:** authorize portable-security dependency remediation
+(with licensing/architecture review as appropriate), or explicitly revise the
+required NTFS delivery scope. DiscUtils 0.16.13 remains approved; no replacement,
+ACL substitution, host mounting or formatting workaround was introduced.
+
 The malformed tests run the direct library parser in a **separate process with
 a 15-second deadline**; timeout kills that process tree and fails the test.
 Exception types are asserted, not silently swallowed or accepted generically.
@@ -165,6 +200,13 @@ retained; this is an engineering review, not legal advice.
 
 ## Required future work, not implemented in foundation
 
+The owner-approved 2026-10-15 roadmap targets 1.0 with qualified read-only
+VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS subsets where feasible. No writer or future
+writer milestone is required for these additions. Phase 7 reader evaluation,
+fixtures/tests and concrete blocker reporting remain required; source-level
+claims above and detection-only do not establish browsing/extraction.
+Internal parsers, not native host mounting support, determine capability.
+
 - Phase 1 must add bounded I/O/partition views, checked offsets/counts,
   safe cancellation/resource budgets, error mapping, parent-path restrictions,
   feature-level capabilities and substantially broader hostile-image tests.
@@ -172,10 +214,18 @@ retained; this is an engineering review, not legal advice.
   background work must avoid sharing a mutable DiscUtils stream/parser.
 - Phase 2 must independently validate each write operation/stack; the small
   FAT round trip does not authorize SectorWorks modification.
+- The owner-approved 2026-10-15 roadmap adds Phase 2B before Phase 3 for explicit
+  raw/VHD/VHDX, filesystem-only/MBR/GPT, FAT LFN and ordinary-NTFS staged/Save As
+  qualification. Existing-volume NTFS modification and formatting are separate;
+  the SID formatting defect does not settle writer feasibility. Required writer
+  delivery cannot be marked complete after evaluation alone.
 - Phase 3 owns locking, identity checks, journaling/recovery and safe direct
   commit. DiscUtils provides no complete SectorWorks transactional safety layer.
+  Direct commit needs per-stack qualification for the required Phase 2B rows.
 - Phase 4 needs a preservation-aware ISO rebuild planner and independent
   validation/boot testing; CDBuilder is not proof of source-layout preservation.
+  Declared UDF and ISO/UDF bridge read/staged/rebuild delivery also needs explicit
+  implementation and independent qualification, not detection-only completion.
 - Additional libraries/internal work are needed for missing filesystems,
   exact optical structures/audio and comprehensive validation. Prefer managed
   implementations; any native option requires all six OS/architecture reviews.

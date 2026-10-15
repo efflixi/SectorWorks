@@ -14,9 +14,9 @@ public sealed partial class ExplorerService
     public Task<EditingSnapshot> StageAsync(Guid workspaceId, ImageChangeRequest request, CancellationToken cancellationToken = default) =>
         RunAsync(workspaceId, "Stage", lease =>
         {
-            RequireCapability(writer.Qualify(lease.Image));
             ArgumentNullException.ThrowIfNull(request);
             _ = GetVolume(lease, request.VolumeId);
+            RequireCapability(writer.QualifyVolume(lease.Image, request.VolumeId));
             if (request.Kind == ImageChangeKind.Metadata || !Enum.IsDefined(request.Kind))
             {
                 throw new NotSupportedException("Metadata changes are reserved; only add, replace, delete, rename and create directory are implemented.");
@@ -28,7 +28,7 @@ public sealed partial class ExplorerService
             {
                 throw new InvalidDataException("Undo history exceeds the bounded editing resource budget; save and reopen the new image before continuing.");
             }
-            var next = new Dictionary<string, StagedNode>(state.Current, StringComparer.OrdinalIgnoreCase);
+            var next = new Dictionary<string, StagedNode>(state.Current.Volumes[request.VolumeId], StringComparer.OrdinalIgnoreCase);
             string path = request.Path;
             StagedNode? existing = next.GetValueOrDefault(path);
             bool adding = request.Kind is ImageChangeKind.AddFile or ImageChangeKind.CreateDirectory;
@@ -53,7 +53,7 @@ public sealed partial class ExplorerService
             if (adding)
             {
                 path = (parent == "/" ? "" : parent) + "/" + request.Path[(request.Path.LastIndexOf('/') + 1)..];
-                ValidateFatPath(path, requireDisplayCase: true);
+                ValidateFatPath(path);
             }
             request = request with { Path = path };
             for (string ancestor = parent; ancestor != "/"; ancestor = StagedFileSystem.Parent(ancestor))
@@ -87,14 +87,15 @@ public sealed partial class ExplorerService
                             throw new ArgumentException("Add/replace requires a host source file.");
                         }
                         long importLength = new FileInfo(request.SourcePath).Length;
-                        long volumeLength = lease.Image.Device.Length;
+                        ImageVolume targetVolume = lease.Image.Volumes.Single(volume => volume.Id == request.VolumeId);
+                        long volumeLength = targetVolume.Partition?.Length ?? lease.Image.Device.Length;
                         if (importLength > uint.MaxValue || importLength > volumeLength)
                         {
                             throw new IOException("Imported file exceeds FAT file-size or image-capacity limits.");
                         }
                         ValidateStagingBudget(state.RetainedBytes, importLength);
                         WorkspaceDataFiles.CreatePrivateDirectory(state.DirectoryPath);
-                        if (new DriveInfo(state.DirectoryPath).AvailableFreeSpace < checked(importLength + 65536))
+                        if (storageSpace.AvailableBytes(state.DirectoryPath) < checked(importLength + 65536))
                         {
                             throw new IOException("Insufficient staging storage space to snapshot the imported file.");
                         }
@@ -124,7 +125,7 @@ public sealed partial class ExplorerService
                             throw new ArgumentException("Rename requires a single filename.");
                         }
                         string renamed = (parent == "/" ? "" : parent) + "/" + request.NewName;
-                        ValidateFatPath(renamed, requireDisplayCase: true);
+                        ValidateFatPath(renamed);
                         if (renamed.Equals(path, StringComparison.Ordinal))
                         {
                             throw new IOException("The rename does not change the filename.");
@@ -145,11 +146,16 @@ public sealed partial class ExplorerService
                         }
                         break;
                 }
-                if (next.Count > MaximumEntries || next.Keys.Any(p => p.Count(c => c == '/') > 128))
+                var nextVolumes = new Dictionary<string, Dictionary<string, StagedNode>>(state.Current.Volumes, StringComparer.Ordinal)
+                {
+                    [request.VolumeId] = next
+                };
+                var nextTree = new EditingTree(nextVolumes);
+                if (nextTree.Count > MaximumEntries || next.Keys.Any(p => p.Count(c => c == '/') > 128))
                 {
                     throw new InvalidDataException("Staged tree exceeds traversal resource limits.");
                 }
-                if (state.States.Take(state.Position + 1).Sum(s => (long)s.Count) + next.Count > 1_000_000)
+                if (state.States.Take(state.Position + 1).Sum(s => (long)s.Count) + nextTree.Count > 1_000_000)
                 {
                     throw new InvalidDataException("Undo history exceeds the 1000000-node snapshot budget; save and reopen the new image before continuing.");
                 }
@@ -163,7 +169,7 @@ public sealed partial class ExplorerService
                 state.States.RemoveRange(state.Position + 1, state.States.Count - state.Position - 1);
                 state.Operations.Add(operation);
                 state.OperationContents.Add(content);
-                state.States.Add(next);
+                state.States.Add(nextTree);
                 state.Position++;
                 if (content is not null) { state.Contents.Add(content); content = null; }
                 state.ReleaseUnusedContents();
@@ -226,9 +232,9 @@ public sealed partial class ExplorerService
             if (!Directory.Exists(directory)) { throw new DirectoryNotFoundException(directory); }
             progress?.Report(new OperationProgress("Verifying source baseline", target, 0, 0));
             VerifySource(lease, cancellationToken);
-            long length = lease.Image.Device.Length;
-            var drive = new DriveInfo(directory);
-            if (drive.AvailableFreeSpace < length) { throw new IOException("Insufficient destination space for the image copy."); }
+            long length = lease.Image.Metadata.ContainerLength;
+            long requiredSpace = checked(length + lease.Image.Device.Length * 2);
+            if (storageSpace.AvailableBytes(directory) < requiredSpace) { throw new IOException("Insufficient destination space for the image copy and bounded writer scratch space."); }
             EditingState state = EnsureEditing(lease, cancellationToken);
             StagedWriteOperation[] operations = state.Operations.Take(state.Position).ToArray();
             writer.ValidateCapacity(lease.Image, operations, cancellationToken);
@@ -236,17 +242,26 @@ public sealed partial class ExplorerService
             bool created = false;
             try
             {
-                var expected = Fingerprint(GetVolume(lease, lease.Image.Volumes[0].Id).FileSystem, cancellationToken);
+                string[] changedVolumes = operations.Select(operation => operation.Request.VolumeId)
+                    .Distinct(StringComparer.Ordinal).ToArray();
+                if (changedVolumes.Length == 0)
+                {
+                    changedVolumes = lease.Image.Volumes.Where(volume => writer.QualifyVolume(lease.Image, volume.Id).Available)
+                        .Select(volume => volume.Id).ToArray();
+                }
+                var expected = changedVolumes.ToDictionary(volumeId => volumeId,
+                    volumeId => Fingerprint(GetVolume(lease, volumeId).FileSystem, cancellationToken), StringComparer.Ordinal);
                 using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536))
                 {
                     created = true;
+                    using var source = new FileStream(lease.Image.Metadata.Path, FileMode.Open, FileAccess.Read, FileShare.Read);
                     byte[] buffer = new byte[65536];
                     using var sourceCopyHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
                     long offset = 0;
                     while (offset < length)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        int read = lease.Image.Device.Read(offset, buffer.AsSpan(0, (int)Math.Min(buffer.Length, length - offset)));
+                        int read = source.Read(buffer.AsSpan(0, (int)Math.Min(buffer.Length, length - offset)));
                         if (read == 0) { throw new EndOfStreamException("Source image ended during Save As."); }
                         output.Write(buffer, 0, read);
                         sourceCopyHash.AppendData(buffer, 0, read);
@@ -267,21 +282,38 @@ public sealed partial class ExplorerService
                 progress?.Report(new OperationProgress("Validating tree and SHA-256", target, length, 0));
                 using (IImageSession reopened = opener.OpenReadOnly(temporary, cancellationToken))
                 {
-                    if (reopened.Metadata.Format != "Raw" || reopened.Device.Length != length || reopened.Volumes.Count != 1
-                        || reopened.Volumes[0].FileSystem.Name != lease.Image.Volumes[0].FileSystem.Name)
+                    if (reopened.Metadata.Format != lease.Image.Metadata.Format
+                        || reopened.Device.Length != lease.Image.Device.Length
+                        || reopened.Device.LogicalSectorSize != lease.Image.Device.LogicalSectorSize
+                        || reopened.Device.PhysicalSectorSize != lease.Image.Device.PhysicalSectorSize
+                        || !reopened.Partitions.SequenceEqual(lease.Image.Partitions)
+                        || reopened.Volumes.Count != lease.Image.Volumes.Count
+                        || reopened.Volumes.Where((volume, index) => volume.Id != lease.Image.Volumes[index].Id
+                            || volume.FileSystem.Name != lease.Image.Volumes[index].FileSystem.Name
+                            || volume.Partition != lease.Image.Volumes[index].Partition).Any())
                     {
-                        throw new InvalidDataException("Output container/filesystem identity does not match the expected raw FAT image.");
+                        throw new InvalidDataException("Output container, partitions or filesystem identities differ from the source.");
                     }
-                    Capability outputCapability = writer.Qualify(reopened);
-                    if (!outputCapability.Available)
+                    foreach (string volumeId in changedVolumes)
                     {
-                        throw new InvalidDataException("Output structural validation failed: " + outputCapability.Reason);
+                        Capability outputCapability = writer.QualifyVolume(reopened, volumeId);
+                        if (!outputCapability.Available)
+                        {
+                            throw new InvalidDataException("Output structural validation failed: " + outputCapability.Reason);
+                        }
+                        var changedPaths = state.Current.Volumes[volumeId].Values.Where(node => node.Entry.IsChanged)
+                            .Select(node => node.Entry.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                        var actual = Fingerprint(reopened.Volumes.Single(volume => volume.Id == volumeId).FileSystem, cancellationToken, changedPaths);
+                        Dictionary<string, string> expectedTree = expected[volumeId];
+                        if (expectedTree.Count != actual.Count || expectedTree.Any(pair => !actual.TryGetValue(pair.Key, out string? value) || value != pair.Value))
+                        {
+                            throw new InvalidDataException("Output validation failed: directory tree, file lengths or SHA-256 content hashes differ.");
+                        }
                     }
-                    var changedPaths = state.Current.Values.Where(node => node.Entry.IsChanged).Select(node => node.Entry.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    var actual = Fingerprint(reopened.Volumes[0].FileSystem, cancellationToken, changedPaths);
-                    if (expected.Count != actual.Count || expected.Any(pair => !actual.TryGetValue(pair.Key, out string? value) || value != pair.Value))
+                    try { writer.ValidateOutput(lease.Image, reopened, operations, cancellationToken); }
+                    catch (Exception error) when (error is IOException or InvalidDataException or NotSupportedException)
                     {
-                        throw new InvalidDataException("Output validation failed: directory tree, file lengths or SHA-256 content hashes differ.");
+                        throw new InvalidDataException("Output metadata/preservation validation failed: " + error.Message, error);
                     }
                 }
                 cancellationToken.ThrowIfCancellationRequested();
@@ -289,9 +321,10 @@ public sealed partial class ExplorerService
                 VerifySource(lease, cancellationToken);
                 File.Move(temporary, target, false);
                 created = false;
-                int files = state.Current.Values.Count(n => !n.Entry.IsDirectory);
+                int files = changedVolumes.Sum(volumeId => state.Current.Volumes[volumeId].Values.Count(node => !node.Entry.IsDirectory));
+                long outputLength = new FileInfo(target).Length;
                 log.Write("SaveAsValidated", target, $"Validated {files} files; source untouched.");
-                return new SaveImageResult(target, length, files, "Reopened raw FAT image; allocation, mirrored FATs, auxiliary metadata, complete directory tree, lengths and SHA-256 hashes verified. Source baseline copied and rechecked; source and staged changes retained.");
+                return new SaveImageResult(target, outputLength, files, "Reopened image; container/partition identities and qualified volume allocation, metadata, complete directory trees, lengths and SHA-256 hashes verified. Source baseline copied and rechecked; source and staged changes retained.");
             }
             catch (Exception error)
             {
@@ -348,22 +381,6 @@ public sealed partial class ExplorerService
         return Convert.ToHexString(hash.GetHashAndReset());
     }
 
-    private static string HashDevice(IReadOnlyBlockDevice device, CancellationToken token)
-    {
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        byte[] buffer = new byte[65536];
-        long offset = 0;
-        while (offset < device.Length)
-        {
-            token.ThrowIfCancellationRequested();
-            int read = device.Read(offset, buffer.AsSpan(0, (int)Math.Min(buffer.Length, device.Length - offset)));
-            if (read == 0) { throw new EndOfStreamException("Source ended while establishing the image baseline."); }
-            hash.AppendData(buffer, 0, read);
-            offset = checked(offset + read);
-        }
-        return Convert.ToHexString(hash.GetHashAndReset());
-    }
-
     private static EditingSnapshot Snapshot(SessionLease lease)
     {
         EditingState? state = lease.Editing;
@@ -373,22 +390,29 @@ public sealed partial class ExplorerService
             return new PendingImageChange(index + 1, operation.Request.Kind, operation.Request.VolumeId,
                 operation.Request.Path, operation.Request.NewName, content?.Length ?? 0);
         }).ToArray() ?? [];
-        return new EditingSnapshot(changes, state?.Position > 0, state is not null && state.Position < state.Operations.Count, lease.Image.Device.Length);
+        return new EditingSnapshot(changes, state?.Position > 0, state is not null && state.Position < state.Operations.Count, lease.Image.Metadata.ContainerLength);
     }
 
     private EditingState EnsureEditing(SessionLease lease, CancellationToken token)
     {
         if (lease.Editing is not null) { return lease.Editing; }
-        IReadOnlyFileSystem fs = lease.Image.Volumes[0].FileSystem;
-        var nodes = new Dictionary<string, StagedNode>(StringComparer.OrdinalIgnoreCase);
-        foreach (FileEntry entry in Walk(fs, "/", token))
+        var volumes = new Dictionary<string, Dictionary<string, StagedNode>>(StringComparer.Ordinal);
+        int count = 0;
+        foreach (ImageVolume volume in lease.Image.Volumes)
         {
-            if (entry.IsLink) { throw new NotSupportedException("Linked entries are not qualified for editing."); }
-            nodes.Add(entry.Path, new StagedNode(entry, entry.Path, null));
+            if (!writer.QualifyVolume(lease.Image, volume.Id).Available) { continue; }
+            var nodes = new Dictionary<string, StagedNode>(StringComparer.OrdinalIgnoreCase);
+            foreach (FileEntry entry in Walk(volume.FileSystem, "/", token))
+            {
+                if (++count > MaximumEntries) { throw new InvalidDataException("Editable volumes exceed the workspace entry budget."); }
+                if (entry.IsLink) { throw new NotSupportedException("Linked entries are not qualified for editing."); }
+                nodes.Add(entry.Path, new StagedNode(entry, entry.Path, null));
+            }
+            volumes.Add(volume.Id, nodes);
         }
         var state = new EditingState(lease.StagingPath,
             message => log.Write("ResidualStagingData", lease.StagingPath, message, "Warning"));
-        state.States.Add(nodes);
+        state.States.Add(new EditingTree(volumes));
         lease.Editing = state;
         return state;
     }
@@ -426,20 +450,15 @@ public sealed partial class ExplorerService
     private static bool IsWithin(string candidate, string root) =>
         candidate.Equals(root, StringComparison.OrdinalIgnoreCase) || candidate.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
 
-    private static void ValidateFatPath(string path, bool requireDisplayCase = false)
+    private static void ValidateFatPath(string path)
     {
         ValidateImagePath(path);
         if (path == "/" || path.Length > 240) { throw new InvalidDataException("FAT edit paths must be non-root and at most 240 characters."); }
         foreach (string name in path.Split('/').Skip(1))
         {
-            string stem = name.Split('.')[0];
-            if (!(requireDisplayCase ? FatEditNames.IsSupported(name) : FatEditNames.IsValidShortName(name))
-                || stem.Equals("CON", StringComparison.OrdinalIgnoreCase) || stem.Equals("PRN", StringComparison.OrdinalIgnoreCase)
-                || stem.Equals("AUX", StringComparison.OrdinalIgnoreCase) || stem.Equals("NUL", StringComparison.OrdinalIgnoreCase)
-                || (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || stem.StartsWith("LPT", StringComparison.OrdinalIgnoreCase))
-                    && stem[3] is >= '1' and <= '9'))
+            if (!FatEditNames.IsSupportedName(name))
             {
-                throw new InvalidDataException("FAT writing requires DOS 8.3 names (ASCII letters, digits, underscore and hyphen), with each name/extension entirely uppercase or lowercase; mixed case within a component requires unsupported long filenames. Reserved names are not allowed.");
+                throw new InvalidDataException("FAT writing requires valid NFC BMP names without control/surrogate characters, reserved names, forbidden punctuation or leading/trailing spaces and trailing dots.");
             }
         }
     }

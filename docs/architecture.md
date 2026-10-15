@@ -5,6 +5,27 @@ pipeline and Avalonia explorer. Phase 2 adds staged modifications and Save As
 through separate editing contracts. Direct commit, rebuild and audio remain
 later-phase work. See [staged editing](staged-editing.md).
 
+Phase 2B adds per-volume qualification (`IStagedImageWriter.QualifyVolume`) and
+production `DiskImageWriter` composition. Workspace editing capability means
+at least one volume qualifies; it never grants editing to an unqualified
+sibling. History snapshots contain separate case-insensitive trees keyed by
+stable volume IDs, with one ordered cross-volume undo/redo list and one bounded
+payload budget. Unqualified volumes continue using the original reader.
+
+Save As copies physical container bytes and hashes that same byte stream,
+not virtual sectors mislabeled as a container. Output reopen checks container,
+virtual/sector and partition/volume identities before validating each affected
+tree and its allocation/metadata. Selected-volume writing must also preserve
+unchanged virtual regions and supported container metadata. The Platform
+`IStorageSpace` boundary supplies host free-space checks for import spools and
+destination/scratch estimates, independently testable for each filesystem.
+NTFS remains gated by the documented existing-volume ACL blocker; no portable
+writer capability follows from successful individual dependency operations.
+`IStagedImageWriter.ValidateOutput` is mandatory: Services calls it on the
+independently reopened output after its own tree/hash checks. Storage compares
+supported source metadata against ordered operation semantics; a writer cannot
+silently change valid timestamps/attributes/aliases and still pass publication.
+
 | Project | Responsibility | Allowed current project references |
 | --- | --- | --- |
 | SectorWorks.Core | Storage/session contracts, immutable metadata, workspace/capability, explorer and editing contracts | None |
@@ -62,16 +83,20 @@ and `EditingSnapshot` keep ordered history/review contracts UI-independent.
 `IStagedImageWriter` isolates qualification, capacity validation and applying
 operations to disposable output. It does not expose a source-commit API.
 DiscUtils writer types remain within Storage.
+The 63-row disk integration suite also references Services to verify actual
+staging/history and Save As against the same independently authored container
+fixtures; this is a test-only reference, not a reversed production dependency.
 `WorkspaceDataFiles` in Platform owns managed permission/link checks for private
 staging directories and payload creation. Services does not scatter OS-specific
 permission handling through the overlay.
 
 FAT editing uses case-insensitive identity with case-preserving paths. Services
 canonicalizes existing parents/targets without normalizing desired names.
-Storage writes representable 8.3 display case into the short-entry case flags,
-including ancestors rewritten by DiscUtils. Case-only rename does not move file
-data. Final output fingerprints still compare exact spelling, not just folded
-identity or content hashes; long-name writing remains separately unsupported.
+Storage retains short-entry display flags and qualifies a separate LFN subset,
+including mixed-case and NFC BMP names. Case-only rename does not move file
+data. Final output fingerprints compare exact spelling, not just folded
+identity or content hashes. See the staged-editing guide for the exact name,
+metadata, allocation and resource restrictions; Unicode is not blanket support.
 
 Extraction destination access lives
 behind `SafeExtractionTarget` in Platform, using OS directory handles to prevent

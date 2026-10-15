@@ -13,6 +13,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <ProjectReference Include="../../src/SectorWorks.Storage/SectorWorks.Storage.csproj" />
+    <ProjectReference Include="../../src/SectorWorks.Services/SectorWorks.Services.csproj" />
     <ProjectReference Include="../../tools/SectorWorks.DependencyProbe/SectorWorks.DependencyProbe.csproj" />
     <Using Include="Xunit" />
     <None Include="../../fixtures/golden/*" Link="fixtures/golden/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

@@ -1,5 +1,73 @@
 # Build and physical-platform status
 
+## Phase 2B partial delivery and physical evidence
+
+Verification host: Linux Mint 22 x86-64/X11, SDK 10.0.402 / runtime 10.0.13,
+2026-10-15. **Phase 2B remains partial/blocked:** FAT editing is qualified in
+the [declared envelope](staged-editing.md#current-phase-2b-envelope-and-mandatory-blocker);
+ordinary NTFS Add/mkdir are blocked by portable ACL inheritance, independently
+of formatting. Existing-file mutation probes do not close that mandatory exit.
+
+Final `./scripts/verify.sh` passed: **561 tests, zero skips**, comprising 309
+storage/integration, 156 services/platform, 66 UI and 30 foundation/dependency.
+Locked restore, zero-warning/error Release build, formatting, UI resources,
+AppImage contracts and all authoritative reference comparisons pass.
+All six final self-contained cross-publishes and AppImage packaging pass;
+ELF/PE/Mach-O architecture headers, legal files and owner-sample exclusion
+were checked. Linux x64 and both AppImage FUSE/extraction-and-run resource
+diagnostics pass. No tests were disabled to obtain these results.
+
+The 63-row FAT matrix covers raw/fixed VHD/dynamic VHD/fixed VHDX/dynamic VHDX,
+filesystem-only/primary MBR/GPT, FAT12/16/32, and separately VHDX physical sectors
+512 and 4096 with 512 logical sectors. The same rows also exercise actual
+Services staging, all five operations, ordered review/undo/redo/discard,
+browse/preview/hex/search/extraction, validated Save As and unchanged source
+hashes. Independent qemu raw conversions and FAT checks are separate evidence
+from the managed reader. 4Kn remains rejected.
+
+Actual X11 rendered-command workflows passed for primary-MBR raw, fixed/dynamic
+VHD and fixed/dynamic VHDX with mixed-case directories and Unicode file names.
+All exercise five operations, history/review, preview/extraction, Save As/reopen,
+cancelled close and discard; generated source hashes stay unchanged.
+Final FAT outputs pass `fsck.fat -n` and mtools. Independent fixed/dynamic VHDX
+checks use qemu-authored fixtures and qemu output reopen/conversion, not the
+historical synthetic fixed-reader fixture. Available tools: qemu 8.2.2,
+dosfstools 4.2 and mtools 4.0.43. Fixed VHD requires explicit qemu `-f vpc`
+because raw auto-detection is ambiguous.
+
+Earlier failed VHDX attempts were safely rejected (fixed BAT qualification and
+upstream dynamic ContentStream.Flush); they are not counted as success. The
+corrected writer disposes the container and flushes the underlying file before
+independent reopen. Local successful evidence is in
+`artifacts/phase2b-lfn-x11-{raw-mbr,vhd-fixed,vhd-dynamic}/` and
+`artifacts/phase2b-final-x11-vhdx-{fixed,dynamic}/`.
+After code freeze all five were independently repeated in
+`artifacts/phase2b-release-x11-{raw-mbr,vhd-fixed,vhd-dynamic,vhdx-fixed,vhdx-dynamic}/`;
+qemu conversion/checks, `fsck.fat -n`, mtools long-name listing and `mtype`
+content equality all pass.
+The smoke supplies dialog paths; native-picker/manual accessibility review
+remains incomplete. No Windows/ARM64 Phase 2B runtime claim follows from the
+owner's historical Phase 1 reports.
+
+| Runtime identifier | Phase 2B target | Physical workflow evidence |
+| --- | --- | --- |
+| linux-x64 | Self-contained portable archive and AppImage prototype | Mint 22/X11 qualified FAT staged/Save As workflows |
+| linux-arm64 | Self-contained cross-publish | Phase 2B unverified |
+| win-x64 | Self-contained cross-publish | Phase 2B unverified |
+| win-arm64 | Self-contained cross-publish | Unverified |
+| osx-x64 | Self-contained cross-publish | Runtime/signing explicitly deferred |
+| osx-arm64 | Self-contained cross-publish | Runtime/signing explicitly deferred |
+
+The six-target build is not physical compatibility, signing/notarization,
+Wayland, full-distro or production qualification. macOS remains intended and
+its earlier launch report remains unresolved. Owner samples remain ignored,
+hash-identical and absent from packages.
+The earlier date-failure regression expected a later fingerprint error; stricter
+source/output qualification now catches invalid dates first. Its expectation
+was updated to require that structural/timestamp failure, not weakened to
+accept output. Four additional regressions prove valid-but-changed untouched
+attributes/dates cannot publish despite matching trees/content hashes.
+
 ## Phase 2 target policy
 
 On 2026-10-14 the owner authorized Phase 2 and explicitly retained **macOS as

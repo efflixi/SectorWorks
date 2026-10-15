@@ -19,6 +19,23 @@ namespace SectorWorks.UITests;
 [Collection("Headless UI")]
 public sealed class StagedEditingTests
 {
+    [Theory]
+    [InlineData("Raw", ".img")]
+    [InlineData("VHD", ".vhd")]
+    [InlineData("VHDX", ".vhdx")]
+    public async Task SaveDialogSuggestsDetectedContainerExtensionRatherThanRawConversion(string format, string extension)
+    {
+        using var service = new ControlledSaveExplorer { ContainerFormat = format };
+        var dialogs = new EditingDialogs();
+        WorkspaceInfo info = await service.OpenAsync("misleading.img");
+        using var workspace = new WorkspaceViewModel(service, dialogs, info, new LayoutSettings());
+        await workspace.InitializeAsync();
+        await workspace.SaveAsCommand.ExecuteAsync(null);
+        Assert.Equal("misleading-modified" + extension, dialogs.LastSuggestedName);
+        Assert.Contains("cancelled", workspace.Status, StringComparison.OrdinalIgnoreCase);
+        Assert.False(service.SaveEntered.Task.IsCompleted);
+    }
+
     [Fact]
     public async Task RenderedCommandsPreserveLowercaseNamesAndCaseOnlyRenamesThroughSave()
     {
@@ -413,7 +430,7 @@ public sealed class StagedEditingTests
                 Dispatcher.UIThread.RunJobs();
                 Window input = Assert.Single(owner.OwnedWindows);
                 Assert.Contains(input.GetVisualDescendants().OfType<TextBlock>(), text =>
-                    text.Text?.Contains("entirely uppercase or lowercase", StringComparison.Ordinal) == true);
+                    text.Text?.Contains("NFC BMP", StringComparison.Ordinal) == true);
                 TextBox box = Assert.Single(input.GetVisualDescendants().OfType<TextBox>());
                 box.Text = "RENAMED.TXT";
                 Click(input.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Stage")));
@@ -649,13 +666,18 @@ internal sealed class EditingDialogs : IPlatformDialogs, IImageEditingDialogs
     public string? OutputPath { get; set; }
     public string? Name { get; set; }
     public string? LastInitialName { get; private set; }
+    public string? LastSuggestedName { get; private set; }
     public bool Confirm { get; set; } = true;
     public int Confirmations { get; private set; }
     public Queue<bool> ConfirmationResponses { get; } = new();
     public Task<IReadOnlyList<string>> PickImagesAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<string>>([]);
     public Task<string?> PickExtractionFolderAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
     public Task<string?> PickImportFileAsync(CancellationToken cancellationToken = default) => Task.FromResult(ImportPath);
-    public Task<string?> PickNewImagePathAsync(string suggestedName, CancellationToken cancellationToken = default) => Task.FromResult(OutputPath);
+    public Task<string?> PickNewImagePathAsync(string suggestedName, CancellationToken cancellationToken = default)
+    {
+        LastSuggestedName = suggestedName;
+        return Task.FromResult(OutputPath);
+    }
     public Task<string?> RequestNameAsync(string title, string initialName, CancellationToken cancellationToken = default)
     {
         LastInitialName = initialName;
@@ -710,6 +732,7 @@ internal sealed class ControlledSaveExplorer : IExplorerService, IImageEditingSe
     public bool FailSave { get; set; }
     public bool StartUnmodified { get; set; }
     public bool CancelStageAfterApply { get; set; }
+    public string ContainerFormat { get; init; } = "Raw";
     private bool stageApplied;
     private static EditingSnapshot Snapshot => new([new(1, ImageChangeKind.CreateDirectory, "fs", "/NEW", null, 0)], true, false, 100000);
     public async Task<WorkspaceInfo> OpenAsync(string path, CancellationToken cancellationToken = default)
@@ -726,7 +749,12 @@ internal sealed class ControlledSaveExplorer : IExplorerService, IImageEditingSe
             CreateDirectories = allowed,
             SaveAs = allowed
         };
-        return info with { Capabilities = caps, Volumes = info.Volumes.Select(v => v with { Capabilities = caps }).ToArray() };
+        return info with
+        {
+            Metadata = info.Metadata with { Format = ContainerFormat },
+            Capabilities = caps,
+            Volumes = info.Volumes.Select(v => v with { Capabilities = caps }).ToArray()
+        };
     }
     public Task CloseAsync(Guid workspaceId) => explorer.CloseAsync(workspaceId);
     public Task<IReadOnlyList<FileEntry>> ReadDirectoryAsync(Guid workspaceId, string volumeId, string path, CancellationToken cancellationToken = default) =>

@@ -252,7 +252,12 @@ public sealed partial class WorkspaceViewModel
         await RunOperationAsync(async token =>
         {
             string? destination = await ((IImageEditingDialogs)dialogs).PickNewImagePathAsync(
-                Path.GetFileNameWithoutExtension(Info.Metadata.Path) + "-modified.img", token);
+                Path.GetFileNameWithoutExtension(Info.Metadata.Path) + "-modified" + (Info.Metadata.Format switch
+                {
+                    "VHD" => ".vhd",
+                    "VHDX" => ".vhdx",
+                    _ => ".img"
+                }), token);
             if (destination is null) { Status = "Save As cancelled — pending changes retained."; return; }
             SaveResult = "Save As in progress — no validated output yet.";
             Validation = SaveResult;

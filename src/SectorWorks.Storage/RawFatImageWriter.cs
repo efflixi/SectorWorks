@@ -8,16 +8,18 @@ public sealed class RawFatImageWriter : IStagedImageWriter
     public const long MaximumImageBytes = 64L * 1024 * 1024 * 1024;
     public const long MaximumFatTableBytes = 8L * 1024 * 1024;
 
-    public Capability Qualify(IImageSession image)
+    public Capability Qualify(IImageSession image) => Qualify(image, 0);
+
+    public Capability Qualify(IImageSession image, uint expectedHiddenSectors)
     {
-        try { return QualifyCore(image); }
+        try { return QualifyCore(image, expectedHiddenSectors); }
         catch (Exception error) when (error is IOException or InvalidDataException or NotSupportedException or ArgumentException or OverflowException or InvalidOperationException or UnauthorizedAccessException)
         {
             return new(false, "FAT write qualification failed; read-only inspection remains available: " + error.Message);
         }
     }
 
-    private static Capability QualifyCore(IImageSession image)
+    private static Capability QualifyCore(IImageSession image, uint expectedHiddenSectors)
     {
         if (image.Warnings.Count != 0)
         {
@@ -49,12 +51,12 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         }
         uint sectors = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(19));
         if (sectors == 0) { sectors = BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(32)); }
-        if (checked((long)sectors * 512) != image.Device.Length || BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(28)) != 0
+        if (checked((long)sectors * 512) != image.Device.Length || BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(28)) != expectedHiddenSectors
             || (fs.Name == "FAT12" && (image.Device.Length != 1_474_560
                 || BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(24)) != 18
                 || BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(26)) != 2)))
         {
-            return new(false, "Only exact-sized filesystem-only volumes with zero hidden sectors are qualified; FAT12 writes are limited to conventional 1,474,560-byte PC floppy layouts. 360K/720K and legacy variants remain read-only.");
+            return new(false, "Only exact-sized bounded FAT volumes with the expected hidden-sector count are qualified (zero for filesystem-only raw images); FAT12 writes are limited to conventional 1,474,560-byte PC floppy layouts. 360K/720K and legacy variants remain read-only.");
         }
         if (!FatWriteMetadata.HasConventionalMetadata(image, boot, fs.Name == "FAT32"))
         {
@@ -74,20 +76,24 @@ public sealed class RawFatImageWriter : IStagedImageWriter
             }
             foreach (FileEntry entry in fs.ReadDirectory(item.Path))
             {
-                if (++count > 100000 || entry.IsLink || !FatEditNames.IsSupported(entry.Name)
-                    || (entry.ShortName is not null && entry.Name != entry.ShortName))
+                if (++count > 100000 || entry.IsLink || !FatEditNames.IsSupportedName(entry.Name)
+                    || entry.ShortName is null || !FatFileSystem.IsSafeAlias(entry.ShortName))
                 {
-                    return new(false, "FAT writing is qualified only for DOS 8.3 trees (ASCII letters, digits, underscore and hyphen), with each name/extension entirely uppercase or lowercase, without long filenames.");
+                    return new(false, "FAT writing requires the qualified NFC BMP filename subset and unambiguous ASCII short aliases.");
                 }
                 if (entry.IsDirectory) { pending.Push((entry.Path, item.Depth + 1)); }
             }
         }
-        return new(true, "Staged DOS 8.3 editing and validated Save As to a new unpartitioned raw FAT image; no source writes or bootability guarantee.");
+        return new(true, "Staged FAT editing with checked long names, mixed case and NFC BMP Unicode, validated Save As to a new unpartitioned raw image; no source writes or bootability guarantee.");
     }
 
     public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
+        => ValidateCapacity(image, operations, 0, cancellationToken);
+
+    public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, uint expectedHiddenSectors,
+        CancellationToken cancellationToken)
     {
-        RequireQualified(image);
+        RequireQualified(image, expectedHiddenSectors);
         var fs = (FatFileSystem)image.Volumes[0].FileSystem;
         long available = fs.ValidateWritableAllocation(cancellationToken);
         long cluster = long.Parse(fs.Properties["Cluster size"], System.Globalization.CultureInfo.InvariantCulture);
@@ -109,7 +115,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         byte[] boot = new byte[512];
         image.Device.Read(0, boot);
         int fixedRootEntries = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(17));
-        var rootNames = image.Volumes[0].FileSystem.ReadDirectory("/").Select(e => e.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var rootNames = fs.RootNameSlots(cancellationToken);
         foreach (StagedWriteOperation operation in operations)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -118,28 +124,30 @@ public sealed class RawFatImageWriter : IStagedImageWriter
             if (r.Path.LastIndexOf('/') == 0)
             {
                 string name = r.Path[1..];
-                if (r.Kind is ImageChangeKind.AddFile or ImageChangeKind.CreateDirectory) { rootNames.Add(name); }
+                if (r.Kind is ImageChangeKind.AddFile or ImageChangeKind.CreateDirectory) { rootNames.Add(name, FatEditNames.RequiredDirectorySlots(name)); }
                 if (r.Kind == ImageChangeKind.Delete) { rootNames.Remove(name); }
-                if (r.Kind == ImageChangeKind.Rename) { rootNames.Remove(name); rootNames.Add(r.NewName!); }
-                if (fixedRootEntries != 0 && rootNames.Count >= fixedRootEntries)
+                if (r.Kind == ImageChangeKind.Rename) { rootNames.Remove(name); rootNames.Add(r.NewName!, FatEditNames.RequiredDirectorySlots(r.NewName!)); }
+                if (fixedRootEntries != 0 && rootNames.Values.Sum() >= fixedRootEntries)
                 {
-                    throw new IOException("The fixed FAT root directory has no remaining entry slots (one slot reserved for the volume label).");
+                    throw new IOException("The fixed FAT root directory has insufficient long-name entry slots (one slot reserved for the volume label).");
                 }
             }
             long OldSize() => sizes.GetValueOrDefault(path);
             long Allocated(long bytes) => checked((bytes + cluster - 1) / cluster * cluster);
+            string desiredName = r.Kind == ImageChangeKind.Rename ? r.NewName! : path[(path.LastIndexOf('/') + 1)..];
+            long directoryMargin = r.Kind == ImageChangeKind.Delete ? 0 : Allocated(FatEditNames.RequiredDirectorySlots(desiredName) * 32L);
             switch (r.Kind)
             {
                 case ImageChangeKind.AddFile:
                 case ImageChangeKind.ReplaceFile:
                     using (Stream content = operation.OpenContent!())
                     {
-                        available = checked(available + Allocated(OldSize()) - Allocated(content.Length) - cluster);
+                        available = checked(available + Allocated(OldSize()) - Allocated(content.Length) - directoryMargin);
                         sizes[path] = content.Length;
                     }
                     break;
                 case ImageChangeKind.CreateDirectory:
-                    available = checked(available - cluster * 2);
+                    available = checked(available - cluster - directoryMargin);
                     break;
                 case ImageChangeKind.Delete:
                     // Directory deletion credits no space: avoiding optimistic allocation estimates.
@@ -148,7 +156,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
                         || key.StartsWith(path + "/", StringComparison.OrdinalIgnoreCase)).ToArray()) { sizes.Remove(deleted); }
                     break;
                 case ImageChangeKind.Rename:
-                    available = checked(available - cluster);
+                    available = checked(available - directoryMargin);
                     string renamed = r.Path[..(r.Path.LastIndexOf('/') + 1)] + r.NewName;
                     foreach (string oldPath in sizes.Keys.Where(key => key.Equals(path, StringComparison.OrdinalIgnoreCase)
                         || key.StartsWith(path + "/", StringComparison.OrdinalIgnoreCase)).ToArray())
@@ -173,21 +181,78 @@ public sealed class RawFatImageWriter : IStagedImageWriter
             RequireQualified(copy);
         }
         using var stream = new FileStream(copyPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-        var changedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        ApplyToStream(stream, operations, cancellationToken);
+        stream.Flush(true);
+    }
+
+    public void ApplyToStream(Stream stream, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
+    {
+        Dictionary<string, FatFileSystem.PreservedEntry> expected;
+        stream.Flush();
+        using (var device = new StreamBlockDevice(stream, new ParserContext()))
+        using (var reader = new FatFileSystem(device))
+        {
+            expected = reader.CapturePreservation(cancellationToken);
+        }
         foreach (StagedWriteOperation operation in operations)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ImageChangeRequest request = operation.Request;
-            string path = Native(request.Path);
-            string? changedPath = request.Kind == ImageChangeKind.Delete ? null : request.Path;
-            // Directory moves leave stale parent-entry IDs in DiscUtils's directory cache.
+            string parent;
+            string name;
+            string alias;
+            string path;
+            byte[]? original = null;
+            bool hadLongName = false;
+            List<(long Offset, byte[] Bytes)> ancestors;
+            stream.Flush();
+            using (var device = new StreamBlockDevice(stream, new ParserContext()))
+            using (var reader = new FatFileSystem(device))
+            {
+                if (request.Kind is ImageChangeKind.AddFile or ImageChangeKind.CreateDirectory)
+                {
+                    string requestedParent = request.Path[..request.Path.LastIndexOf('/')];
+                    string canonicalParent = reader.CanonicalPath(requestedParent.Length == 0 ? "/" : requestedParent, cancellationToken);
+                    request = request with { Path = canonicalParent.TrimEnd('/') + request.Path[request.Path.LastIndexOf('/')..] };
+                }
+                else
+                {
+                    request = request with { Path = reader.CanonicalPath(request.Path, cancellationToken) };
+                }
+                parent = request.Path[..request.Path.LastIndexOf('/')];
+                name = request.Kind == ImageChangeKind.Rename ? request.NewName! : request.Path[(request.Path.LastIndexOf('/') + 1)..];
+                ancestors = reader.AncestorMetadata(request.Path, cancellationToken);
+                if (request.Kind is ImageChangeKind.AddFile or ImageChangeKind.CreateDirectory)
+                {
+                    alias = reader.ChooseAlias(parent, name, null, cancellationToken);
+                    path = reader.AliasPath(parent.Length == 0 ? "/" : parent, cancellationToken).TrimEnd('\\') + "\\" + alias;
+                }
+                else
+                {
+                    path = reader.AliasPath(request.Path, cancellationToken);
+                    original = reader.EntryBytes(request.Path, cancellationToken);
+                    hadLongName = reader.NameSlotCount(request.Path, cancellationToken) > 1;
+                    alias = path[(path.LastIndexOf('\\') + 1)..];
+                    if (request.Kind == ImageChangeKind.Rename)
+                    {
+                        bool caseOnly = name.Equals(reader.DisplayName(request.Path, cancellationToken), StringComparison.OrdinalIgnoreCase);
+                        if (!caseOnly) { alias = reader.ChooseAlias(parent, name, request.Path, cancellationToken); }
+                        reader.SetDisplayName(stream, request.Path, name, alias, cancellationToken, original,
+                            forceLongName: caseOnly && hadLongName, preserveAlias: caseOnly);
+                        stream.Flush();
+                        reader.RecordExpectedChange(expected, request, cancellationToken);
+                        continue;
+                    }
+                    if (request.Kind == ImageChangeKind.ReplaceFile) { name = reader.DisplayName(request.Path, cancellationToken); }
+                    reader.RemoveLongName(stream, request.Path, cancellationToken);
+                }
+            }
             using (var fs = new DiscUtils.Fat.FatFileSystem(stream))
             {
                 switch (request.Kind)
                 {
                     case ImageChangeKind.CreateDirectory:
                         fs.CreateDirectory(path);
-                        changedDirectories.Add(request.Path);
                         break;
                     case ImageChangeKind.AddFile:
                     case ImageChangeKind.ReplaceFile:
@@ -209,8 +274,6 @@ public sealed class RawFatImageWriter : IStagedImageWriter
                         if (attributes.HasValue) { fs.SetAttributes(path, attributes.Value); }
                         break;
                     case ImageChangeKind.Delete:
-                        changedDirectories.RemoveWhere(directory => directory.Equals(request.Path, StringComparison.OrdinalIgnoreCase)
-                            || directory.StartsWith(request.Path + "/", StringComparison.OrdinalIgnoreCase));
                         if (fs.DirectoryExists(path))
                         {
                             fs.DeleteDirectory(path, true);
@@ -220,73 +283,84 @@ public sealed class RawFatImageWriter : IStagedImageWriter
                             fs.DeleteFile(path);
                         }
                         break;
-                    case ImageChangeKind.Rename:
-                        string renamed = Native(request.Path[..(request.Path.LastIndexOf('/') + 1)] + request.NewName);
-                        changedPath = renamed.Replace('\\', '/');
-                        if (renamed.Equals(path, StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (fs.DirectoryExists(path)) { changedDirectories.Add(changedPath); }
-                            break;
-                        }
-                        DateTime modified = fs.GetLastWriteTime(path);
-                        bool directory = fs.DirectoryExists(path);
-                        if (directory)
-                        {
-                            fs.MoveDirectory(path, renamed);
-                            string renamedPath = renamed.Replace('\\', '/');
-                            foreach (string oldPath in changedDirectories.Where(candidate => candidate.Equals(request.Path, StringComparison.OrdinalIgnoreCase)
-                                || candidate.StartsWith(request.Path + "/", StringComparison.OrdinalIgnoreCase)).ToArray())
-                            {
-                                changedDirectories.Remove(oldPath);
-                                changedDirectories.Add(renamedPath + oldPath[request.Path.Length..]);
-                            }
-                            changedDirectories.Add(renamedPath);
-                        }
-                        else
-                        {
-                            fs.MoveFile(path, renamed);
-                        }
-                        // DiscUtils's entry copy omits the modification date during both file and directory moves.
-                        fs.SetLastWriteTime(renamed, modified);
-                        break;
                     default:
                         throw new NotSupportedException("Metadata changes are reserved, not implemented.");
                 }
             }
-            string restorePath = changedPath ?? request.Path[..request.Path.LastIndexOf('/')];
-            if (restorePath.Length != 0)
+            FatFileSystem.RestoreAncestorMetadata(stream, ancestors);
+            if (request.Kind != ImageChangeKind.Delete)
             {
-                // DiscUtils also resets parent-directory case flags when updating their modification times.
                 stream.Flush();
                 using var device = new StreamBlockDevice(stream, new ParserContext());
                 using var reader = new FatFileSystem(device);
-                while (restorePath.Length != 0)
+                reader.SetDisplayName(stream, path.Replace('\\', '/'), name, alias, cancellationToken, original,
+                    replacement: request.Kind == ImageChangeKind.ReplaceFile, forceLongName: hadLongName);
+                if (request.Kind == ImageChangeKind.CreateDirectory)
                 {
-                    reader.SetShortNameCase(stream, restorePath, cancellationToken);
-                    restorePath = restorePath[..restorePath.LastIndexOf('/')];
+                    reader.CompleteChangedDirectoryDates(stream, [request.Path], cancellationToken);
                 }
             }
-        }
-        if (changedDirectories.Count != 0)
-        {
             stream.Flush();
-            using var device = new StreamBlockDevice(stream, new ParserContext());
-            using var reader = new FatFileSystem(device);
-            reader.CompleteChangedDirectoryDates(stream, changedDirectories, cancellationToken);
+            using (var device = new StreamBlockDevice(stream, new ParserContext()))
+            using (var reader = new FatFileSystem(device))
+            {
+                reader.RecordExpectedChange(expected, request, cancellationToken);
+            }
         }
         FatWriteMetadata.UpdateFat32FreeSpace(stream, cancellationToken);
-        stream.Flush(true);
+        stream.Flush();
+        using (var device = new StreamBlockDevice(stream, new ParserContext()))
+        using (var reader = new FatFileSystem(device))
+        {
+            reader.ValidateWritableAllocation(cancellationToken);
+            reader.ValidatePreservation(expected, cancellationToken);
+        }
     }
 
-    private void RequireQualified(IImageSession image)
+    private void RequireQualified(IImageSession image, uint expectedHiddenSectors = 0)
     {
-        Capability capability = Qualify(image);
+        Capability capability = Qualify(image, expectedHiddenSectors);
         if (!capability.Available)
         {
             throw new NotSupportedException(capability.Reason);
         }
     }
 
-    private static string Native(string path) => path.Replace('/', '\\');
+    public void ValidatePreservedMetadata(IReadOnlyFileSystem source, IReadOnlyFileSystem output,
+        IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
+    {
+        if (source is not FatFileSystem original || output is not FatFileSystem saved)
+        {
+            throw new NotSupportedException("FAT metadata validation requires the qualified bounded FAT readers.");
+        }
+        saved.ValidateWritableAllocation(cancellationToken);
+        saved.ValidateSourcePreservation(original, operations, cancellationToken);
+    }
+
+    public void ValidateOutput(IImageSession source, IImageSession output,
+        IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
+    {
+        RequireQualified(source);
+        RequireQualified(output);
+        if (source.Device.Length != output.Device.Length
+            || source.Volumes[0].FileSystem.Name != output.Volumes[0].FileSystem.Name)
+        {
+            throw new ImageFormatException("Raw FAT output changed its volume size or filesystem type.");
+        }
+        byte[] boot = Bounds.Read(source.Device, 0, 512);
+        if (!boot.AsSpan().SequenceEqual(Bounds.Read(output.Device, 0, 512)))
+        {
+            throw new ImageFormatException("Raw FAT output changed its boot-sector bytes.");
+        }
+        if (source.Volumes[0].FileSystem.Name == "FAT32")
+        {
+            long backup = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(50)) * 512L;
+            if (!Bounds.Read(source.Device, backup, 512).AsSpan().SequenceEqual(Bounds.Read(output.Device, backup, 512)))
+            {
+                throw new ImageFormatException("Raw FAT output changed its backup boot-sector bytes.");
+            }
+        }
+        ValidatePreservedMetadata(source.Volumes[0].FileSystem, output.Volumes[0].FileSystem, operations, cancellationToken);
+    }
 
 }

@@ -4,7 +4,7 @@ using static SectorWorks.Storage.PartitionReader;
 
 namespace SectorWorks.Storage;
 
-internal sealed class FatFileSystem : IReadOnlyFileSystem
+internal sealed partial class FatFileSystem : IReadOnlyFileSystem
 {
     private const int MaxChainClusters = 1_048_576;
     private const int MaxDirectoryBytes = 16 * 1024 * 1024;
@@ -22,7 +22,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
     private bool _disposed;
     private static readonly Encoding Oem = CreateOem();
 
-    private sealed record Entry(FileEntry File, uint Cluster, long DirectoryOffset);
+    private sealed record Entry(FileEntry File, uint Cluster, long DirectoryOffset, IReadOnlyList<long> LongOffsets);
 
     internal static bool LooksLikeFat(byte[] boot) => boot.Length >= 90
         && (boot.AsSpan(54, 3).SequenceEqual("FAT"u8) || boot.AsSpan(82, 3).SequenceEqual("FAT"u8)
@@ -283,7 +283,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
     internal void SetShortNameCase(Stream output, string path, CancellationToken token)
     {
         string name = path[(path.LastIndexOf('/') + 1)..];
-        if (!FatEditNames.IsSupported(name)) { throw new ImageFormatException("Filename case requires an unsupported FAT long-name entry."); }
+        if (!FatEditNames.IsSupportedShortName(name)) { throw new ImageFormatException("Filename case requires a FAT long-name entry."); }
         Entry entry = Resolve(path, token) ?? throw new ImageFormatException("Changed FAT entry was not found.");
         string[] parts = name.Split('.');
         byte flags = (byte)(parts[0].Any(c => c is >= 'a' and <= 'z') ? 0x08 : 0);
@@ -309,18 +309,19 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
             }
         }
         var reachable = new HashSet<uint>();
-        var pending = new Stack<(string Path, uint Cluster, bool Root, int Depth)>();
-        pending.Push(("/", _rootCluster, true, 0));
+        var pending = new Stack<(string Path, uint Cluster, bool Root, int Depth, uint ParentCluster)>();
+        pending.Push(("/", _rootCluster, true, 0, 0));
         int count = 0;
         while (pending.TryPop(out var directory))
         {
             token.ThrowIfCancellationRequested();
             if (directory.Depth > 128) { throw new ImageFormatException("FAT write traversal exceeds depth limits."); }
+            if (!directory.Root) { ValidateSpecialEntries(directory.Cluster, directory.ParentCluster); }
             if (!directory.Root || _bits == 32) { Claim(Chain(directory.Cluster, token)); }
-            foreach (Entry entry in DirectoryEntries(directory.Path, directory.Cluster, directory.Root, token, requireShortNames: true))
+            foreach (Entry entry in DirectoryEntries(directory.Path, directory.Cluster, directory.Root, token, strictNames: true))
             {
                 if (++count > 100000) { throw new ImageFormatException("FAT write traversal exceeds entry limits."); }
-                if (entry.File.IsDirectory) { pending.Push((entry.File.Path, entry.Cluster, false, directory.Depth + 1)); }
+                if (entry.File.IsDirectory) { pending.Push((entry.File.Path, entry.Cluster, false, directory.Depth + 1, directory.Root ? 0 : directory.Cluster)); }
                 else if (entry.Cluster != 0)
                 {
                     List<uint> chain = Chain(entry.Cluster, token);
@@ -348,7 +349,20 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
                 throw new ImageFormatException("Unreferenced, cross-linked or inconsistent FAT cluster allocation.");
             }
         }
-        return checked(((long)_clusterCount - reachable.Count) * _clusterBytes);
+        long freeClusters = (long)_clusterCount - reachable.Count;
+        if (_bits == 32)
+        {
+            byte[] boot = Bounds.Read(_device, 0, 512);
+            byte[] info = Bounds.Read(_device, U16(boot, 48) * (long)_sector, _sector);
+            uint declaredFree = U32(info, 488);
+            uint nextFree = U32(info, 492);
+            if (declaredFree != uint.MaxValue && declaredFree != freeClusters
+                || nextFree != uint.MaxValue && (nextFree < 2 || nextFree >= _clusterCount + 2))
+            {
+                throw new ImageFormatException("FAT32 FSInfo free-space summary disagrees with allocation.");
+            }
+        }
+        return checked(freeClusters * _clusterBytes);
         void Claim(IEnumerable<uint> clusters)
         {
             foreach (uint cluster in clusters)
@@ -358,13 +372,15 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
         }
     }
 
-    private List<Entry> DirectoryEntries(string parent, uint cluster, bool root, CancellationToken token, bool requireShortNames = false)
+    private List<Entry> DirectoryEntries(string parent, uint cluster, bool root, CancellationToken token, bool strictNames = false)
     {
         var entries = new List<Entry>();
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var longParts = new Dictionary<int, string>();
         int nextLong = 0;
         byte longChecksum = 0;
+        var longOffsets = new List<long>();
+        var aliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         List<uint>? chain = root && _bits != 32 ? null : Chain(cluster, token,
             Math.Min(MaxChainClusters, MaxDirectoryBytes / _clusterBytes));
         long bytes = chain is null ? _rootBytes : checked((long)chain.Count * _clusterBytes);
@@ -384,42 +400,66 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
                 ReadOnlySpan<byte> raw = buffer.AsSpan(i, 32);
                 if (raw[0] == 0)
                 {
+                    if (strictNames && longOffsets.Count != 0) { throw new ImageFormatException("Orphan FAT long-name sequence."); }
+                    if (strictNames) { ValidateAliasCollisions(entries); }
                     return entries;
                 }
                 if (raw[0] == 0xe5)
                 {
+                    if (strictNames && longOffsets.Count != 0) { throw new ImageFormatException("Interrupted FAT long-name sequence."); }
                     longParts.Clear();
+                    longOffsets.Clear();
                     nextLong = 0;
                     continue;
                 }
                 byte attributes = raw[11];
                 if (attributes == 0x0f)
                 {
-                    if (requireShortNames) { throw new NotSupportedException("FAT writing requires DOS 8.3 short-name records; long filename records, including redundant short-name aliases, are not supported."); }
                     int ordinal = raw[0] & 0x1f;
                     if ((raw[0] & 0x40) != 0)
                     {
+                        if (strictNames && longOffsets.Count != 0) { throw new ImageFormatException("Overlapping FAT long-name sequence."); }
                         longParts.Clear();
+                        longOffsets.Clear();
                         nextLong = ordinal;
                         longChecksum = raw[13];
                     }
-                    if (ordinal is < 1 or > 20 || ordinal != nextLong || raw[13] != longChecksum
+                    if (ordinal is < 1 or > 20 || ordinal != nextLong || raw[13] != longChecksum || (raw[0] & 0xa0) != 0
                         || raw[12] != 0 || raw[26] != 0 || raw[27] != 0)
                     {
+                        if (strictNames) { throw new ImageFormatException("Invalid FAT long-name ordinal, checksum or reserved fields."); }
                         longParts.Clear();
+                        longOffsets.Clear();
                         nextLong = 0;
                         continue;
+                    }
+                    if (strictNames)
+                    {
+                        foreach (int characterOffset in new[] { 1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30 })
+                        {
+                            ushort character = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[characterOffset..]);
+                            if (character is >= 0xd800 and <= 0xdfff)
+                            {
+                                throw new NotSupportedException("FAT writing supports BMP Unicode names without surrogate code units.");
+                            }
+                        }
                     }
                     longParts[ordinal] = Encoding.Unicode.GetString(raw.Slice(1, 10))
                         + Encoding.Unicode.GetString(raw.Slice(14, 12)) + Encoding.Unicode.GetString(raw.Slice(28, 4));
                     nextLong--;
+                    longOffsets.Add(offset + i);
                     continue;
                 }
                 string shortName = ShortName(raw);
                 string name = shortName;
+                if (strictNames && longOffsets.Count != 0 && (nextLong != 0 || Checksum(raw[..11]) != longChecksum))
+                {
+                    throw new ImageFormatException("Incomplete FAT long-name sequence or short-alias checksum mismatch.");
+                }
                 if (longParts.Count > 0 && nextLong == 0 && Checksum(raw[..11]) == longChecksum)
                 {
                     name = string.Concat(longParts.OrderBy(p => p.Key).Select(p => p.Value));
+                    if (strictNames) { ValidateLongNamePadding(name); }
                     int nul = name.IndexOf('\0');
                     if (nul >= 0)
                     {
@@ -427,17 +467,39 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
                     }
                     name = name.TrimEnd('\uffff');
                 }
+                long[] entryLongOffsets = longOffsets.ToArray();
                 longParts.Clear();
+                longOffsets.Clear();
                 nextLong = 0;
                 if ((attributes & 0x08) != 0 || shortName is "." or "..")
                 {
+                    if (strictNames && entryLongOffsets.Length != 0) { throw new ImageFormatException("Long names cannot decorate FAT special or volume-label records."); }
+                    if (strictNames && ((attributes & 0x08) != 0 ? !root || attributes != 8 : root))
+                    {
+                        throw new NotSupportedException("Unexpected FAT volume-label or special-directory metadata.");
+                    }
                     continue;
+                }
+                if (strictNames && (!FatEditNames.IsSupportedName(name) || !IsSafeAlias(shortName)
+                    || (raw[12] & ~0x18) != 0 || (attributes & 0xc0) != 0))
+                {
+                    throw new NotSupportedException("FAT name, alias or entry metadata is outside the qualified safe naming subset.");
+                }
+                if (strictNames && (raw[13] > 199 || FatTime(
+                        System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[24..]),
+                        System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[22..])) is null
+                    || !SupportedOptionalDate(raw, 16, 14) || !SupportedOptionalDate(raw, 18, -1)
+                    || (_bits != 32 && (raw[20] != 0 || raw[21] != 0))
+                    || (_bits == 32 && (raw[21] & 0xf0) != 0)))
+                {
+                    throw new NotSupportedException("FAT timestamps or reserved entry metadata are outside the qualified preservation subset.");
                 }
                 ImagePath.CheckName(name);
                 if (!names.Add(name))
                 {
                     throw new ImageFormatException($"Ambiguous duplicate FAT filename: {name}");
                 }
+                if (strictNames && !aliases.Add(shortName)) { throw new ImageFormatException("Duplicate FAT short alias."); }
                 uint start = (uint)(raw[26] | raw[27] << 8);
                 if (_bits == 32)
                 {
@@ -446,6 +508,10 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
                 }
                 long length = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(raw[28..]);
                 bool directory = (attributes & 0x10) != 0;
+                if (strictNames && directory && length != 0)
+                {
+                    throw new NotSupportedException("FAT directory length metadata is outside the qualified preservation subset.");
+                }
                 if (directory && (start == cluster || (_rootCluster >= 2 && start == _rootCluster)))
                 {
                     throw new ImageFormatException("Cyclic FAT directory reference detected.");
@@ -459,11 +525,50 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
                 ushort time = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[22..]);
                 var file = new FileEntry(child, name, directory, directory ? 0 : length, FatTime(date, time),
                     ((FileAttributes)attributes).ToString(), shortName);
-                entries.Add(new(file, start, offset + i));
+                entries.Add(new(file, start, offset + i, entryLongOffsets));
             }
             position += count;
         }
+        if (strictNames && longOffsets.Count != 0) { throw new ImageFormatException("Orphan FAT long-name sequence at directory boundary."); }
+        if (strictNames)
+        {
+            ValidateAliasCollisions(entries);
+        }
         return entries;
+    }
+
+    private static void ValidateLongNamePadding(string encoded)
+    {
+        int nul = encoded.IndexOf('\0');
+        if (nul >= 0 && (nul == 0 || encoded[(nul + 1)..].Any(c => c != '\uffff'))
+            || nul < 0 && encoded.Contains('\uffff'))
+        {
+            throw new ImageFormatException("Invalid FAT long-name terminator or padding.");
+        }
+        int length = nul < 0 ? encoded.Length : nul;
+        if (length > 255 || (length + 12) / 13 != encoded.Length / 13)
+        {
+            throw new ImageFormatException("Nonminimal or oversized FAT long-name sequence.");
+        }
+    }
+
+    private static bool SupportedOptionalDate(ReadOnlySpan<byte> raw, int dateOffset, int timeOffset)
+    {
+        ushort date = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[dateOffset..]);
+        ushort time = timeOffset < 0 ? (ushort)0 : System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[timeOffset..]);
+        return date == 0 ? time == 0 && (timeOffset < 0 || raw[13] == 0) : FatTime(date, time) is not null;
+    }
+
+    private static void ValidateAliasCollisions(List<Entry> entries)
+    {
+        var names = entries.ToDictionary(e => e.File.Name, StringComparer.OrdinalIgnoreCase);
+        foreach (Entry entry in entries)
+        {
+            if (entry.File.ShortName is string alias && names.TryGetValue(alias, out Entry? other) && other != entry)
+            {
+                throw new ImageFormatException("FAT display name conflicts with another entry's short alias.");
+            }
+        }
     }
 
     private List<uint> Chain(uint first, CancellationToken token, int maxClusters = MaxChainClusters)

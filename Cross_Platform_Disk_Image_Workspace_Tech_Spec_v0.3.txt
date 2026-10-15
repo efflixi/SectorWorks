@@ -315,6 +315,36 @@ Possible later operations:
 All operations must be subject to the capabilities of the current image session.
 
 
+6.6 EDITING CAPABILITY DELIVERY ROADMAP
+
+Owner-approved roadmap clarification, October 15, 2026:
+
+The current roadmap targets release 1.0. VMDK, VDI, QCOW2, DMG, ext2/ext3/ext4, exFAT, HFS+ and APFS target qualified read-only subsets for 1.0 where feasible. Modification, staged writing, Save As of modified images, direct commit, rebuild, creation and formatting for these additions are outside 1.0 requirements, not unassigned release-blocking writer gaps. No post-1.0 writer delivery date or milestone is promised.
+
+Phase 7 still requires reader evaluation, legal fixtures and tests for exact supported variants/features. Detection-only is not browsing/extraction. Document concrete limitations and feasibility blockers for owner review; do not silently remove a reader requirement if infeasible or infer blanket read support from this goal. Core access uses internal parsers, never host mounting: native Windows/Linux/macOS mounting support does not determine application parser capability. Track platform limitations from executed evidence.
+
+Apply the read-only cap compositionally: a read-only container keeps even FAT/NTFS read-only, and ext/exFAT/HFS+/APFS remain read-only inside otherwise writable raw/VHD/VHDX. This boundary does not reduce the core raw/VHD/VHDX FAT/ordinary-NTFS, optical or retro writing milestones below.
+
+Read support does not automatically provide editing, Save As, direct commit, or rebuild. The checklist must assign explicit delivery and qualification tasks for each required container -> partition layout -> filesystem -> feature-subset combination. A single working combination proves the initial feasibility milestone, not completion of the broader editing roadmap.
+
+Delivery assignments:
+- Phase 2 retains its verified initial conventional unpartitioned raw FAT12/FAT16/FAT32 DOS 8.3 editing and Save As subset.
+- Phase 2B, a separate milestone before Phase 3, expands staged editing and validated Save As to raw, fixed/dynamic VHD and fixed/dynamic VHDX with filesystem-only, valid primary MBR and valid GPT layouts containing conventional FAT12/FAT16/FAT32 or ordinary supported NTFS, where structurally valid. Each container variant, partition arrangement, supported sector-size combination and filesystem requires its own qualification row.
+- Phase 2B also delivers a declared FAT long-filename/mixed-case/Unicode writing subset and portable modification of existing ordinary NTFS volumes. NTFS creation/formatting remains a separate capability; the known dependency Windows SID formatting failure must not be treated as proof that all NTFS modification is impossible.
+- Phase 3 explicitly qualifies safe direct commit for the Phase 2B rows, including the initial Phase 2 subset. Generic transaction infrastructure or one successful combination is insufficient.
+- Phase 4 integrates ISO 9660, Joliet and supported Rock Ridge subsets with shared staged editing and validated rebuild. It also delivers a declared UDF read/edit/rebuild subset and separately qualified ISO/UDF bridge rebuild, rather than leaving UDF detection as the only scheduled capability.
+- Phase 6 integrates qualified BIN/CUE data and mixed-mode layouts with shared staged editing and validated new-output-set rebuilding, including safe multi-file publication.
+- Phase 7 item 7.10 separately qualifies conventional 360K/720K FAT12 staged editing, Save As and safe direct commit; wider legacy variants remain capability-gated. Creation and conversion require separate qualification.
+
+For disk containers, validated copy-and-apply Save As and qualified direct commit are normally the applicable save modes; rebuilding every format is not mandatory. Format-aware reconstruction is required when the layout cannot safely absorb changes, particularly optical media. Record inapplicable save modes with reasons rather than conflating them with missing writers.
+
+Each required row must remain incomplete or blocked until verified. If safe implementation is not achievable, obtain an explicit owner-approved scope decision; a named follow-up milestone is required only for work still required by the roadmap. Intentional 1.0 read-only additions need no invented future writer milestone; evaluation alone does not fulfill required reader or writer delivery tasks. Unsupported variants must remain safely read-only with reasons. Differencing parents, VHDX active-log replay, filesystem repair and partition creation/movement/resizing are not implicitly added by the editing expansion.
+
+Qualification must cover all advertised operations, staged browse/preview/hex/search/extraction, history/discard, capacity and naming rules, source integrity, new-output publication, independent reopen, and container/partition/filesystem allocation and metadata validation in addition to tree/content hashes. Preserve untouched volumes, opaque regions and supported metadata, or refuse the write. Direct commit additionally requires per-stack locking, backup, journal, interruption and recovery evidence. Bootability and exact-layout preservation remain independently tested capabilities, not automatic consequences of successful file editing.
+
+This is a documentation/roadmap correction, not permission to implement a phase. Phase 2B and every later phase require separate authorization and the normal verification/user-review gate. Historical Phase 2 completion remains limited to its recorded envelope. See checklist.txt for the authoritative task status and per-phase exit criteria.
+
+
 7. STORAGE ARCHITECTURE
 
 Storage logic must be separated into independent layers.
@@ -958,15 +988,25 @@ Phase 2 - Staged File Modification
 - Implement save-as-new-image workflows.
 - Add output validation.
 
+Phase 2B - Existing Disk-Format Editing Expansion
+- Qualify shared staged editing and validated Save As for raw, fixed/dynamic VHD and fixed/dynamic VHDX with filesystem-only, primary MBR and GPT FAT/ordinary-NTFS layouts.
+- Add a qualified FAT long-filename/mixed-case/Unicode writer subset.
+- Qualify portable existing-volume NTFS modification separately from formatting.
+- Preserve and validate container/partition/filesystem metadata, allocation and unchanged content for every required row.
+- Stop for verification and user review before Phase 3.
+
 Phase 3 - Safe Direct Commit
-- Add direct writes for tested container/filesystem combinations.
+- Qualify direct writes for each required Phase 2B container/layout/filesystem row, not merely one combination.
 - Add locking, backup, journaling, validation, and recovery.
 - Add external-change detection.
+- Require per-stack failure/recovery evidence or explicit owner-approved scope decisions with named follow-up milestones.
 
 Phase 4 - ISO Rebuild
 - Add controlled ISO rebuild.
 - Preserve supported naming extensions and metadata.
 - Add bootability capability detection and warnings.
+- Integrate ISO 9660/Joliet/Rock Ridge staged editing and qualify each advertised naming/metadata subset.
+- Deliver a declared UDF read/staged-edit/rebuild subset and consistent ISO/UDF bridge rebuild; unsafe/unavailable delivery stays blocked pending owner decision.
 
 Phase 5 - Linux and ARM64 Hardening
 - Validate all core functions on Linux x86-64 and ARM64.
@@ -979,11 +1019,14 @@ Phase 6 - BIN/CUE and Optical Expansion
 - Represent audio and mixed-mode tracks.
 - Add direct playback of CD audio tracks from supported images.
 - Add rebuild workflows only where preservation requirements are understood.
+- Integrate qualified data-track staged editing and validate safe publication/recovery of complete BIN/CUE output sets.
 
 Phase 7 - Additional Formats and Filesystems
 - Evaluate VMDK, VDI, QCOW2, DMG, ext filesystems, exFAT, HFS+, and APFS.
 - Expand and qualify retro-floppy compatibility, prioritizing 360K and 720K PC images while retaining the existing read-only 720K subset.
 - Add formats incrementally according to testability and user value.
+- Explicitly qualify conventional 360K/720K staged editing, Save As and safe direct commit; track creation/conversion separately.
+- Qualify feasible read-only subsets of VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS for 1.0; document concrete reader blockers for owner review without promising later writers.
 
 
 24. FEASIBILITY PROTOTYPE

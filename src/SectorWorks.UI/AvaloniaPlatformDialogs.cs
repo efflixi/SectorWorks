@@ -54,13 +54,20 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
     public async Task<string?> PickNewImagePathAsync(string suggestedName, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        string extension = Path.GetExtension(suggestedName).ToLowerInvariant() switch
+        {
+            ".vhd" => "vhd",
+            ".vhdx" => "vhdx",
+            _ => "img"
+        };
         IStorageFile? file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = "Save As New Image — existing files cannot be overwritten",
             SuggestedFileName = suggestedName,
-            DefaultExtension = "img",
+            DefaultExtension = extension,
             ShowOverwritePrompt = false,
-            FileTypeChoices = [new FilePickerFileType("Raw disk image") { Patterns = ["*.img"] }]
+            FileTypeChoices = [new FilePickerFileType(extension == "img" ? "Raw disk image" : extension.ToUpperInvariant() + " disk image")
+                { Patterns = ["*." + extension] }]
         });
         cancellationToken.ThrowIfCancellationRequested();
         return file is null ? null : file.TryGetLocalPath()
@@ -77,7 +84,7 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
             Spacing = 12,
             Children =
             {
-                new TextBlock { Text = "Enter one DOS 8.3 name, not a path: up to 8 characters plus an optional 3-character extension. Use ASCII letters, digits, _ or -. Each part must be entirely uppercase or lowercase (e.g. README.txt). Mixed case such as Readme.txt requires unsupported long names.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new TextBlock { Text = "Enter one image entry name, not a path. Qualified FAT supports short names and long mixed-case/Unicode names in NFC BMP form; no emoji/surrogates, control characters, reserved device names, leading/trailing spaces, trailing dots or \" * / : < > ? \\ |. The complete image path must fit within 240 characters.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                 input,
                 new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, accept } }
             }

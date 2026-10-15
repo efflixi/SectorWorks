@@ -17,7 +17,7 @@ namespace SectorWorks.UITests;
 public static class DesktopSmoke
 {
     public static string[] Arguments { get; private set; } = [];
-    internal static bool IsPhase2 => Arguments.Length > 0 && Arguments[0] == "--phase2";
+    internal static bool IsPhase2 => Arguments.Length > 0 && Arguments[0] is "--phase2" or "--phase2b";
 
     internal static FileEntry SelectPreviewFile(IEnumerable<FileEntry> entries)
     {
@@ -32,6 +32,7 @@ public static class DesktopSmoke
         {
             Console.Error.WriteLine("Usage: SectorWorks.UITests <image path> <new extraction folder> <screenshot.png> [minimum]");
             Console.Error.WriteLine("   or: SectorWorks.UITests --phase2 <new generated-fixture folder> <screenshot.png> [minimum]");
+            Console.Error.WriteLine("   or: SectorWorks.UITests --phase2b <new generated-fixture folder> <screenshot.png> [raw-mbr|vhd-fixed|vhd-dynamic|vhdx-fixed|vhdx-dynamic]");
             return 2;
         }
         Arguments = args;

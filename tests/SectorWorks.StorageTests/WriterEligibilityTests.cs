@@ -20,14 +20,15 @@ public sealed class WriterEligibilityTests
     [InlineData("caf\u00e9.txt", false)]
     public void ShortNamesPreserveRepresentableCaseWithoutRequiringLongNames(string name, bool supported)
     {
-        Assert.Equal(supported, FatEditNames.IsSupported(name));
+        Assert.Equal(supported, FatEditNames.IsSupportedShortName(name));
     }
 
     [Fact]
     public void ShortNameLookupsAllowMixedCaseWithoutClaimingItCanBeStored()
     {
         Assert.True(FatEditNames.IsValidShortName("CtMoUsE.eXe"));
-        Assert.False(FatEditNames.IsSupported("CtMoUsE.eXe"));
+        Assert.False(FatEditNames.IsSupportedShortName("CtMoUsE.eXe"));
+        Assert.True(FatEditNames.IsSupported("CtMoUsE.eXe"));
     }
 
     [Theory]

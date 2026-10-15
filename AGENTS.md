@@ -35,6 +35,28 @@ Owner retained macOS as an intended supported target on 2026-10-14 and explicitl
 deferred physical runtime/signing validation while authorizing Phase 2.
 Keep both cross-publishes working without claiming physical compatibility.
 
+Owner approved the editing-roadmap correction on 2026-10-15: Phase 2B is a
+separate staged-editing/Save As expansion milestone before Phase 3. It covers
+the required raw/VHD/VHDX, filesystem-only/MBR/GPT, FAT/ordinary-NTFS stacks and
+FAT long names. Phase 3 must qualify direct commit per required stack.
+ISO/UDF/bridge, BIN/CUE and conventional 360K/720K delivery is explicitly
+assigned to Phases 4, 6 and 7.10 respectively. See the checklist and
+[planned capability matrix](docs/support-matrix.md#required-editing-delivery-roadmap).
+Owner separately authorized Phase 2B implementation on 2026-10-15, after the
+1.0 scope correction; no later-phase implementation is authorized.
+Keep historical Phase 2 completion limited to its verified envelope; required
+unverified rows stay incomplete/blocked unless the owner explicitly approves
+a scope decision with a named follow-up milestone.
+
+The current roadmap targets 1.0. VMDK/VDI/QCOW2/DMG/ext2/ext3/ext4/exFAT/HFS+/APFS
+target qualified read-only subsets where feasible. Their writers, modified Save
+As, commit/rebuild and creation/formatting are outside 1.0, not unassigned gaps;
+no future writer milestone/date is required or promised. Phase 7 reader
+evaluation/fixtures/tests remain required. Detection is not browsing/extraction;
+document exact reader blockers for owner review, never silently drop them.
+Apply read-only caps across containers and filesystems compositionally. Internal
+parsers determine support, not the host OS's native mounting capabilities.
+
 ## Learnings
 
 DiscUtils FAT writer success and reopened file hashes are insufficient write
@@ -45,12 +67,27 @@ Use the qualified writer's allocation/metadata checks and independent
 checks alone.
 Keep write fixtures separate from immutable read goldens, whose readable layouts
 may intentionally fail stricter writer qualification.
-See [Phase 2 restrictions and evidence](docs/staged-editing.md) before broadening
-FAT capabilities, especially DOS 8.3 naming and legacy floppy exclusions.
+See [current editing restrictions and evidence](docs/staged-editing.md) before
+broadening FAT capabilities, especially the NFC BMP/ASCII-alias subset and
+legacy floppy exclusions.
 
 FAT lowercase short names use NT-reserved display flags, not necessarily LFN
 records. DiscUtils resets ancestor-directory case flags during timestamp updates;
 restore the changed entry and its ancestors after disposing the writer adapter.
 Keep FAT lookup case-insensitive but output spelling validation ordinal/exact.
-Mixed case within a basename/extension and all live LFN records remain a separate,
-unsupported write capability; do not silently normalize them.
+Phase 2B qualifies LFN/mixed-case/NFC BMP names separately; do not normalize
+unsupported names or change untouched aliases. Partitioned FAT qualification
+must compare the original BPB hidden-sector count against the absolute partition
+LBA, including its FAT32 backup, without rewriting it to qualify the volume.
+
+Existing-volume NTFS creation fails independently of formatting: DiscUtils ACL
+inheritance calls unsupported RawSecurityDescriptor APIs on Linux and can leave
+an indexed Security-ID-0 file before throwing. `ntfsfix -n` may still pass;
+retain bitmap/index/security checks and keep NTFS staging disabled pending
+owner-approved remediation. See [dependency evidence](docs/dependency-evaluation.md).
+
+DiscUtils VHDX ContentStream.Flush is unimplemented. The qualified writer uses
+synchronous payload/BAT writes, disposes the container, flushes the underlying
+file to disk, then independently reopens and checks metadata and virtual bytes.
+Preserve that ordering; a successful tree read is not equivalent to a durable
+container flush.

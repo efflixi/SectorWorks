@@ -34,6 +34,13 @@ internal sealed class StagedFileSystem(IReadOnlyFileSystem source, Dictionary<st
 
 internal sealed record StagedNode(FileEntry Entry, string? OriginalPath, StagedContent? Content);
 
+internal sealed class EditingTree(Dictionary<string, Dictionary<string, StagedNode>> volumes)
+{
+    public Dictionary<string, Dictionary<string, StagedNode>> Volumes { get; } = volumes;
+    public int Count => Volumes.Values.Sum(nodes => nodes.Count);
+    public IEnumerable<StagedNode> Values => Volumes.Values.SelectMany(nodes => nodes.Values);
+}
+
 internal sealed class StagedContent : IDisposable
 {
     private readonly FileStream owner;
@@ -96,10 +103,10 @@ internal sealed class EditingState(string directory, Action<string> reportResidu
     public string DirectoryPath { get; } = directory;
     public List<StagedWriteOperation> Operations { get; } = [];
     public List<StagedContent?> OperationContents { get; } = [];
-    public List<Dictionary<string, StagedNode>> States { get; } = [];
+    public List<EditingTree> States { get; } = [];
     public List<StagedContent> Contents { get; } = [];
     public int Position { get; set; }
-    public Dictionary<string, StagedNode> Current => States[Position];
+    public EditingTree Current => States[Position];
     public long RetainedBytes => Contents.Sum(content => content.Length);
     public bool CleanupBlocked { get; private set; }
     public void VerifySpool()

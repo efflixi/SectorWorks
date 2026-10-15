@@ -39,7 +39,38 @@ The VHD/VHDX FAT volume deliberately occupies only the first floppy-sized
 portion of the virtual disk. This is a filesystem-only synthetic layout, not
 a partitioned operating-system disk. Fixed and differencing containers, missing
 parents, GPT backup/CRC damage, FAT cycles, full volumes, NTFS compression,
-sparse files, links, deep trees, and boot media remain later fixture work.
+sparse files, links, deep trees, and boot media are not all represented by this
+immutable foundation catalog. Later disposable fixtures are documented below.
+
+## Phase 2B disposable writer and interoperability fixtures
+
+`DiskWriterFixtures` generates separate, exact-sized conventional FAT12/16/32
+volumes, valid primary MBR/GPT layouts, sentinel partition gaps and multi-volume
+images. It converts raw media with `qemu-img` to independently authored fixed/
+dynamic VHD and fixed/dynamic VHDX; the fixed-VHDX reader-only synthetic fixture
+is not substituted for that evidence. No immutable golden is made writable or
+silently changed to satisfy stricter writer checks.
+
+The matrix has 63 FAT rows: five container variants, three layouts and three FAT
+variants at 512 logical sectors, plus separate 512/4096 physical-sector VHDX
+rows. Outputs reopen through both the internal parser and qemu raw conversion;
+their virtual hashes agree. Extracted bounded volumes run `fsck.fat -n` and
+mtools when available. Long-name fixtures separately cover aliases, NFC BMP
+Unicode, directory growth/fullness, metadata and allocation regressions.
+`qemu-img` is a test-authoring prerequisite, not an application runtime dependency;
+the available host uses qemu 8.2.2, dosfstools 4.2 and mtools 4.0.43.
+
+NTFS modification probes create disposable copies of the immutable independently
+authored NTFS fixture; fresh `mkntfs` media independently reproduces creation's
+ACL blocker. Native NTFS tools and managed bitmap/index/security checks provide
+evidence beyond content hashes. Failed probes are not product outputs or
+qualified write fixtures; see [the dependency finding](dependency-evaluation.md#phase-2b-existing-volume-ntfs-blocker-2026-10-15).
+
+The actual desktop `--phase2b` harness authors its own legal FAT12 MBR disk and
+optionally converts it with qemu. It exercises rendered commands with mixed-case
+directory and Unicode file names, not owner-supplied or operating-system media.
+Diagnostic output and screenshots stay in ignored `artifacts/`; no proprietary
+sample enters a fixture, archive or release.
 
 ## Repeatable verification
 

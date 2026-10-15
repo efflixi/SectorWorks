@@ -12,6 +12,7 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
     private readonly IImageOpener opener;
     private readonly IExplorerLog log;
     private readonly IStagedImageWriter writer;
+    private readonly IStorageSpace storageSpace;
     private readonly string stagingRoot;
     private readonly ConcurrentDictionary<Guid, SessionLease> sessions = new();
     private readonly object lifecycle = new();
@@ -19,11 +20,13 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
 
     public ExplorerService(string? stagingDirectory = null) : this(new SectorWorks.Storage.ImageOpener(), stagingDirectory: stagingDirectory) { }
 
-    public ExplorerService(IImageOpener opener, IExplorerLog? log = null, IStagedImageWriter? writer = null, string? stagingDirectory = null)
+    public ExplorerService(IImageOpener opener, IExplorerLog? log = null, IStagedImageWriter? writer = null,
+        string? stagingDirectory = null, IStorageSpace? storageSpace = null)
     {
         this.opener = opener;
         this.log = log ?? new JsonExplorerLog();
-        this.writer = writer ?? new SectorWorks.Storage.RawFatImageWriter();
+        this.writer = writer ?? new SectorWorks.Storage.DiskImageWriter();
+        this.storageSpace = storageSpace ?? new HostStorageSpace();
         string userData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         stagingRoot = stagingDirectory is not null ? Path.GetFullPath(stagingDirectory)
             : string.IsNullOrWhiteSpace(userData) ? throw new InvalidOperationException("No managed user-data directory is available for staged image content.")
@@ -54,14 +57,15 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
                     new Capability(preview, preview ? "Bounded text/file hex preview." : "Only raw image hex inspection is available."),
                     new Capability(false, "Full filesystem validation is not implemented; opening performs bounded structural checks only."));
                 Capability editing = writer.Qualify(image);
-                string? sourceHash = editing.Available ? HashDevice(image.Device, cancellationToken) : null;
+                string? sourceHash = editing.Available ? HashSourceFile(image.Metadata.Path, image.Metadata.ContainerLength, cancellationToken) : null;
                 if (sourceHash is not null && HashSourceFile(image.Metadata.Path, image.Metadata.ContainerLength, cancellationToken) != sourceHash)
                 {
                     throw new IOException("Source changed while establishing the Save As baseline; reopen the image.");
                 }
                 capabilities = WithEditing(capabilities, editing);
                 var info = new WorkspaceInfo(id, editing.Available ? WorkspaceState.ReadyWritable : WorkspaceState.ReadyReadOnly, image.Metadata, image.Partitions,
-                    image.Volumes.Select(v => new VolumeInfo(v.Id, v.FileSystem.Name, v.FileSystem.VolumeLabel, v.Partition, v.FileSystem.Properties, WithEditing(v.FileSystem.Capabilities, editing))).ToArray(),
+                    image.Volumes.Select(v => new VolumeInfo(v.Id, v.FileSystem.Name, v.FileSystem.VolumeLabel, v.Partition, v.FileSystem.Properties,
+                        WithEditing(v.FileSystem.Capabilities, writer.QualifyVolume(image, v.Id)))).ToArray(),
                     image.Warnings, capabilities);
                 foreach (string warning in image.Warnings)
                 {
@@ -366,9 +370,9 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
     {
         ImageVolume volume = lease.Image.Volumes.SingleOrDefault(v => v.Id == id)
             ?? throw new ArgumentException("The volume does not belong to this workspace.", nameof(id));
-        return lease.Editing is null ? volume : volume with
+        return lease.Editing is null || !lease.Editing.Current.Volumes.TryGetValue(id, out Dictionary<string, StagedNode>? nodes) ? volume : volume with
         {
-            FileSystem = new StagedFileSystem(volume.FileSystem, lease.Editing.Current)
+            FileSystem = new StagedFileSystem(volume.FileSystem, nodes)
         };
     }
 

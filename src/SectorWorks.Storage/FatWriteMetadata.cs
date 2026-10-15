@@ -45,7 +45,7 @@ internal static class FatWriteMetadata
         return unnamed || found;
     }
 
-    internal static void UpdateFat32FreeSpace(FileStream stream, CancellationToken token)
+    internal static void UpdateFat32FreeSpace(Stream stream, CancellationToken token)
     {
         var boot = new byte[512];
         stream.Position = 0;

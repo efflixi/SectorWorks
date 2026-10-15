@@ -5,7 +5,7 @@ in C# with Avalonia and MVVM. It will inspect, browse, extract and, when safely
 supported, stage modifications and commit or rebuild images without host-OS
 mounting. Source data integrity and capability-based support are central.
 
-**Status: Phase 2 staged file modification verified and ready for owner review.** The supported
+**Status: Phase 2B partially delivered; mandatory portable NTFS writing blocked.** The supported
 reader subset was implemented and verified on Linux Mint 22 x64/X11. Owner-reported
 physical testing on 2026-10-14 also found Phase 1 working on Linux x64, Windows
 x64 and Linux ARM64 (Raspberry Pi 500). Windows 7 x64 reportedly runs the current
@@ -17,30 +17,79 @@ The reported missing first hex page is fixed: selecting the Hex View
 tab now loads it without a paging workaround, including for small binary files;
 see [platform status](docs/platform-status.md) for verification.
 Advanced NTFS reads and manual desktop integration review remain incomplete,
-as recorded in the checklist. Phase 2 adds staged modifications and Save As a
-new image for individually qualified raw/FAT combinations; source images remain
-read-only. See [staged editing and safety](docs/staged-editing.md). Direct commit
+as recorded in the checklist. Phase 2B adds shared staged modifications and Save As a
+new image for individually qualified FAT volumes in raw, fixed/dynamic VHD and
+fixed/dynamic VHDX; source images remain read-only.
+See [staged editing and safety](docs/staged-editing.md). Direct commit
 (Phase 3), ISO rebuild (Phase 4) and audio workflows (Phase 6) are not enabled.
 
-Latest Phase 2 verification, including the short-name case refinement:
-**313 tests passed, zero skipped**, zero-warning
-Release build, formatting/reference-copy/resource checks, all six refreshed
-self-contained publishes, and a real Linux Mint/X11 staged-edit/Save As workflow.
-FAT12/FAT16/FAT32 outputs pass independent `fsck.fat -n` and mtools checks.
-Editing requires a qualified unpartitioned conventional raw FAT image with a
-DOS 8.3 tree; FAT12 writes are limited to 1,474,560-byte floppy images.
-Uppercase and lowercase short names are supported, with case-insensitive lookup
-and preserved display case. Each basename and extension must independently be
-entirely uppercase or lowercase, such as `ctmouse.exe` or `README.txt`.
-Case-only file/directory renames are supported; mixed case within a component
-(such as `Readme.txt`) requires long-filename records and remains unsupported.
-Long-name trees, partitioned images, VHD/VHDX, NTFS and ISO remain nonwritable.
+The Phase 2B FAT envelope includes filesystem-only, primary MBR and consistent
+GPT layouts, per-volume capabilities and independent multi-volume staging.
+LFN/mixed-case/NFC BMP Unicode names are supported in a declared safe subset,
+with alias, spelling, allocation and metadata preservation checks. FAT12 remains
+limited to conventional 1,474,560-byte volumes; 360K/720K and early-DOS writing
+remain deferred. Logical sectors must be 512 bytes; VHDX 512/512 and 512/4096
+layouts are separately qualified, not 4Kn.
+
+Portable existing-volume NTFS Add/mkdir fail through the approved dependency's
+ACL inheritance on Linux, independently of formatting. All NTFS staging and
+Save As remain disabled pending owner direction; successful individual-operation
+experiments do not complete Phase 2B. See the
+[qualification ledger](docs/support-matrix.md#phase-2b-qualification-ledger-implementation-authorized-2026-10-15),
+[dependency blocker](docs/dependency-evaluation.md#phase-2b-existing-volume-ntfs-blocker-2026-10-15)
+and [current verification/platform evidence](docs/platform-status.md).
+Physical Mint/X11 workflows and independent FAT/container checks are distinct
+from six-target cross-publishing; Windows/ARM64 Phase 2B runtime is unverified.
+Final verification: **561 tests passed, zero skipped**, zero-warning Release
+build, locked restore, formatting/resources/reference-copy checks, all six
+self-contained publishes and the Linux x64 AppImage prototype. Five real X11
+container workflows pass with unchanged sources and independent output checks.
+
+### 1.0 scope boundary
+
+The roadmap targets **1.0**. VMDK, VDI, QCOW2, DMG, ext2/ext3/ext4, exFAT,
+HFS+ and APFS target **qualified read-only subsets where feasible** in Phase 7.
+Their modification/staging, modified Save As, direct commit, rebuild, creation
+and formatting are outside 1.0 requirements, not missing required writers.
+No post-1.0 writer date is promised. Reader evaluation, legal fixtures and tests
+remain required: detection is not browsing/extraction; exact unsupported variants
+and infeasible-reader blockers must be documented for owner review, not silently
+dropped. This is not a claim that these readers are implemented.
+
+Read-only caps compose across the stack: a read-only container caps even FAT/NTFS;
+ext/exFAT/HFS+/APFS stay read-only inside raw/VHD/VHDX. Internal parsers determine
+access independently of native host-OS mounting capabilities. Platform limits
+require evidence, not assumptions about Windows reading Linux/Mac filesystems.
+Core disk, optical and retro write milestones below are unchanged.
+
+### Planned editing coverage
+
+The owner approved a documentation-only roadmap correction on 2026-10-15:
+**Phase 2B now precedes Phase 3**. It explicitly schedules staged editing and
+validated Save As for partitioned raw images, fixed/dynamic VHD and VHDX,
+broader FAT naming (LFN/mixed case/Unicode), and ordinary existing-volume NTFS.
+Phase 3 must then qualify direct commit per required disk stack, not just one
+combination. Phase 4 covers shared ISO/UDF/bridge staging and rebuilding;
+Phase 6 covers BIN/CUE staging and safe output-set rebuilding; Phase 7 item 7.10
+covers conventional 360K/720K editing/Save As/direct-commit qualification.
+
+Only the qualified Phase 2B FAT subset above is implemented; NTFS is blocked
+and later milestones remain unimplemented. The owner
+separately authorized Phase 2B implementation on 2026-10-15; no Phase 3 work
+is authorized. Existing Phase 2 completion remains historical and does not
+complete the expanded Phase 2B requirements. See the
+[capability delivery matrix](docs/support-matrix.md#required-editing-delivery-roadmap)
+and [checklist](checklist.txt) for explicit tasks, preservation/failure gates
+and the owner-review requirement for unresolved scope.
 
 ## Prerequisites
 
 - .NET SDK **10.0.402**, pinned exactly in `global.json`.
 - .NET **10 LTS**, target `net10.0`; validation host runtime **10.0.13**.
 - Bash and network access to NuGet for the first restore/publish.
+- `qemu-img` for Phase 2B disposable container/interoperability tests. Native
+  `fsck.fat`/mtools and NTFS tools add independent checks when installed; none
+  is a runtime application dependency.
 - Primary host: Linux Mint 22 x86-64 / VS Code.
 
 Install that SDK using Microsoft's [.NET installation instructions](https://learn.microsoft.com/dotnet/core/install/).

@@ -1,4 +1,4 @@
-# Phase 2 staged editing and Save As
+# Staged editing and Save As: Phase 2 and partial Phase 2B
 
 Phase 2 is authorized independently of Phase 3 direct commit and Phase 4 ISO
 rebuild. Sources stay read-only. A modified workspace is not a modified source
@@ -12,6 +12,8 @@ evidence; reader support alone does not enable editing. VHD, VHDX, NTFS, ISO,
 unknown layouts and legacy floppy variants remain read-only unless separately
 qualified. In particular, the existing 720K Compaq/early-DOS read compatibility
 does not establish safe write support.
+The initial envelope is historical; the qualified Phase 2B FAT expansion below
+supersedes only the corresponding restrictions. NTFS remains blocked.
 
 Bootability and exact-layout preservation are not advertised. Do not use
 valuable bootable originals as write-test media. Tests use generated fixtures
@@ -28,7 +30,100 @@ Undo, redo and discard concern the in-session staged state. Save As creates a
 separate destination; it does not grant permission to overwrite the original.
 Direct commit, recovery journaling and ISO rebuilding remain later-phase work.
 
-## Qualified editing envelope
+### Roadmap and authorization
+
+On 2026-10-15 the owner approved a separate **Phase 2B** before Phase 3 to close
+the existing disk-format editing gaps. It requires its own implementation
+authorization, which the owner supplied on 2026-10-15. Phase 2's historical
+completed status and all restrictions below remain
+unchanged as historical evidence; implementation authorization is separate from
+roadmap approval.
+
+Phase 2B explicitly delivers shared staged editing and validated Save As for
+raw, fixed/dynamic VHD and fixed/dynamic VHDX with structurally valid
+filesystem-only, primary MBR and GPT layouts containing qualified FAT12/16/32
+or ordinary NTFS. It includes FAT LFN/mixed-case/Unicode writing and portable
+modification of existing ordinary NTFS volumes, separately from formatting.
+Every variant/layout/filesystem row needs its own allocation, metadata,
+preservation and failure evidence; reader support and successful file hashes
+alone are insufficient.
+
+Phase 3 then qualifies direct commit per required disk stack, rather than
+stopping after one combination. ISO/Joliet/Rock Ridge and a declared UDF/bridge
+subset receive shared staged/rebuild qualification in Phase 4. BIN/CUE receives
+staged data-track editing and safe output-set reconstruction in Phase 6.
+Conventional 360K/720K writing remains assigned to Phase 7 item 7.10.
+
+See the [delivery matrix](support-matrix.md#required-editing-delivery-roadmap)
+and [authoritative checklist](../checklist.txt) for exact assignments and gates.
+Unachievable required rows stay blocked pending an explicit owner-approved
+scope decision with a named follow-up milestone, not silently deferred.
+
+The [1.0 read-only boundary](support-matrix.md#owner-approved-10-read-only-boundary)
+excludes writers for Phase 7 VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS additions,
+without reducing Phase 2B or optical/retro writing requirements. No future
+writer milestone is needed for those intentional read-only additions; exact
+reader feasibility blockers still need owner review.
+
+## Current Phase 2B envelope and mandatory blocker
+
+**Phase 2B is partial/blocked, not complete.** Qualified conventional FAT12,
+FAT16 and FAT32 now use the shared five-operation staged workflow and validated
+Save As across raw, fixed/dynamic VHD and independently authored fixed/dynamic
+VHDX, each with filesystem-only, primary MBR and consistent GPT layouts.
+Capabilities are per volume. Multiple qualified volumes can be staged together;
+an unqualified sibling remains read-only and its virtual bytes are preserved.
+
+Disk logical sectors must be 512 bytes. VHDX physical-sector configurations
+512/512 and 512/4096 are separately tested; 4096-logical-sector (4Kn) writes are
+disabled. Virtual disk/volume bounds are 64 GiB, 8 MiB per FAT and 1,048,576 data
+clusters. FAT12 remains limited to conventional 1,474,560-byte volumes with
+18-sector/two-head geometry, including when bounded inside a partition.
+FAT volumes must exactly fill their selected extent. BPB hidden sectors must
+equal the selected partition's absolute LBA (zero without a partition); primary
+and backup boot metadata must agree. No source normalization or repair is offered.
+
+FAT naming supports short names and checked LFN/mixed-case/Unicode names in
+**NFC BMP form**, with at most 255 UTF-16 units per on-disk name and 240
+characters for the complete staged path. Surrogates/emoji, decomposed names,
+control/format/private-use/unassigned characters, reserved device names,
+leading/trailing spaces, trailing dots and FAT-forbidden punctuation are
+rejected, not normalized. Existing short aliases must be unambiguous ASCII in
+the qualified alias alphabet; CP437 aliases outside that subset remain read-only.
+Lookup is case-insensitive; output spelling is checked ordinally. Existing
+aliases and LFN sequences are retained for untouched entries and replacements;
+new names receive collision-checked aliases. Metadata editors remain unavailable.
+Nonminimal/invalid LFN records, unknown/reserved entry metadata and invalid
+ordinary modification dates remain read-only. Supported creation/access dates
+may be unspecified but are retained exactly; no timezone is invented for FAT.
+
+Untouched entries retain supported metadata. Rename and replacement preserve
+creation/access/modification dates and supported attributes. Ancestor case flags and timestamps are
+restored after dependency operations. LFN slots, checksums, aliases, mirrored
+FATs, unique reachable chains/no lost or crosslinked clusters, and FAT32 primary/
+backup boot/FSInfo summaries are checked independently of file hashes.
+
+Save As copies the physical container, extracts only selected bounded volumes
+to owned disposable scratch files, and patches only changed 512-byte virtual
+sectors. It retains container variant, virtual size, supported sector sizes,
+partition metadata and untouched virtual regions. Dynamic block allocation can
+grow for changed data, not because the whole virtual disk was rewritten.
+Container checks reject unknown optional metadata, overlapping BAT payloads,
+partially present VHDX blocks, parents, active logs and structural warnings.
+Source container identity metadata is retained; VHDX write GUID/sequence fields
+may update as required by its writer, with an empty output log. No bootability,
+bit-identical layout, repair, conversion, direct commit or crash recovery claim
+follows from this byte-preservation evidence.
+
+**Required ordinary NTFS editing is blocked on all rows.** Existing-volume
+Add/mkdir fail through the dependency's ACL inheritance on Linux, independently
+of formatting. A failure can leave an indexed empty file on the disposable probe
+copy even when `ntfsfix -n` passes. Successful replace/delete/rename experiments
+do not qualify all five operations. The [dependency evidence](dependency-evaluation.md#phase-2b-existing-volume-ntfs-blocker-2026-10-15)
+records the required owner decision: portable-security remediation or explicit
+NTFS scope revision. No mandatory NTFS requirement has been silently removed.
+
+## Historical Phase 2 initial envelope
 
 The initial writer intentionally accepts only **filesystem-only, unpartitioned
 raw FAT12/FAT16/FAT32 images**. Each must have conventional 512-byte sectors,
@@ -127,7 +222,7 @@ silently switch the workspace to the new output.
    stack remains browseable, with editing commands disabled and a reason.
 2. Navigate to the destination directory. Use Add or New Folder; use a single
    selected entry for Replace, Rename or Delete. New/renamed names must satisfy
-   the qualified DOS 8.3 rules above.
+   the current qualified FAT naming rules above.
 3. Open Changes to review ordered operations. Preview, hex, search and extraction
    show the current staged state. Undo/Redo and Discard affect only that state.
 4. Choose Save As and a new destination. Wait for copying, applying, flushing and
@@ -150,12 +245,17 @@ these commands.
 - Source devices remain read-only; only the temporary copy is passed to the
   replaceable Storage writer.
 - Qualified opening establishes a streamed source SHA-256 baseline. Save As
-  rechecks the source path, compares copied bytes against that baseline, and
+  rechecks the source path, compares copied physical container bytes against
+  that baseline, and
   rechecks the source again before publication. Detected external changes abort
   the save. This is not Phase 3 write locking, commit or recovery.
 - Output is flushed to disk, closed and independently reopened through the
   reader pipeline. Its container/filesystem identity, complete expected tree,
   file lengths and SHA-256 content hashes must match the staged view.
+- The writer's required output-validation contract compares supported original
+  entry metadata with the ordered changes after this independent reopen.
+  Valid-but-changed timestamps/attributes/aliases cannot pass merely because
+  tree/content hashes and allocation are correct.
 - FAT output allocation is checked independently of content hashes: mirrored
   tables, reachable unique chains, exact file allocation and absence of lost
   clusters must agree. Unchanged file hashes alone cannot prove this.
@@ -167,6 +267,8 @@ these commands.
   termination can leave a hidden `.sectorworks-save-*.img` file; Phase 3 recovery
   discovery/journaling is not implemented. Do not treat residual files as
   validated images.
+  Bounded-volume scratch files use `.sectorworks-volume-*.img`; cleanup failures
+  identify their residual paths too. They are never advertised as saved images.
 
 Free-space checks are advisory: other processes can consume space afterward,
 and I/O/flush errors still abort the operation. Copying a raw image requires its
@@ -207,7 +309,42 @@ allocation metadata and independently verified output. The approved dependency
 version is retained behind the replaceable writer boundary; the release-quality
 review remains required.
 
-## Executed verification and reproduction
+## Phase 2B final verification and reproduction
+
+On Linux Mint 22 x64/X11, 2026-10-15:
+
+- `./scripts/verify.sh`: **561 passing tests, zero skips**, locked restore,
+  zero-warning Release build, formatting/resources and authoritative copies.
+- 63 direct disk matrix rows and the same 63 actual shared staged workflows
+  pass, plus naming/metadata/fullness/growth, multivolume and failure regressions.
+- `./scripts/publish.sh all`: all six self-contained targets and Linux x64
+  AppImage pass architecture/legal/sample-exclusion and local resource checks.
+- All five real X11 container workflows pass after code freeze. Outputs pass
+  independent qemu conversion (plus VHDX checks), bounded `fsck.fat -n`, mtools
+  long-name listing and `mtype` content equality; source hashes are unchanged.
+- NTFS remains blocked, not passed or skipped into completion. Its disposable
+  probes/native checks are evidence for the documented owner decision.
+
+Final logs are local-only `artifacts/phase2b-final-verification.log`,
+`artifacts/phase2b-final-precommit-publish.log`, and
+`artifacts/phase2b-release-x11-<variant>.log`; screenshots and generated media
+are in the matching directories. Repeat only in a **new** artifact directory:
+
+```sh
+source scripts/common.sh
+"$DOTNET" tests/SectorWorks.UITests/bin/Release/net10.0/SectorWorks.UITests.dll \
+  --phase2b artifacts/my-phase2b-smoke artifacts/my-phase2b-smoke/window.png raw-mbr
+```
+
+Supported harness variants are `raw-mbr`, `vhd-fixed`, `vhd-dynamic`,
+`vhdx-fixed` and `vhdx-dynamic`. The harness requires a real graphical session
+and supplies dialog paths; native-picker/manual accessibility review remains
+incomplete. For native checks, convert VHD with explicit qemu `-f vpc` or VHDX
+with `-f vhdx`, then extract the bounded partition before running FAT tools.
+No source mounting or owner sample is used. Windows/ARM64 Phase 2B runtime is
+unverified; macOS physical runtime/signing remains expressly deferred.
+
+## Historical Phase 2 verification and reproduction
 
 On Linux Mint 22 x64/X11, 2026-10-14:
 

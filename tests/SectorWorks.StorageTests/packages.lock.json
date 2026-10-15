@@ -153,6 +153,20 @@
           "DiscUtils.Vhdx": "[0.16.13, )"
         }
       },
+      "sectorworks.platform": {
+        "type": "Project",
+        "dependencies": {
+          "SectorWorks.Core": "[1.0.0, )"
+        }
+      },
+      "sectorworks.services": {
+        "type": "Project",
+        "dependencies": {
+          "SectorWorks.Core": "[1.0.0, )",
+          "SectorWorks.Platform": "[1.0.0, )",
+          "SectorWorks.Storage": "[1.0.0, )"
+        }
+      },
       "sectorworks.storage": {
         "type": "Project",
         "dependencies": {

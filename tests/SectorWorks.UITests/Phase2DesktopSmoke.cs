@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Avalonia;
@@ -46,7 +48,13 @@ internal static class Phase2DesktopSmoke
             int exitCode = 1;
             try
             {
-                string source = CreateFixture(directory);
+                string variant = DesktopSmoke.Arguments[0] == "--phase2b"
+                    ? DesktopSmoke.Arguments.Length == 4 ? DesktopSmoke.Arguments[3] : "raw-mbr"
+                    : "raw";
+                string source = CreateFixture(directory, variant);
+                string stagedDirectory = variant == "raw" ? "STAGED" : "Mixed directory";
+                string addedName = variant == "raw" ? "ADDED.TXT" : "Added-\u03bb.txt";
+                string renamedName = variant == "raw" ? "RENAMED.TXT" : "Renamed-\u03bb.txt";
                 string sourceHash = Hash(source);
                 dialogs.ImportPath = Path.Combine(directory, "import.txt");
                 File.WriteAllText(dialogs.ImportPath, "Added through the physical desktop UI.\n", new UTF8Encoding(false));
@@ -61,30 +69,30 @@ internal static class Phase2DesktopSmoke
                 await Task.Delay(300);
                 window.UpdateLayout();
 
-                dialogs.Name = "STAGED";
+                dialogs.Name = stagedDirectory;
                 await InvokeToolbarAsync(window, "New Folder");
                 CheckWorkspace(workspace);
-                Check(workspace.Entries.Any(e => e.Name == "STAGED" && e.IsChanged && e.IsDirectory), "New directory is not marked staged.");
-                await workspace.NavigateAsync("/STAGED");
+                Check(workspace.Entries.Any(e => e.Name == stagedDirectory && e.IsChanged && e.IsDirectory), "New directory is not marked staged.");
+                await workspace.NavigateAsync("/" + stagedDirectory);
                 CheckWorkspace(workspace);
-                dialogs.Name = "ADDED.TXT";
+                dialogs.Name = addedName;
                 await InvokeToolbarAsync(window, "Add");
                 CheckWorkspace(workspace);
-                await SelectFileAsync(window, workspace, "ADDED.TXT");
+                await SelectFileAsync(window, workspace, addedName);
                 Check(workspace.PreviewText.Contains("Added through", StringComparison.Ordinal), "Added-file preview does not use staged bytes.");
                 dialogs.ImportPath = replacement;
                 await InvokeToolbarAsync(window, "Replace");
                 CheckWorkspace(workspace);
-                await SelectFileAsync(window, workspace, "ADDED.TXT");
+                await SelectFileAsync(window, workspace, addedName);
                 Check(workspace.PreviewText.Contains(ReplacementText, StringComparison.Ordinal), "Replacement preview does not use staged bytes.");
-                dialogs.Name = "RENAMED.TXT";
+                dialogs.Name = renamedName;
                 await InvokeToolbarAsync(window, "Rename");
                 CheckWorkspace(workspace);
-                await SelectFileAsync(window, workspace, "RENAMED.TXT");
+                await SelectFileAsync(window, workspace, renamedName);
                 Check(workspace.Selection.Single().IsChanged, "Renamed entry is not marked staged.");
                 await InvokeToolbarAsync(window, "Extract");
                 CheckWorkspace(workspace);
-                string extracted = Path.Combine(dialogs.ExtractionDirectory, "RENAMED.TXT");
+                string extracted = Path.Combine(dialogs.ExtractionDirectory, renamedName);
                 Check(File.Exists(extracted) && Hash(extracted) == Hash(replacement), "Staged extraction differs from replacement content.");
 
                 await workspace.NavigateAsync("/");
@@ -115,8 +123,8 @@ internal static class Phase2DesktopSmoke
                 Check(reopened.Entries.All(e => e.Name != "DELETE.TXT"), "Deleted file survived in saved output.");
                 await SelectFileAsync(window, reopened, "KEEP.TXT");
                 Check(reopened.PreviewText.Contains(UnchangedText, StringComparison.Ordinal), "Unchanged file content was not preserved.");
-                await reopened.NavigateAsync("/STAGED");
-                await SelectFileAsync(window, reopened, "RENAMED.TXT");
+                await reopened.NavigateAsync("/" + stagedDirectory);
+                await SelectFileAsync(window, reopened, renamedName);
                 Check(reopened.PreviewText.Contains(ReplacementText, StringComparison.Ordinal), "Reopened output content differs from staged replacement.");
                 await main.CloseCommand.ExecuteAsync(reopened);
                 Check(main.Error.Length == 0 && main.Workspaces.Count == 1, "Reopened workspace did not close cleanly.");
@@ -142,12 +150,12 @@ internal static class Phase2DesktopSmoke
                 await workspace.DiscardCommand.ExecuteAsync(null);
                 CheckWorkspace(workspace);
                 Check(!workspace.IsModified && workspace.PendingChanges.Count == 0, "Discard did not clear staged changes.");
-                Check(workspace.Entries.All(e => e.Name != "STAGED") && workspace.Entries.Any(e => e.Name == "DELETE.TXT"),
+                Check(workspace.Entries.All(e => e.Name != stagedDirectory) && workspace.Entries.Any(e => e.Name == "DELETE.TXT"),
                     "Discard did not restore the original source tree.");
                 Check(Hash(source) == sourceHash, "Source changed after discard.");
                 await main.CloseCommand.ExecuteAsync(workspace);
                 Check(main.Workspaces.Count == 0 && main.Error.Length == 0, "Source workspace did not close cleanly.");
-                Console.WriteLine($"PASS physical Phase 2: generated raw FAT12; add/replace/rename/delete/new-directory; changed markers, ordered volume-scoped pending list, undo/redo, staged preview/extraction, Save As validation/output reopen, cancelled close, discard; scaling={window.RenderScaling}");
+                Console.WriteLine($"PASS physical staged editing: generated {variant} FAT12; add/replace/rename/delete/new-directory; changed markers, ordered volume-scoped pending list, undo/redo, staged preview/extraction, Save As validation/output reopen, cancelled close, discard; scaling={window.RenderScaling}");
                 Console.WriteLine($"PASS source unchanged: {source}; SHA-256 {sourceHash}");
                 Console.WriteLine($"PASS staged extraction/output: {extracted}; SHA-256 {Hash(extracted)}; output={dialogs.OutputPath}");
                 Console.WriteLine($"PASS app-window-only screenshot: {DesktopSmoke.Arguments[2]}; generated disposable artifacts={directory}");
@@ -159,8 +167,12 @@ internal static class Phase2DesktopSmoke
         window.Opened += (_, _) => Dispatcher.UIThread.Post(() => smoke.Execute(null));
     }
 
-    internal static string CreateFixture(string directory)
+    internal static string CreateFixture(string directory, string variant = "raw")
     {
+        if (variant is not ("raw" or "raw-mbr" or "vhd-fixed" or "vhd-dynamic" or "vhdx-fixed" or "vhdx-dynamic"))
+        {
+            throw new ArgumentException("Unsupported disposable desktop fixture variant.", nameof(variant));
+        }
         if (Directory.Exists(directory) || File.Exists(directory)) { throw new IOException("Phase 2 smoke requires a NEW disposable fixture directory."); }
         Directory.CreateDirectory(directory);
         string image = Path.Combine(directory, "source.img");
@@ -175,7 +187,52 @@ internal static class Phase2DesktopSmoke
             stream.Flush(true);
         }
         GeneratedFatFixtureMetadata.Complete(image);
-        return image;
+        if (variant == "raw") { return image; }
+        string disk = Path.Combine(directory, "partitioned.img");
+        using (var output = new FileStream(disk, FileMode.CreateNew, FileAccess.ReadWrite))
+        {
+            output.SetLength(16 * 1024 * 1024);
+            byte[] mbr = new byte[512];
+            "PHASE2B-OPAQUE-BOOT"u8.CopyTo(mbr);
+            mbr[450] = 1;
+            BinaryPrimitives.WriteUInt32LittleEndian(mbr.AsSpan(454), 2048);
+            BinaryPrimitives.WriteUInt32LittleEndian(mbr.AsSpan(458), 2880);
+            mbr[510] = 0x55;
+            mbr[511] = 0xaa;
+            output.Write(mbr);
+            output.Position = 2048 * 512L;
+            using var input = File.OpenRead(image);
+            input.CopyTo(output);
+            output.Position = 2048 * 512L + 28;
+            byte[] hidden = new byte[4];
+            BinaryPrimitives.WriteUInt32LittleEndian(hidden, 2048);
+            output.Write(hidden);
+            output.Flush(true);
+        }
+        if (variant == "raw-mbr") { return disk; }
+        bool vhdx = variant.StartsWith("vhdx", StringComparison.Ordinal);
+        string container = Path.Combine(directory, vhdx ? "source.vhdx" : "source.vhd");
+        var start = new ProcessStartInfo("qemu-img") { RedirectStandardOutput = true, RedirectStandardError = true };
+        string options = "subformat=" + (variant.EndsWith("fixed", StringComparison.Ordinal) ? "fixed" : "dynamic")
+            + (vhdx ? "" : ",force_size=on");
+        foreach (string argument in new[] { "convert", "-f", "raw", "-O", vhdx ? "vhdx" : "vpc", "-o", options, disk, container })
+        {
+            start.ArgumentList.Add(argument);
+        }
+        using Process process = Process.Start(start) ?? throw new IOException("Could not start independent qemu-img fixture author.");
+        Task<string> stdout = process.StandardOutput.ReadToEndAsync();
+        Task<string> stderr = process.StandardError.ReadToEndAsync();
+        if (!process.WaitForExit(60000))
+        {
+            process.Kill(true);
+            process.WaitForExit();
+            throw new IOException("Independent qemu-img fixture author exceeded its 60-second deadline.");
+        }
+        if (process.ExitCode != 0)
+        {
+            throw new IOException("Independent qemu-img fixture author failed: " + stdout.GetAwaiter().GetResult() + stderr.GetAwaiter().GetResult());
+        }
+        return container;
     }
 
     private static void WriteFile(FatFileSystem fileSystem, string name, string content)

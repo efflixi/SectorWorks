@@ -221,12 +221,11 @@ public sealed class EditingTests
     [InlineData("/CON.txt")]
     [InlineData("/trailing.")]
     [InlineData("/trailing ")]
-    [InlineData("/nonascii-é")]
-    [InlineData("/TOOLONGNAME.TXT")]
-    [InlineData("/MiXeD.txt")]
-    [InlineData("/NAME.tXt")]
+    [InlineData("/decomposed-e\u0301")]
+    [InlineData("/surrogate-\ud83d\ude00")]
+    [InlineData("/ leading")]
     [InlineData("/nul.txt")]
-    [InlineData("/TOOLONG.EXTENSION")]
+    [InlineData("/CLOCK$")]
     [InlineData("/")]
     public async Task InvalidNamesAreRejectedWithoutPendingChanges(string path)
     {
@@ -495,9 +494,32 @@ public sealed class EditingTests
         await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, info.Volumes[0].Id, "/ADDED.TXT", work.File("input", "unchanged bytes")));
         string output = Path.Combine(work.Path, "invalid-date.img");
         InvalidDataException failure = await Assert.ThrowsAsync<InvalidDataException>(() => service.SaveAsAsync(info.Id, output));
-        Assert.Contains("modification date", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("structural validation", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("timestamps", failure.Message, StringComparison.Ordinal);
         Assert.False(File.Exists(output));
         Assert.Equal(baseline, Hash(source));
+        Assert.Empty(Directory.GetFiles(work.Path, ".sectorworks-save-*"));
+    }
+
+    [Theory]
+    [InlineData(11)]
+    [InlineData(16)]
+    [InlineData(18)]
+    [InlineData(24)]
+    public async Task ValidButChangedUntouchedMetadataCannotPublishWithMatchingTreeAndHashes(int field)
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden("fat12.img");
+        string baseline = Hash(source);
+        using var service = new ExplorerService(new ImageOpener(), writer: new MetadataCorruptingWriter(field), stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/NEW"));
+        string output = Path.Combine(work.Path, "metadata-corrupt.img");
+        InvalidDataException failure = await Assert.ThrowsAsync<InvalidDataException>(() => service.SaveAsAsync(info.Id, output));
+        Assert.Contains("metadata/preservation validation", failure.Message, StringComparison.Ordinal);
+        Assert.False(File.Exists(output));
+        Assert.Equal(baseline, Hash(source));
+        Assert.Single((await service.GetEditingSnapshotAsync(info.Id)).Changes);
         Assert.Empty(Directory.GetFiles(work.Path, ".sectorworks-save-*"));
     }
 
@@ -647,7 +669,7 @@ public sealed class EditingTests
     }
 
     [Fact]
-    public async Task IndependentlyAuthoredLongNamesRemainReadOnlyWhenMtoolsAvailable()
+    public async Task IndependentlyAuthoredLongNamesQualifyAndPreserveAliasesWhenMtoolsAvailable()
     {
         string? mcopy = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
             .Select(directory => Path.Combine(directory, "mcopy")).FirstOrDefault(File.Exists);
@@ -663,9 +685,17 @@ public sealed class EditingTests
         Assert.True(process.ExitCode == 0, errors);
         using var service = new ExplorerService(stagingDirectory: work.Path);
         WorkspaceInfo info = await service.OpenAsync(source);
-        Assert.False(info.Capabilities.Modify.Available);
-        Assert.Contains("8.3", info.Capabilities.Modify.Reason, StringComparison.Ordinal);
+        Assert.True(info.Capabilities.Modify.Available, info.Capabilities.Modify.Reason);
         Assert.Equal("long filename content", (await service.PreviewAsync(info.Id, info.Volumes[0].Id, "/Long file.txt")).Text);
+        FileEntry before = (await service.ReadDirectoryAsync(info.Id, info.Volumes[0].Id, "/")).Single(entry => entry.Name == "Long file.txt");
+        await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/Mixed directory"));
+        string output = Path.Combine(work.Path, "long-name.img");
+        await service.SaveAsAsync(info.Id, output);
+        using IImageSession saved = new ImageOpener().OpenReadOnly(output);
+        FileEntry after = saved.Volumes[0].FileSystem.ReadDirectory("/").Single(entry => entry.Name == before.Name);
+        Assert.Equal(before.ShortName, after.ShortName);
+        Assert.Equal(before.ModifiedUtc, after.ModifiedUtc);
+        await AssertIndependentFatToolsAsync(output, "/", "Long file.txt");
     }
 
     [Theory]
@@ -752,7 +782,9 @@ public sealed class EditingTests
         Assert.Contains(await service.ReadDirectoryAsync(info.Id, volume, "/"), entry => entry.Name == "sentinel.txt");
         await service.RedoAsync(info.Id);
         await Assert.ThrowsAsync<IOException>(() => service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/sentinel.TXT", NewName: "SENTINEL.txt")));
-        await Assert.ThrowsAsync<InvalidDataException>(() => service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/sentinel.TXT", NewName: "Sentinel.txt")));
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/sentinel.TXT", NewName: "Sentinel.txt"));
+        Assert.Contains(await service.ReadDirectoryAsync(info.Id, volume, "/"), entry => entry.Name == "Sentinel.txt");
+        await service.UndoAsync(info.Id);
         string output = Path.Combine(work.Path, "case-renamed.img");
         await service.SaveAsAsync(info.Id, output);
         Assert.Equal(originalHash, Hash(source));
@@ -791,7 +823,7 @@ public sealed class EditingTests
     }
 
     [Fact]
-    public async Task LongNameRecordWithIdenticalShortAliasStillDisablesEditing()
+    public async Task LongNameRecordWithIdenticalShortAliasIsPreservedThroughEditing()
     {
         using var work = new EditDirectory();
         string source = work.Golden("fat12.img");
@@ -827,9 +859,12 @@ public sealed class EditingTests
         }
         using var service = new ExplorerService(stagingDirectory: work.Path);
         WorkspaceInfo info = await service.OpenAsync(source);
-        Assert.False(info.Capabilities.Modify.Available);
-        Assert.Contains("long filename records", info.Capabilities.Modify.Reason, StringComparison.Ordinal);
+        Assert.True(info.Capabilities.Modify.Available, info.Capabilities.Modify.Reason);
         Assert.Equal("SENTINEL.TXT", (await service.ReadDirectoryAsync(info.Id, info.Volumes[0].Id, "/")).Single(entry => !entry.IsDirectory).Name);
+        await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/NEW"));
+        string output = Path.Combine(work.Path, "redundant-lfn.img");
+        await service.SaveAsAsync(info.Id, output);
+        Assert.Equal(EditDirectory.RootEntry(source, "SENTINEL.TXT"), EditDirectory.RootEntry(output, "SENTINEL.TXT"));
     }
 
     [Fact]
@@ -856,6 +891,8 @@ public sealed class EditingTests
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
             inner.ValidateCapacity(image, operations, token);
+        public void ValidateOutput(IImageSession source, IImageSession output, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
+            inner.ValidateOutput(source, output, operations, token);
         public void Apply(string path, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token)
         {
             inner.Apply(path, operations, token);
@@ -885,6 +922,42 @@ public sealed class EditingTests
         Assert.Equal("FAT12", info.Volumes[0].FileSystem);
         Assert.False(info.Capabilities.Modify.Available);
         Assert.False(info.Capabilities.SaveAs.Available);
+    }
+
+    [Theory]
+    [InlineData("fat12.img")]
+    [InlineData("fat16.img")]
+    [InlineData("fat32.img")]
+    public async Task LongMixedCaseUnicodeNamesUseSharedStagedHistoryAndValidatedSave(string fixture)
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden(fixture);
+        string hash = Hash(source);
+        byte[] original = EditDirectory.RootEntry(source, "SENTINEL.TXT");
+        using var service = new ExplorerService(stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        string volume = info.Volumes[0].Id;
+        await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, volume, "/Mixed directory"));
+        await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, volume, "/Mixed directory/Unicode-\u03bb.txt", work.File("first", "first")));
+        await service.StageAsync(info.Id, new(ImageChangeKind.ReplaceFile, volume, "/mixed DIRECTORY/UNICODE-\u039b.TXT", work.File("replacement", "second")));
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/Mixed directory", NewName: "Renamed directory"));
+        await service.UndoAsync(info.Id);
+        Assert.Equal("second", (await service.PreviewAsync(info.Id, volume, "/Mixed directory/Unicode-\u03bb.txt")).Text);
+        await service.RedoAsync(info.Id);
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/Renamed directory/Unicode-\u03bb.txt", NewName: "unicode-\u03bb.txt"));
+        await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, volume, "/Delete this long name.txt", work.File("transient", "remove")));
+        await service.StageAsync(info.Id, new(ImageChangeKind.Delete, volume, "/delete THIS long name.txt"));
+        Assert.Single(await service.SearchAsync(info.Id, "unicode-"));
+        string output = Path.Combine(work.Path, "long-unicode.img");
+        await service.SaveAsAsync(info.Id, output);
+        using IImageSession saved = new ImageOpener().OpenReadOnly(output);
+        FileEntry entry = Assert.Single(saved.Volumes[0].FileSystem.ReadDirectory("/Renamed directory"));
+        Assert.Equal("unicode-\u03bb.txt", entry.Name);
+        using var text = new StreamReader(saved.Volumes[0].FileSystem.OpenRead(entry.Path));
+        Assert.Equal("second", text.ReadToEnd());
+        Assert.Equal(hash, Hash(source));
+        Assert.Equal(original, EditDirectory.RootEntry(output, "SENTINEL.TXT"));
+        await AssertIndependentFatToolsAsync(output, "/", "Renamed directory");
     }
 
     private static string Hash(string path)
@@ -979,6 +1052,8 @@ public sealed class EditingTests
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken) =>
             inner.ValidateCapacity(image, operations, cancellationToken);
+        public void ValidateOutput(IImageSession source, IImageSession output, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
+            inner.ValidateOutput(source, output, operations, token);
         public void Apply(string copyPath, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
         {
             if (!corrupt) { throw new IOException("Injected write failure."); }
@@ -994,6 +1069,8 @@ public sealed class EditingTests
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken) =>
             inner.ValidateCapacity(image, operations, cancellationToken);
+        public void ValidateOutput(IImageSession source, IImageSession output, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
+            inner.ValidateOutput(source, output, operations, token);
         public void Apply(string copyPath, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
         {
             inner.Apply(copyPath, operations, cancellationToken);
@@ -1007,6 +1084,8 @@ public sealed class EditingTests
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken) =>
             inner.ValidateCapacity(image, operations, cancellationToken);
+        public void ValidateOutput(IImageSession source, IImageSession output, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
+            inner.ValidateOutput(source, output, operations, token);
         public void Apply(string copyPath, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
         {
             inner.Apply(copyPath, operations, cancellationToken);
@@ -1029,7 +1108,31 @@ public sealed class EditingTests
         }
     }
 
-    private sealed class EditDirectory : IDisposable
+    private sealed class MetadataCorruptingWriter(int field) : IStagedImageWriter
+    {
+        private readonly RawFatImageWriter inner = new();
+        public Capability Qualify(IImageSession image) => inner.Qualify(image);
+        public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
+            inner.ValidateCapacity(image, operations, token);
+        public void ValidateOutput(IImageSession source, IImageSession output, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
+            inner.ValidateOutput(source, output, operations, token);
+        public void Apply(string path, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token)
+        {
+            inner.Apply(path, operations, token);
+            MutateRootEntry(path, "SENTINEL.TXT", (bytes, offset) =>
+            {
+                if (field == 11) { bytes[offset + field] ^= 2; }
+                else
+                {
+                    Span<byte> date = bytes.AsSpan(offset + field, 2);
+                    ushort old = BinaryPrimitives.ReadUInt16LittleEndian(date);
+                    BinaryPrimitives.WriteUInt16LittleEndian(date, old == 0x5021 ? (ushort)0x5022 : (ushort)0x5021);
+                }
+            });
+        }
+    }
+
+    internal sealed class EditDirectory : IDisposable
     {
         public string Path { get; } = System.IO.Path.Combine(AppContext.BaseDirectory, "editing-work", Guid.NewGuid().ToString("N"));
         public EditDirectory() => Directory.CreateDirectory(Path);
@@ -1051,8 +1154,11 @@ public sealed class EditingTests
         public static void AddRootDirectory(string path, string name)
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite);
-            using var fs = new DiscUtils.Fat.FatFileSystem(stream);
-            fs.CreateDirectory(name);
+            using (var fs = new DiscUtils.Fat.FatFileSystem(stream)) { fs.CreateDirectory(name); }
+            byte[] boot = new byte[512];
+            stream.Position = 0;
+            stream.ReadExactly(boot);
+            if (Read16(boot, 22) == 0) { CompleteFat32Hints(stream, boot); }
         }
 
         public static byte[] RootEntry(string path, string name)
@@ -1121,6 +1227,14 @@ public sealed class EditingTests
             int backup = Read16(boot, 50);
             stream.Position = backup * 512L;
             stream.Write(boot);
+            CompleteFat32Hints(stream, boot);
+        }
+
+        private static void CompleteFat32Hints(FileStream stream, byte[] boot)
+        {
+            int reserved = Read16(boot, 14);
+            uint fatSectors = Read32(boot, 36);
+            int backup = Read16(boot, 50);
             long clusters = (Read32(boot, 32) - reserved - boot[16] * (long)fatSectors) / boot[13];
             byte[] fat = new byte[checked((int)(fatSectors * 512))];
             stream.Position = reserved * 512L;

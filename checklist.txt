@@ -1,5 +1,5 @@
 SECTORWORKS DEVELOPMENT CHECKLIST
-Workflow Revision: 0.2
+Workflow Revision: 0.3
 
 Purpose:
 This checklist converts the SectorWorks technical phases into an agent-executable implementation plan. It is intentionally more concrete than the technical specification.
@@ -11,6 +11,7 @@ WORKFLOW AUTHORITY
 - Agents must NEVER begin a later phase without explicit user approval.
 - A later-phase dependency discovered during current work must be noted under the affected item and reported to the user.
 - At the end of every phase, the agent must perform verification, update this checklist truthfully, request user review, and STOP.
+- Phase 2B is a separate owner-approved roadmap milestone between Phase 2 and Phase 3. It requires explicit implementation authorization; documentation approval is not authorization to start it.
 
 STATUS KEY
 [ ] Not started / incomplete
@@ -42,6 +43,32 @@ GLOBAL RULES
 [ ] Never weaken valid tests to make verification pass.
 [ ] Never mark physical platform validation complete based solely on cross-compilation.
 [ ] Never cross into a later phase without explicit user approval.
+
+CAPABILITY DELIVERY COVERAGE
+    NOTE: Owner approved this roadmap correction on 2026-10-15, including
+    a separate Phase 2B before Phase 3. No implementation authorized by it.
+    Phase 2's verified initial subset remains complete within its recorded
+    envelope; its "at least one" exit is not the product-wide editing target.
+[ ] Maintain named container -> partition layout -> filesystem -> feature-subset rows for planned and delivered capabilities.
+[ ] Track staged operations, Save As, direct commit, rebuild, validation, bootability and exact-layout preservation independently for each row.
+[ ] Assign every required incomplete capability to a phase/item; generic infrastructure or library APIs do not complete any row.
+[ ] Keep required rows incomplete/blocked until verified, or obtain explicit owner approval for a documented scope change; require a named follow-up milestone only for capabilities still required by the roadmap.
+[ ] Do not substitute a single successful stack for the required coverage of a phase.
+    NOTE: Disk images normally use copy-and-apply Save As or qualified direct
+    commit; optical layouts normally require reconstruction. Rebuild is not
+    automatically required for every readable format. Record why a save mode
+    is inapplicable; an unavailable required writer is a gap/blocker, not an exemption.
+    Owner decision, 2026-10-15: this roadmap targets 1.0. VMDK, VDI, QCOW2,
+    DMG, ext2/ext3/ext4, exFAT, HFS+ and APFS target qualified read-only
+    subsets where feasible. Their modification/staging, modified Save As,
+    direct commit, rebuild, creation and formatting are outside 1.0 requirements,
+    not release-blocking writer gaps. No post-1.0 delivery date is promised.
+    Phase 7 must still evaluate readers and publish exact tested subsets or
+    concrete blockers; detection-only is not browsing/extraction, and infeasible
+    readers require owner review rather than silent removal. Apply the cap
+    compositionally: a read-only container caps FAT/NTFS too; a read-only
+    filesystem stays read-only inside raw/VHD/VHDX. Internal parsers, not the
+    host OS's native mount support, determine access on every platform.
 
 
 ============================================================
@@ -222,8 +249,9 @@ Establish the permanent UI foundation and a safe read-only storage pipeline capa
 [x] Detect/report differencing VHD parent requirements.
 [x] Detect VHDX.
 [x] Open fixed VHDX read-only where supported.
-    NOTE: Synthetic fixed-reader fixture (all blocks allocated and fixed flag).
-    Independent-tool fixed-VHDX interoperability remains release-hardening work.
+    NOTE: Phase 1 used a synthetic fixed-reader fixture (all blocks allocated
+    and fixed flag). Phase 2B separately adds independently qemu-authored
+    fixed/dynamic write fixtures and independent output interoperability checks.
 [x] Open dynamic VHDX read-only.
 [x] Detect/report differencing VHDX parent requirements.
     NOTE: Parent-requiring containers rejected explicitly; no automatic parent
@@ -687,6 +715,8 @@ PHASE 2 VERIFICATION AND USER REVIEW GATE
 [x] Review exit criteria.
 [x] Prepare user review summary.
 [x] STOP and request user approval. Do not begin Phase 3.
+    NOTE: Roadmap corrected on 2026-10-15: Phase 2B now precedes Phase 3.
+    This historical Phase 2 gate does not authorize either milestone.
     NOTE: Final 2026-10-14 verification: locked restore; zero-warning Release
     build; 287 tests, zero skips (128 services, 67 storage, 62 UI, 30 foundation);
     formatting/resources/reference-copy checks pass. All six self-contained
@@ -726,11 +756,179 @@ PHASE 2 EXIT CRITERIA
 
 
 ============================================================
+PHASE 2B - EXISTING DISK-FORMAT EDITING EXPANSION
+============================================================
+
+GOAL:
+Extend the shared staged workflow and validated Save As to the already-readable
+disk-container/filesystem stacks before adding direct commit in Phase 3.
+
+    NOTE: Owner authorized Phase 2B implementation on 2026-10-15 following
+    the 1.0 read-only scope correction. Phase 3 remains unauthorized.
+    Required coverage is raw, fixed/dynamic VHD and fixed/dynamic VHDX, each
+    with filesystem-only, valid primary MBR and valid GPT layouts containing
+    conventional FAT12/FAT16/FAT32 or ordinary supported NTFS, where those
+    combinations are structurally valid. Record each variant separately.
+    FAT12 conventional 1.44 MB remains the initial disk-writing baseline;
+    360K/720K and early-DOS expansion remain in 7.10. Differencing parents,
+    VHDX active-log replay, filesystem repair and partition creation/movement/
+    resizing are not added by this milestone.
+    NOTE: 2026-10-15 delivery is PARTIAL/BLOCKED, not Phase 2B complete.
+    Qualified FAT is delivered across 63 container/layout/filesystem/sector
+    rows, including shared staged workflows. Required NTFS creation is blocked
+    by concrete portable ACL inheritance failures; no NTFS writer is enabled.
+    No Phase 3 implementation has begun.
+
+2B.1 Per-stack qualification and shared staged integration
+[x] Enumerate the required coverage rows above, their sector sizes/resource bounds and operation-level restrictions in the support matrix before implementation.
+[x] Wire add/replace/delete/rename/create-directory, Pending Changes, undo/redo/discard and staged browse/preview/hex/search/extraction for every qualified row.
+[x] Qualify naming, attributes, capacity/allocation estimates, imported payloads, source-change detection and output/temp-space checks for each row.
+[x] Keep capabilities per volume; isolate changes to selected volumes and support staged edits to multiple qualified volumes without corrupting unchanged volumes.
+[x] Keep source images read-only and preserve the Phase 2 Save As safety contract, including flush, independent reopen, validation and non-overwriting publication.
+[x] Regress the existing raw/FAT writer and its allocation, FSInfo, timestamp and short-name case fixes.
+    NOTE: Qualified rows are FAT only; mandatory NTFS delivery remains 2B.6.
+    Capabilities never transfer from qualified FAT to an unqualified sibling.
+    Global ordered history has independent volume trees and one payload budget.
+
+2B.2 Broader FAT naming and writable layouts
+[x] Implement FAT12/16/32 long-filename editing, including existing LFN trees, mixed case and Unicode within a declared encoding/name subset.
+[x] Validate LFN sequences/checksums, short-alias generation/collisions, case-only rename, directory growth and cleanup of both long and short entries.
+[x] Preserve untouched names, aliases, attributes and supported timestamps; reject unpreservable names/metadata rather than normalize or silently discard them.
+[x] Qualify conventional writable FAT layouts beyond Phase 2's unpartitioned/zero-hidden-sector restriction where required by 2B.3-2B.5.
+[x] Verify mirrored allocation, crosslinks/lost clusters, directory slots, full/near-full media and FAT32 primary/backup boot/FSInfo metadata.
+[x] Cross-check disposable outputs with independent FAT tools where available; tree/hash agreement alone is insufficient.
+    NOTE: NFC BMP names <=255 UTF-16 units, staged paths <=240 characters,
+    qualified ASCII aliases; unsafe names/metadata rejected, never normalized.
+    Replacements preserve dates/attributes/aliases and correct FAT32 high-cluster
+    allocation fields. Case-only rename retains independently chosen aliases.
+    Untouched short/LFN/special metadata is compared independently after reopen.
+    Native fsck.fat/mtools and fullness/growth/fragmented-root regressions pass.
+
+2B.3 Partitioned raw Save As
+[!] Implement bounded writes to FAT12/16/32 and qualified NTFS volumes within valid primary MBR and GPT raw images.
+    NOTE: Required FAT rows pass; ordinary NTFS delivery is blocked by 2B.6.
+[x] Validate partition-relative addressing and BPB hidden-sector/geometry expectations without silently repairing source metadata.
+[x] Preserve partition offsets/sizes/types/IDs/names/flags, MBR boot code, GPT primary/backup headers and arrays, and untouched partitions/unallocated or opaque regions.
+[x] Test multiple volumes, first/last-sector boundaries, invalid overlaps, damaged backup GPT and attempts to write outside the selected volume.
+[x] Require new raw output to reopen with matching partition metadata and unchanged out-of-volume bytes; do not infer bootability from byte preservation alone.
+    NOTE: Original BPB hidden sectors equal absolute partition LBA, including
+    backup metadata. Neither qualification views nor scratch copies normalize it.
+
+2B.4 VHD staged editing and Save As
+[!] Qualify fixed and dynamic VHD separately with the required filesystem-only/MBR/GPT and FAT/NTFS rows.
+    NOTE: Both variants/layouts/FAT subsets pass; NTFS remains blocked by 2B.6.
+[x] Produce a new VHD retaining its fixed/dynamic variant and virtual size unless the user explicitly requests a separately qualified conversion.
+[x] Validate headers/footer/checksums, block allocation tables, dynamic block growth and zero/unallocated reads without unnecessarily expanding sparse containers.
+[x] Preserve supported container and partition metadata and unchanged virtual-sector contents; document any necessary container identity changes.
+[x] Independently reopen and cross-check fixed/dynamic outputs with another implementation where available.
+[x] Reject differencing/parent-requiring or otherwise unsupported variants with an explicit capability reason.
+    NOTE: qemu-authored fixed/dynamic fixtures and independent virtual-byte/FAT
+    checks pass. Actual new-block growth is tested; ordinary edits do not expand
+    the dynamic payload unnecessarily. Footer/header/UUID metadata is retained.
+
+2B.5 VHDX staged editing and Save As
+[!] Qualify fixed and dynamic VHDX separately with the required filesystem-only/MBR/GPT and FAT/NTFS rows.
+    NOTE: Both variants/layouts/FAT subsets pass; NTFS remains blocked by 2B.6.
+[x] Produce a new VHDX retaining its variant, virtual size and supported logical/physical sector sizes; declare and test supported sector-size combinations.
+[x] Validate headers/checksums, region/metadata tables, block allocation and output log state, including dynamic allocation and zero/unallocated reads.
+[x] Preserve supported container and partition metadata and unchanged virtual-sector contents without unnecessarily expanding dynamic images.
+[x] Add independently authored fixed-VHDX fixtures and independent output interoperability checks; the existing synthetic fixed-reader fixture alone is insufficient.
+[x] Reject parent-requiring, active-log or unsupported metadata/sector-layout cases without automatic replay, repair or feature loss.
+    NOTE: 512/512 and 512/4096 independently tested; 4Kn remains rejected.
+    qemu-authored fixed/dynamic interoperability passes, including ZERO blocks.
+    Creator/page83/region/metadata are retained; expected write GUID/sequence
+    changes are allowed, with inactive logs. Unimplemented dependency stream
+    Flush is avoided; disposal/backing-file Flush(true)/independent reopen pass.
+
+2B.6 Portable ordinary NTFS editing and Save As
+[!] Implement and qualify ordinary resident/nonresident file add/replace/delete/rename and directory creation with Unicode names across the required raw/VHD/VHDX rows.
+    NOTE: 2026-10-15 existing-volume Add/mkdir fail on Linux through
+    DoGetSecurity -> RawSecurityDescriptor (unsupported ACL APIs), including
+    no-short-name/uncompressed options and fresh mkntfs media. Failure can
+    allocate/index an empty Security-ID-0 file; ntfsfix -n alone misses this.
+    Existing replace/transitions/delete/Unicode rename experiments pass bitmap,
+    metadata/content and independent-tool checks but do not qualify all required
+    operations. Sixteen regressions added; NTFS remains disabled on every stack.
+    Owner decision: portable-security dependency remediation or explicit required
+    NTFS scope revision. See docs/dependency-evaluation.md for concrete evidence.
+[x] Separate modification of an existing NTFS volume from NTFS creation/formatting; the known Windows SID formatting failure is not evidence that all modification is impossible.
+[!] Verify allocation bitmap/MFT/index consistency, resident/nonresident transitions, directory growth, full-volume behavior and supported timestamp/attribute/security metadata preservation.
+    NOTE: Narrow existing-file probes pass, but complete creation/growth/full
+    workflow qualification cannot proceed safely until the ACL blocker is resolved.
+[!] Detect unsupported sparse/compressed/encrypted/reparse/alternate-stream/attribute-list features and reject unsafe modifications without dropping opaque data or metadata.
+    NOTE: Read restrictions and universal NTFS write gating remain intact;
+    the required portable writer preflight/preservation path is not delivered.
+[!] Validate changed and unchanged files, allocation and metadata with independent NTFS tooling where available, not content hashes alone.
+    NOTE: Probe evidence includes bitmap/MFT/security/native checks; this is
+    not qualification of complete staged/Save As across required NTFS rows.
+[!] Keep storage integration replaceable; resolve portable writer defects or record a blocker for owner decision rather than declaring evaluation alone sufficient.
+    NOTE: Dependency integration remains replaceable and no unsafe writer is
+    enabled. Material portable-security remediation awaits owner decision;
+    recording the blocker does not complete required NTFS delivery.
+    NOTE: Formatting is a separate capability and remains subject to the
+    release-quality dependency review. Phase 2B requires existing-volume writes,
+    not a Windows-only formatter or an automatic DiscUtils replacement.
+
+2B.7 Verification and coverage evidence
+[!] Add legal repeatable disposable fixtures for every required container/layout/filesystem row and meaningful naming/sector/allocation variants.
+    NOTE: FAT 63-row matrix and meaningful variants delivered; NTFS probes/
+    mixed read-only sibling evidence do not complete all required NTFS rows.
+[!] Exercise all staged operations, history/discard, Save As/reopen and unchanged source hashes per row.
+    NOTE: All 63 qualified FAT rows pass actual shared Services workflows;
+    required NTFS staged rows remain disabled, not counted as successful.
+[x] Test low space, cancellation, source/destination races, I/O/flush/validation failures, corrupt metadata and unsupported features without false success or source modification.
+[x] Verify container/partition/filesystem metadata and allocation separately from tree/content hashes; use independent tools where available and document unavailable checks.
+[x] Run cross-target builds and representative runtime workflows on physically available platforms; keep deferred macOS and other unavailable physical evidence explicit.
+[x] Publish the exact qualified envelope and unresolved rows in the support matrix and staged-editing documentation.
+    NOTE: These verified checks cover newly writable FAT rows, not a completed
+    NTFS writer. Source/sample hashes remain unchanged; samples are not bundled.
+
+----------------------------------------
+PHASE 2B VERIFICATION AND USER REVIEW GATE
+----------------------------------------
+[x] Re-read rules.txt and the full current specifications/checklist.
+[x] Run restore/build/verify and all available cross-target publishes.
+[x] Run per-stack round-trip/failure tests and independent-tool checks.
+[!] Exercise shared staged/Save As workflows for raw, fixed/dynamic VHD and fixed/dynamic VHDX with FAT and ordinary NTFS.
+    NOTE: Qualified FAT complete; required NTFS blocked, no partial writer.
+[x] Review every required coverage row, TODO/stub/disabled test and capability reason; keep unresolved work visibly incomplete/blocked.
+[x] Update checklist, support matrix, limitations and physical-platform evidence honestly.
+[x] Review all Phase 2B exit criteria and prepare the user review summary.
+[x] STOP and request user approval. Do not begin Phase 3.
+    NOTE: Final verification: 561 tests / zero skips (309 storage/integration,
+    156 services/platform, 66 UI, 30 foundation/dependency), zero-warning
+    Release build; locked restore, formatting/resources/reference-copy checks.
+    All six self-contained publishes plus Linux x64 AppImage pass architecture,
+    legal/sample-exclusion and Linux/AppImage resource checks. Five final actual
+    Mint/X11 raw-MBR/fixed-dynamic-VHD/fixed-dynamic-VHDX workflows pass with
+    long/mixed/Unicode names and unchanged sources. Independent qemu/FAT tools
+    pass; mtype bytes match staged extraction. Native dialogs, Windows/ARM64
+    Phase 2B runtime remain unverified; macOS runtime/signing deferred.
+    Owner-authorized publication is an intermediate PARTIAL development
+    prerelease, not 1.0 or full Phase 2B. Await NTFS owner decision/review.
+
+PHASE 2B EXIT CRITERIA
+[!] Required raw/VHD/VHDX filesystem-only/MBR/GPT FAT/ordinary-NTFS rows have verified staged editing and validated Save As.
+    NOTE: Required FAT delivered; ordinary NTFS remains blocked by 2B.6.
+[x] FAT LFN/mixed-case/Unicode editing is qualified within an explicit subset without losing existing names or aliases.
+[x] Partition/container structures and unchanged data are preserved as claimed; source images remain unchanged.
+[x] Allocation/metadata validation and failure tests pass for every newly writable row.
+[x] Unsupported variants remain safely gated with reasons; no blanket write, formatting, bootability or exact-layout claim is made.
+[!] All required rows are verified or have explicit owner-approved scope decisions with named follow-up milestones; a single working stack cannot satisfy this phase.
+    NOTE: No NTFS scope revision or portable-security remediation authorized.
+    Blocker documentation is not an approved reduction or phase completion.
+
+
+============================================================
 PHASE 3 - SAFE DIRECT COMMIT
 ============================================================
 
 GOAL:
 Commit staged changes directly to tested mutable images with locking, recovery, validation, and external-change protection.
+
+    NOTE: Phase 2B must pass review before Phase 3 begins. Phase 3 adds safe
+    source commit to its qualified stacks; it does not silently broaden their
+    naming/filesystem/container envelope or treat one stack as full coverage.
 
 3.1 External change detection
 [ ] Record source path/identity/size/time and optional lightweight fingerprint.
@@ -769,6 +967,16 @@ Commit staged changes directly to tested mutable images with locking, recovery, 
 [ ] Test failure before/during write, metadata update, flush, application termination, low space, and lock failures where possible.
 [ ] Verify recoverability and no false success.
 
+3.7 Explicit per-stack direct-commit qualification
+[ ] Qualify raw filesystem-only, primary MBR and GPT layouts independently for Phase 2B FAT12/16/32 (including LFN) and ordinary NTFS operations.
+[ ] Qualify fixed VHD and dynamic VHD separately with Phase 2B filesystem/layout coverage, including dynamic allocation/container-metadata failure recovery.
+[ ] Qualify fixed VHDX and dynamic VHDX separately with Phase 2B filesystem/layout/sector-size coverage, including allocation/header/log-state recovery.
+[ ] Test source identity/locking/backup/journal/flush/reopen/validation/recovery for each required row, including multi-volume staged changes and unchanged-volume preservation.
+[ ] Verify interrupted filesystem and container metadata updates cannot yield a reported success or an unusable backup; retain tested recovery choices.
+[ ] Re-run independent filesystem/container checks and preservation assertions on committed disposable images.
+[ ] Record staged/Save As/direct-commit capabilities separately per row; a safe Save As result alone does not qualify source commit.
+[ ] If a row cannot safely commit, leave its task blocked and obtain an explicit owner decision on Save As-only scope or a named replacement/rebuild milestone before closing Phase 3.
+
 ----------------------------------------
 PHASE 3 VERIFICATION AND USER REVIEW GATE
 ----------------------------------------
@@ -776,13 +984,14 @@ PHASE 3 VERIFICATION AND USER REVIEW GATE
 [ ] Run restore/build/verify.
 [ ] Run all Phase 3 tests/failure injection and available cross-target builds.
 [ ] Exercise direct commit/recovery workflows on disposable images.
+[ ] Review all 3.7 coverage rows and their recovery evidence; do not close the phase on one successful combination.
 [ ] Update checklist and later-phase NOTES honestly.
 [ ] Review exit criteria.
 [ ] Prepare user review summary.
 [ ] STOP and request user approval. Do not begin Phase 4.
 
 PHASE 3 EXIT CRITERIA
-[ ] At least one combination supports tested direct commit.
+[ ] Every required 3.7 row supports tested direct commit, or has an explicit owner-approved scope decision and named follow-up milestone.
 [ ] External changes/concurrent writers are detected/prevented.
 [ ] Backup/recovery is operational.
 [ ] Interrupted commits are detectable.
@@ -823,6 +1032,20 @@ Apply normal staged editing to supported ISO images and rebuild safely while rep
 [ ] Boot-test representative BIOS/UEFI images when boot preservation is claimed.
 [ ] Test with independent tool where practical.
 
+4.5 Shared ISO staged workflow and naming coverage
+[ ] Integrate supported ISO 9660, Joliet and Rock Ridge subsets with the common overlay, all five file/directory operations, Pending Changes, undo/redo/discard and staged browse/preview/hex/search/extraction.
+[ ] Qualify ISO naming levels, Joliet Unicode and supported Rock Ridge names/metadata separately; keep multiple namespace views consistent in rebuilt output.
+[ ] Route Save As/Rebuild through the same validated new-image plan; source replacement, if offered, must use the Phase 3 locking/backup/recovery safeguards.
+[ ] Test unsupported extensions, namespace conflicts and opaque/hybrid/boot metadata without silently downgrading or stripping structures.
+
+4.6 Explicit UDF and ISO/UDF bridge delivery
+[ ] Declare and implement a bounded UDF revision/layout subset for browsing/extraction beyond the current detection-only support, with legal independently authored fixtures.
+[ ] Qualify staged add/replace/delete/rename/create-directory and validated new-image UDF rebuild for that subset through the shared workflow.
+[ ] Qualify ISO/UDF bridge rebuild separately, keeping ISO/Joliet/UDF namespaces and file contents consistent rather than rebuilding only the ISO view and dropping UDF.
+[ ] Verify descriptors, allocation, names, metadata and reopened content with an independent UDF implementation/tool where available.
+[ ] Detect unsupported UDF revisions/features, multisession/hybrid layouts and preservation requirements before enabling changes.
+[ ] If no safe portable UDF reader/rebuilder is achievable, retain detection-only/read-only capability as applicable and mark these delivery tasks blocked for explicit owner scope decision, not complete after evaluation alone.
+
 ----------------------------------------
 PHASE 4 VERIFICATION AND USER REVIEW GATE
 ----------------------------------------
@@ -830,6 +1053,7 @@ PHASE 4 VERIFICATION AND USER REVIEW GATE
 [ ] Run restore/build/verify.
 [ ] Run all Phase 4 rebuild/validation tests and available cross-target builds.
 [ ] Exercise representative rebuild workflows.
+[ ] Review separate ISO/Joliet/Rock Ridge/UDF/bridge staged and rebuild coverage, preservation evidence and any explicit owner-approved scope decisions.
 [ ] Update checklist/dependency NOTES honestly.
 [ ] Review exit criteria.
 [ ] Prepare user review summary.
@@ -841,6 +1065,8 @@ PHASE 4 EXIT CRITERIA
 [ ] Rebuilt ISO reopens/validates.
 [ ] Naming/boot preservation is accurate where advertised.
 [ ] Unsupported/hybrid cases are safely limited/read-only.
+[ ] Named ISO 9660/Joliet/Rock Ridge subsets pass shared staged editing and validated rebuild tests independently.
+[ ] The declared UDF and ISO/UDF bridge subsets pass read/staged/rebuild qualification, or unresolved delivery has an explicit owner-approved scope decision and named follow-up milestone.
 
 
 ============================================================
@@ -971,6 +1197,14 @@ Support CUE/disc structures, data and mixed-mode tracks, direct CD-DA playback, 
 [ ] Validate CUE syntax/offsets/indexes/audio preservation.
 [ ] Reopen and independently test rebuilt images where practical.
 
+6.9 Shared staged editing and safe multi-file output
+[ ] Wire qualified data-track filesystems to common add/replace/delete/rename/create-directory, history/discard, Pending Changes and staged browse/preview/hex/search/extraction.
+[ ] Qualify single-track data, supported multi-file data and supported mixed-mode rebuilds separately; do not infer one from another.
+[ ] Implement Save As/Rebuild to a new BIN/CUE output set with output-name/reference conflict checks, bounded storage estimates, flush/reopen/validation and safe cancellation.
+[ ] Prevent partially published output sets from being reported as successful; define rollback/recovery for multi-file publication and use Phase 3 safeguards for any requested source-set replacement.
+[ ] Verify untouched audio bytes, track order/indexes/gaps/sector modes and claimed boot/subchannel preservation independently of filesystem tree hashes.
+[ ] Reject unpreservable layouts before staging, or require an explicit separately qualified informed conversion; never silently discard tracks or metadata.
+
 ----------------------------------------
 PHASE 6 VERIFICATION AND USER REVIEW GATE
 ----------------------------------------
@@ -992,6 +1226,7 @@ PHASE 6 EXIT CRITERIA
 [ ] Player controls work consistently on physically tested platforms.
 [ ] Read-only images can play audio.
 [ ] Rebuild is offered only for understood layouts.
+[ ] Each advertised editable data/mixed-mode layout uses the common staged workflow and produces a validated, consistently referenced new output set.
 [ ] Unsupported layouts fail safely/remain read-only.
 
 
@@ -1002,7 +1237,7 @@ PHASE 7 - ADDITIONAL FORMATS AND FILESYSTEMS
 GOAL:
 Expand only when implementation quality, portability, preservation guarantees, and tests justify support.
 
-7.1 Common evaluation for EACH new format/filesystem
+7.1 Common evaluation for EACH new format/filesystem or capability expansion
 [ ] Identify demand/use case.
 [ ] Evaluate implementation/library, license, maintenance, managed/native nature.
 [ ] Evaluate linux-x64/linux-arm64/win-x64/win-arm64/osx-x64/osx-arm64 compatibility.
@@ -1015,6 +1250,11 @@ Expand only when implementation quality, portability, preservation guarantees, a
 [ ] Add capability mapping/UI labeling/properties.
 [ ] Document limitations.
 [ ] Add to support matrix only after validation.
+[ ] Assign named staged/Save As/direct-commit/rebuild delivery tasks only for required or explicitly advertised editing; do not imply editing from reads.
+[ ] Integrate any advertised editing with the common staged workflow and qualify its save mode using Phase 2B/3/4/6 safeguards as applicable.
+[ ] Apply the owner-approved 1.0 read-only boundary above to VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS; no future writer milestone is required or promised.
+[ ] Evaluate feasible reader subsets for each named addition; document exact unsupported variants and concrete feasibility blockers for owner review without equating detection with browsing/extraction.
+[ ] Verify platform parser capability from evidence, independently of native host mounting support.
 
 7.2 VMDK
 [ ] Evaluate common variants and declare initial subset.
@@ -1028,7 +1268,7 @@ Expand only when implementation quality, portability, preservation guarantees, a
 
 7.4 QCOW2
 [ ] Evaluate compression/encryption/backing files.
-[ ] Choose initial read/write level.
+[ ] Choose and qualify the feasible 1.0 read-only subset; document backing-file restrictions.
 [ ] Complete common evaluation.
 [ ] Add fixtures/handler/backing handling.
 
@@ -1040,14 +1280,14 @@ Expand only when implementation quality, portability, preservation guarantees, a
 7.6 ext2/ext3/ext4
 [ ] Evaluate implementation.
 [ ] Define feature/journal/incompat baselines.
-[ ] Start read-only unless writes are rigorously proven.
+[ ] Qualify read-only ext2/ext3/ext4 subsets for 1.0; writing is outside 1.0 scope.
 [ ] Add Linux-generated fixtures, symlink/ownership/case/extents tests.
 [ ] Complete common evaluation.
 
 7.7 exFAT
 [ ] Evaluate implementation.
 [ ] Add fixture/Unicode/large-file tests.
-[ ] Implement read support and prove writes before enabling.
+[ ] Implement and qualify feasible read-only support for 1.0; writing is outside 1.0 scope.
 [ ] Complete common evaluation.
 
 7.8 HFS+
@@ -1057,9 +1297,9 @@ Expand only when implementation quality, portability, preservation guarantees, a
 
 7.9 APFS
 [ ] Evaluate realistic library/licensing options.
-[ ] Choose detection-only/read-only initial scope.
+[ ] Evaluate and qualify feasible read-only subsets; detection-only does not satisfy browsing/extraction.
 [ ] Identify encryption/snapshot/container limitations.
-[ ] Do not expose write support without extensive independent validation.
+[ ] Keep writing disabled under the owner-approved 1.0 read-only boundary.
 [ ] Add legal fixtures and achievable common evaluation.
 
 7.10 Retro-computing floppy compatibility - 360K and 720K priorities
@@ -1080,7 +1320,9 @@ Expand only when implementation quality, portability, preservation guarantees, a
     NOTE: The Compaq README extracts correctly but currently requires Hex View;
     filesystem compatibility and text-decoding capability are independent.
 [ ] Regress the existing 720K Compaq-compatible subset throughout expansion.
-[ ] Separately qualify any write/create/conversion support using the staged-write/commit pipelines, capacity checks, reopen and round-trip tests.
+[ ] Qualify staged file editing and validated Save As for declared conventional 360K and 720K FAT12 subsets separately, preserving the existing read-only variants until their writers pass.
+[ ] Qualify direct commit for each writable retro subset using Phase 3 locking/backup/journal/recovery and independent allocation/metadata checks; if unsafe, require explicit owner-approved Save As-only scope.
+[ ] Separately evaluate/qualify create/conversion support, capacity checks, reopen and round-trip tests; editing does not imply formatting or conversion.
 [ ] Verify geometry, boot-sector and opaque-metadata preservation before claiming bootability or exact-layout preservation; never silently resize or normalize retro media.
 [ ] Keep physical platform evidence separate from cross-build results.
     NOTE: Structured track/sector images and flux captures require their own
@@ -1105,6 +1347,8 @@ PHASE 7 EXIT CRITERIA
 [ ] Repeatable fixtures/tests exist.
 [ ] Capability model/UI accurately reflects support level.
 [ ] No new format weakens data-integrity rules.
+[ ] Feasible named 1.0 read-only additions have qualified browsing/extraction subsets, or exact reader blockers remain visible for owner review; no writer milestone is required for these intentionally read-only additions.
+[ ] Required 7.10 360K/720K staged/Save As/direct-commit tasks are verified or have explicit owner-approved scope decisions and named follow-up milestones.
 
 
 ============================================================
@@ -1144,7 +1388,8 @@ CROSS-PHASE FEASIBILITY MILESTONES
 [x] Replacement can be staged.
 [x] Modified image can Save As.
 [x] Saved image reopens/validates.
-    NOTE: Phase 2 qualified conventional unpartitioned raw FAT subset only.
+    NOTE: Phase 2 qualified conventional unpartitioned raw FAT initially;
+    partial Phase 2B broadens qualified FAT stacks. Required NTFS stays blocked.
 [ ] linux-arm64 runs on Raspberry Pi 5.
     NOTE: Raspberry Pi 500 success is recorded separately; exact Pi 5 testing
     and Phase 5 performance/OS qualification remain incomplete.
@@ -1162,12 +1407,19 @@ Storage dependency production-readiness review
 [ ] Review then-current maintenance, maintained forks/alternatives, licensing, security/error behavior, and all six OS/architecture targets.
 [ ] Revisit the NTFS formatting failure and independently verify any advertised NTFS write/format capabilities.
     NOTE: Format throws PlatformNotSupportedException on Linux .NET 10 due to
-    Windows principal/SID APIs. Ordinary NTFS reads passed; portable NTFS
-    writes/formatting remain unproven and must not be enabled without evidence.
+    Windows principal/SID APIs. Existing-volume Add/mkdir independently fail
+    through portable ACL inheritance (2B.6); complete NTFS writing remains
+    blocked, despite successful narrower mutation probes. Reads remain available.
 [ ] Record the keep/patch/replace decision, resolve release-blocking limitations, and run regression/preservation tests for any dependency changes.
     NOTE: Development approval does not waive per-phase verification, input
     safety, data-integrity rules, or honest capability reporting. Keep library
     integration behind replaceable storage interfaces.
+
+Editing roadmap closure
+[ ] Audit required editing stacks against Phase 2B/3/4/6/7.10, and Phase 7 additions against the owner-approved 1.0 read-only boundary, not merely the initial feasibility milestone.
+[ ] Confirm required editing has been delivered or explicitly scope-approved; do not classify intentional 1.0 read-only additions as unassigned writer gaps or invent future writer milestones.
+[ ] Resolve or obtain explicit owner decisions on concrete Phase 7 reader blockers; do not silently drop infeasible reader requirements or advertise detection-only as browsing/extraction.
+[ ] Keep format creation/formatting, conversion, bootability and exact-layout promises separate from existing-volume file editing, with independent evidence wherever advertised.
 
 Security
 [ ] Test malformed offsets/sizes, integer boundaries, deep nesting, huge counts, crafted names, traversal, and symlink attacks when relevant.
@@ -1188,8 +1440,9 @@ Local testing infrastructure
 [ ] Add regression fixture/test for serious bugs.
 [ ] Maintain testing/platform status documentation.
 [ ] Add independently authored fixed-VHDX and representative bootable optical interoperability fixtures.
-    NOTE: Current fixed-VHDX test is synthetic; El Torito metadata inspection
-    establishes no bootability or rebuild-preservation guarantee.
+    NOTE: Phase 2B supplies independently qemu-authored fixed/dynamic VHDX
+    fixtures and output checks. Optical interoperability remains incomplete;
+    El Torito inspection establishes no boot/rebuild-preservation guarantee.
 
 Cross-platform UX
 [ ] Test actual keyboard/dialog/clipboard/drag-drop/path/permission behavior on physically available OSes.
@@ -1233,8 +1486,9 @@ For every user-facing format/filesystem combination:
 [x] Audio playback documented where applicable.
 [x] Known limitations documented.
 [x] Automated tests exist for claimed functionality.
-    NOTE: Phase 1 readers and Phase 2 qualified raw/FAT staged Save As subset
-    documented in docs/support-matrix.md and docs/staged-editing.md. Direct
+    NOTE: Readers and the partial Phase 2B qualified FAT staged Save As subset,
+    including explicit NTFS blockers, are documented in docs/support-matrix.md
+    and docs/staged-editing.md. Direct
     commit/rebuild/preservation/audio unavailable; unsupported variants explicit.
     Re-review this check whenever another phase expands user-facing claims.
 

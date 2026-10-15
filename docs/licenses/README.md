@@ -2,7 +2,7 @@
 
 Package-prefixed license and notice files are copied verbatim from the pinned
 NuGet package cache. `package-inventory.json` is generated from the resolved
-application, Phase 1 storage/service/UI tests, foundation tests and isolated
+application, storage/service/UI tests, foundation tests and isolated
 dependency-probe/test assets and the
 corresponding NuGet metadata.
 It includes build/test-only and non-target assets; it is not a claim that every
