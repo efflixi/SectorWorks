@@ -20,6 +20,62 @@ namespace SectorWorks.UITests;
 public sealed class StagedEditingTests
 {
     [Fact]
+    public async Task RenderedCommandsPreserveLowercaseNamesAndCaseOnlyRenamesThroughSave()
+    {
+        using var files = new EditingFiles();
+        string source = files.Golden("fat12.img");
+        string original = files.Hash(source);
+        string output = Path.Combine(files.Path, "case-preserved.img");
+        using var session = HeadlessUnitTestSession.StartNew(typeof(HeadlessBootstrap));
+        await session.Dispatch(async () =>
+        {
+            using var service = new ExplorerService(stagingDirectory: files.Path);
+            var dialogs = new EditingDialogs { ImportPath = files.Write("input", "lowercase UI contents"), OutputPath = output, Name = "lower" };
+            using var main = new MainWindowViewModel(service, dialogs, new MemoryLayout());
+            await main.OpenPathsCommand.ExecuteAsync(new[] { source });
+            WorkspaceViewModel workspace = Assert.Single(main.Workspaces);
+            var window = new MainWindow { DataContext = main };
+            window.Show();
+            try
+            {
+                Dispatcher.UIThread.RunJobs();
+                Click(Toolbar(window, "New Folder"));
+                await workspace.NewDirectoryCommand.ExecutionTask!;
+                Assert.Empty(workspace.Error);
+                await workspace.NavigateAsync("/lower");
+                dialogs.Name = "test.txt";
+                Click(Toolbar(window, "Add"));
+                await workspace.AddCommand.ExecutionTask!;
+                Assert.Empty(workspace.Error);
+                Assert.Equal("test.txt", Assert.Single(workspace.Entries).Name);
+                workspace.SelectEntries(workspace.Entries);
+                await workspace.PreviewCommand.ExecutionTask!;
+                dialogs.Name = "TEST.txt";
+                Click(Toolbar(window, "Rename"));
+                await workspace.RenameCommand.ExecutionTask!;
+                Assert.Empty(workspace.Error);
+                Assert.Equal("TEST.txt", Assert.Single(workspace.Entries).Name);
+                Click(Toolbar(window, "Undo"));
+                await workspace.UndoCommand.ExecutionTask!;
+                Assert.Equal("test.txt", Assert.Single(workspace.Entries).Name);
+                Click(Toolbar(window, "Redo"));
+                await workspace.RedoCommand.ExecutionTask!;
+                Assert.Equal("TEST.txt", Assert.Single(workspace.Entries).Name);
+                Click(Toolbar(window, "Save As"));
+                await workspace.SaveAsCommand.ExecutionTask!;
+                Assert.Empty(workspace.Error);
+                WorkspaceInfo saved = await service.OpenAsync(output);
+                Assert.True(saved.Capabilities.Modify.Available);
+                Assert.Equal("/lower/TEST.txt", Assert.Single(await service.ReadDirectoryAsync(saved.Id, saved.Volumes[0].Id, "/LOWER")).Path);
+                Assert.Equal("lowercase UI contents", (await service.PreviewAsync(saved.Id, saved.Volumes[0].Id, "/LOWER/test.TXT")).Text);
+                Assert.Equal(original, files.Hash(source));
+            }
+            finally { window.Close(); }
+            return true;
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task PhysicalSmokeGeneratesQualifiedDisposableFatAndRefusesDirectoryReuse()
     {
         using var files = new EditingFiles();
@@ -356,10 +412,17 @@ public sealed class StagedEditingTests
                 Task<string?> name = dialogs.RequestNameAsync("Rename", "ORIGINAL.TXT");
                 Dispatcher.UIThread.RunJobs();
                 Window input = Assert.Single(owner.OwnedWindows);
+                Assert.Contains(input.GetVisualDescendants().OfType<TextBlock>(), text =>
+                    text.Text?.Contains("entirely uppercase or lowercase", StringComparison.Ordinal) == true);
                 TextBox box = Assert.Single(input.GetVisualDescendants().OfType<TextBox>());
                 box.Text = "RENAMED.TXT";
                 Click(input.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Stage")));
                 Assert.Equal("RENAMED.TXT", await name);
+                Task<string?> lowerName = dialogs.RequestNameAsync("Lowercase name", "lower.txt");
+                Dispatcher.UIThread.RunJobs();
+                Window lowerInput = Assert.Single(owner.OwnedWindows);
+                Click(lowerInput.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Stage")));
+                Assert.Equal("lower.txt", await lowerName);
                 Task<bool> confirmation = dialogs.ConfirmAsync("Discard", "Discard staged changes?", "Discard changes");
                 Dispatcher.UIThread.RunJobs();
                 Window confirm = Assert.Single(owner.OwnedWindows);

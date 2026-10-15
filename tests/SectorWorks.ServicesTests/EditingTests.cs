@@ -64,18 +64,23 @@ public sealed class EditingTests
         using var text = new StreamReader(reopened.Volumes[0].FileSystem.OpenRead("/RENAMED/ADDED.TXT"));
         Assert.Equal("replacement content\n", text.ReadToEnd());
         Assert.Empty(Directory.GetFiles(work.Path, ".sectorworks-save-*"));
+        await AssertIndependentFatToolsAsync(output, "/RENAMED", "ADDED");
+    }
+
+    private static async Task AssertIndependentFatToolsAsync(string output, string directory, string expectedName)
+    {
         string? mdir = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
             .Select(directory => Path.Combine(directory, "mdir")).FirstOrDefault(File.Exists);
         if (mdir is not null)
         {
             var start = new ProcessStartInfo(mdir) { RedirectStandardOutput = true, RedirectStandardError = true };
-            foreach (string argument in new[] { "-i", output, "::/RENAMED" }) { start.ArgumentList.Add(argument); }
+            foreach (string argument in new[] { "-i", output, "::" + directory }) { start.ArgumentList.Add(argument); }
             using Process process = Process.Start(start)!;
             string listing = await process.StandardOutput.ReadToEndAsync();
             string errors = await process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
             Assert.True(process.ExitCode == 0, errors);
-            Assert.Contains("ADDED", listing, StringComparison.Ordinal);
+            Assert.Contains(expectedName, listing, StringComparison.Ordinal);
         }
         const string fsck = "/usr/sbin/fsck.fat";
         if (File.Exists(fsck))
@@ -218,7 +223,9 @@ public sealed class EditingTests
     [InlineData("/trailing ")]
     [InlineData("/nonascii-é")]
     [InlineData("/TOOLONGNAME.TXT")]
-    [InlineData("/lower.txt")]
+    [InlineData("/MiXeD.txt")]
+    [InlineData("/NAME.tXt")]
+    [InlineData("/nul.txt")]
     [InlineData("/TOOLONG.EXTENSION")]
     [InlineData("/")]
     public async Task InvalidNamesAreRejectedWithoutPendingChanges(string path)
@@ -662,6 +669,201 @@ public sealed class EditingTests
     }
 
     [Theory]
+    [InlineData("fat12.img")]
+    [InlineData("fat16.img")]
+    [InlineData("fat32.img")]
+    public async Task LowercaseBaseTreeAndNewNamesPreserveCaseAcrossAllEditingOperations(string fixture)
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden(fixture);
+        EditDirectory.AddRootDirectory(source, "EMPTY");
+        EditDirectory.SetRootCase(source, "SENTINEL.TXT", 0x18);
+        EditDirectory.SetRootCase(source, "EMPTY", 0x08);
+        string originalHash = Hash(source);
+        byte[] originalEntry = EditDirectory.RootEntry(source, "SENTINEL.TXT");
+        using var service = new ExplorerService(stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        string volume = info.Volumes[0].Id;
+        Assert.True(info.Capabilities.Modify.Available, info.Capabilities.Modify.Reason);
+        Assert.Contains(await service.ReadDirectoryAsync(info.Id, volume, "/"), entry => entry.Name == "sentinel.txt");
+        string input = work.File("input", "initial contents");
+        await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, volume, "/EmPtY/child"));
+        await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, volume, "/EMPTY/ChIlD/UPPER.txt", input));
+        Assert.Equal("/empty/child/UPPER.txt", Assert.Single(await service.ReadDirectoryAsync(info.Id, volume, "/EMPTY/CHILD")).Path);
+        await Assert.ThrowsAsync<IOException>(() => service.StageAsync(info.Id, new(ImageChangeKind.AddFile, volume, "/empty/child/upper.TXT", input)));
+        string replacement = work.File("replacement", "replacement contents");
+        await service.StageAsync(info.Id, new(ImageChangeKind.ReplaceFile, volume, "/EMPTY/CHILD/uPpEr.TxT", replacement));
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/EMPTY/CHILD", NewName: "renamed"));
+        await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, volume, "/empty/RENAMED/delete.txt", input));
+        await service.StageAsync(info.Id, new(ImageChangeKind.Delete, volume, "/EMPTY/renamed/DeLeTe.TxT"));
+        Assert.Equal("replacement contents", (await service.PreviewAsync(info.Id, volume, "/EMPTY/RENAMED/upper.TXT")).Text);
+        foreach (string name in new[] { "CAPS.TXT", "lower.TXT", "UPPER.txt", "both.txt" })
+        {
+            await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, volume, "/" + name, input));
+        }
+        string output = Path.Combine(work.Path, "case-preserved.img");
+        await service.SaveAsAsync(info.Id, output);
+        Assert.Equal(originalHash, Hash(source));
+        Assert.Equal(originalEntry[12], EditDirectory.RootEntry(output, "SENTINEL.TXT")[12]);
+        Assert.Equal(originalEntry.AsSpan(22, 10).ToArray(), EditDirectory.RootEntry(output, "SENTINEL.TXT").AsSpan(22, 10).ToArray());
+        Assert.Equal(0x00, EditDirectory.RootEntry(output, "CAPS.TXT")[12]);
+        Assert.Equal(0x08, EditDirectory.RootEntry(output, "LOWER.TXT")[12]);
+        Assert.Equal(0x10, EditDirectory.RootEntry(output, "UPPER.TXT")[12]);
+        Assert.Equal(0x18, EditDirectory.RootEntry(output, "BOTH.TXT")[12]);
+        Assert.Equal(0x08, EditDirectory.RootEntry(output, "EMPTY")[12]);
+        using IImageSession reopened = new ImageOpener().OpenReadOnly(output);
+        Assert.True(new RawFatImageWriter().Qualify(reopened).Available);
+        var fs = reopened.Volumes[0].FileSystem;
+        Assert.Contains(fs.ReadDirectory("/"), entry => entry.Name == "sentinel.txt");
+        Assert.Equal("/empty/renamed/UPPER.txt", Assert.Single(fs.ReadDirectory("/empty/renamed")).Path);
+        using var reader = new StreamReader(fs.OpenRead("/EMPTY/RENAMED/upper.TXT"));
+        Assert.Equal("replacement contents", reader.ReadToEnd());
+        await AssertIndependentFatToolsAsync(output, "/empty/renamed", "UPPER");
+    }
+
+    [Theory]
+    [InlineData("fat12.img")]
+    [InlineData("fat16.img")]
+    [InlineData("fat32.img")]
+    public async Task CaseOnlyFileAndDirectoryRenamesPreserveContentDatesAndUndoRedo(string fixture)
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden(fixture);
+        EditDirectory.AddRootDirectory(source, "EMPTY");
+        EditDirectory.SetRootCase(source, "SENTINEL.TXT", 0x18);
+        EditDirectory.SetRootCase(source, "EMPTY", 0x08);
+        string originalHash = Hash(source);
+        byte[] originalEntry = EditDirectory.RootEntry(source, "SENTINEL.TXT");
+        using var service = new ExplorerService(stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        string volume = info.Volumes[0].Id;
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/EmPtY", NewName: "EMPTY"));
+        await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, volume, "/eMpTy/child.txt", work.File("input", "nested")));
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/EMPTY", NewName: "empty"));
+        Assert.Equal("/empty/child.txt", Assert.Single(await service.ReadDirectoryAsync(info.Id, volume, "/EMPTY")).Path);
+        await service.UndoAsync(info.Id);
+        Assert.Equal("/EMPTY/child.txt", Assert.Single(await service.ReadDirectoryAsync(info.Id, volume, "/empty")).Path);
+        await service.RedoAsync(info.Id);
+        Assert.Equal("/empty/child.txt", Assert.Single(await service.ReadDirectoryAsync(info.Id, volume, "/EMPTY")).Path);
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/empty", NewName: "EMPTY"));
+        await service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/SeNtInEl.TxT", NewName: "SENTINEL.txt"));
+        Assert.Contains(await service.ReadDirectoryAsync(info.Id, volume, "/"), entry => entry.Name == "SENTINEL.txt");
+        await service.UndoAsync(info.Id);
+        Assert.Contains(await service.ReadDirectoryAsync(info.Id, volume, "/"), entry => entry.Name == "sentinel.txt");
+        await service.RedoAsync(info.Id);
+        await Assert.ThrowsAsync<IOException>(() => service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/sentinel.TXT", NewName: "SENTINEL.txt")));
+        await Assert.ThrowsAsync<InvalidDataException>(() => service.StageAsync(info.Id, new(ImageChangeKind.Rename, volume, "/sentinel.TXT", NewName: "Sentinel.txt")));
+        string output = Path.Combine(work.Path, "case-renamed.img");
+        await service.SaveAsAsync(info.Id, output);
+        Assert.Equal(originalHash, Hash(source));
+        byte[] renamed = EditDirectory.RootEntry(output, "SENTINEL.TXT");
+        Assert.Equal(0x10, renamed[12]);
+        Assert.Equal(originalEntry.AsSpan(22, 10).ToArray(), renamed.AsSpan(22, 10).ToArray());
+        Assert.Equal(0, EditDirectory.RootEntry(output, "EMPTY")[12]);
+        WorkspaceInfo saved = await service.OpenAsync(output);
+        Assert.Contains(await service.ReadDirectoryAsync(saved.Id, saved.Volumes[0].Id, "/"), entry => entry.Name == "SENTINEL.txt");
+        Assert.Equal("/EMPTY/child.txt", Assert.Single(await service.ReadDirectoryAsync(saved.Id, saved.Volumes[0].Id, "/empty")).Path);
+        Assert.Equal("nested", (await service.PreviewAsync(saved.Id, saved.Volumes[0].Id, "/EmPtY/ChIlD.TxT")).Text);
+        await AssertIndependentFatToolsAsync(output, "/EMPTY", "child");
+    }
+
+    [Theory]
+    [InlineData("fat12.img")]
+    [InlineData("fat16.img")]
+    [InlineData("fat32.img")]
+    public async Task ReplacingLowercaseBaseFilePreservesItsCaseFlags(string fixture)
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden(fixture);
+        EditDirectory.SetRootCase(source, "SENTINEL.TXT", 0x18);
+        string originalHash = Hash(source);
+        using var service = new ExplorerService(stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        await service.StageAsync(info.Id, new(ImageChangeKind.ReplaceFile, info.Volumes[0].Id, "/SeNtInEl.TxT", work.File("replacement", "lowercase replacement")));
+        string output = Path.Combine(work.Path, "replaced.img");
+        await service.SaveAsAsync(info.Id, output);
+        Assert.Equal(0x18, EditDirectory.RootEntry(output, "SENTINEL.TXT")[12]);
+        WorkspaceInfo saved = await service.OpenAsync(output);
+        Assert.Equal("sentinel.txt", (await service.ReadDirectoryAsync(saved.Id, saved.Volumes[0].Id, "/")).Single(entry => !entry.IsDirectory).Name);
+        Assert.Equal("lowercase replacement", (await service.PreviewAsync(saved.Id, saved.Volumes[0].Id, "/SeNtInEl.TxT")).Text);
+        Assert.Equal(originalHash, Hash(source));
+        await AssertIndependentFatToolsAsync(output, "/", "sentinel");
+    }
+
+    [Fact]
+    public async Task LongNameRecordWithIdenticalShortAliasStillDisablesEditing()
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden("fat12.img");
+        byte[] alias = EditDirectory.RootEntry(source, "SENTINEL.TXT");
+        byte checksum = 0;
+        foreach (byte value in alias.AsSpan(0, 11).ToArray())
+        {
+            checksum = unchecked((byte)(((checksum & 1) << 7) + (checksum >> 1) + value));
+        }
+        byte[] boot = ReadBoot(source);
+        using (var stream = new FileStream(source, FileMode.Open, FileAccess.ReadWrite))
+        {
+            long rootOffset = (BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(14))
+                + boot[16] * BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(22))) * 512L;
+            byte[] root = new byte[BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(17)) * 32];
+            stream.Position = rootOffset;
+            stream.ReadExactly(root);
+            int insertOffset = checked((int)(EditDirectory.RootEntryOffset(stream, "SENTINEL.TXT") - rootOffset));
+            Array.Copy(root, insertOffset, root, insertOffset + 32, root.Length - insertOffset - 32);
+            byte[] lfn = new byte[32];
+            lfn[0] = 0x41;
+            lfn[11] = 0x0f;
+            lfn[13] = checksum;
+            int[] offsets = [1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30];
+            const string name = "SENTINEL.TXT";
+            for (int i = 0; i < offsets.Length; i++)
+            {
+                BinaryPrimitives.WriteUInt16LittleEndian(lfn.AsSpan(offsets[i]), i < name.Length ? name[i] : (ushort)0);
+            }
+            lfn.CopyTo(root, insertOffset);
+            stream.Position = rootOffset;
+            stream.Write(root);
+        }
+        using var service = new ExplorerService(stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        Assert.False(info.Capabilities.Modify.Available);
+        Assert.Contains("long filename records", info.Capabilities.Modify.Reason, StringComparison.Ordinal);
+        Assert.Equal("SENTINEL.TXT", (await service.ReadDirectoryAsync(info.Id, info.Volumes[0].Id, "/")).Single(entry => !entry.IsDirectory).Name);
+    }
+
+    [Fact]
+    public async Task OutputValidationRejectsLostCaseFlagsEvenWhenFileHashesMatch()
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden("fat12.img");
+        EditDirectory.SetRootCase(source, "SENTINEL.TXT", 0x18);
+        string originalHash = Hash(source);
+        using var service = new ExplorerService(new ImageOpener(), writer: new CaseCorruptingWriter(), stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, info.Volumes[0].Id, "/added.txt", work.File("input", "added")));
+        string output = Path.Combine(work.Path, "bad-case.img");
+        await Assert.ThrowsAsync<InvalidDataException>(() => service.SaveAsAsync(info.Id, output));
+        Assert.False(File.Exists(output));
+        Assert.Equal(originalHash, Hash(source));
+        Assert.True((await service.GetEditingSnapshotAsync(info.Id)).IsModified);
+        Assert.Empty(Directory.GetFiles(work.Path, ".sectorworks-save-*"));
+    }
+
+    private sealed class CaseCorruptingWriter : IStagedImageWriter
+    {
+        private readonly RawFatImageWriter inner = new();
+        public Capability Qualify(IImageSession image) => inner.Qualify(image);
+        public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
+            inner.ValidateCapacity(image, operations, token);
+        public void Apply(string path, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token)
+        {
+            inner.Apply(path, operations, token);
+            EditDirectory.SetRootCase(path, "SENTINEL.TXT", 0);
+        }
+    }
+
+    [Theory]
     [InlineData(368640)]
     [InlineData(737280)]
     public async Task RetroCapacityDoesNotInheritModernFat12WriteQualification(int length)
@@ -845,6 +1047,50 @@ public sealed class EditingTests
             return path;
         }
         public void Dispose() => Directory.Delete(Path, true);
+
+        public static void AddRootDirectory(string path, string name)
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite);
+            using var fs = new DiscUtils.Fat.FatFileSystem(stream);
+            fs.CreateDirectory(name);
+        }
+
+        public static byte[] RootEntry(string path, string name)
+        {
+            using var stream = System.IO.File.OpenRead(path);
+            stream.Position = RootEntryOffset(stream, name);
+            byte[] entry = new byte[32];
+            stream.ReadExactly(entry);
+            return entry;
+        }
+
+        public static void SetRootCase(string path, string name, byte flags)
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite);
+            stream.Position = RootEntryOffset(stream, name) + 12;
+            stream.WriteByte(flags);
+        }
+
+        public static long RootEntryOffset(FileStream stream, string name)
+        {
+            stream.Position = 0;
+            byte[] boot = new byte[512];
+            stream.ReadExactly(boot);
+            bool fat32 = Read16(boot, 22) == 0;
+            long rootSector = Read16(boot, 14) + boot[16] * (long)(fat32 ? Read32(boot, 36) : Read16(boot, 22));
+            if (fat32) { rootSector += (Read32(boot, 44) - 2L) * boot[13]; }
+            int rootBytes = fat32 ? boot[13] * 512 : Read16(boot, 17) * 32;
+            string[] parts = name.ToUpperInvariant().Split('.');
+            byte[] expected = Encoding.ASCII.GetBytes(parts[0].PadRight(8) + (parts.Length == 2 ? parts[1] : "").PadRight(3));
+            stream.Position = rootSector * 512;
+            byte[] root = new byte[rootBytes];
+            stream.ReadExactly(root);
+            for (int offset = 0; offset < root.Length; offset += 32)
+            {
+                if (root.AsSpan(offset, 11).SequenceEqual(expected)) { return rootSector * 512 + offset; }
+            }
+            throw new InvalidOperationException("Synthetic FAT root entry not found: " + name);
+        }
 
         // DiscUtils-authored read goldens omit root labels and FAT32 auxiliary sectors.
         // Build clean disposable write fixtures explicitly; never repair product source images.

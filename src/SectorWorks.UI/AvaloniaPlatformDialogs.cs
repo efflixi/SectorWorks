@@ -77,7 +77,7 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
             Spacing = 12,
             Children =
             {
-                new TextBlock { Text = "Enter one uppercase DOS 8.3 name, not a path: up to 8 characters plus an optional 3-character extension. Use A–Z, 0–9, _ or -. Imported names are not automatically changed; edit them to meet these limits. The image filesystem validates the name.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new TextBlock { Text = "Enter one DOS 8.3 name, not a path: up to 8 characters plus an optional 3-character extension. Use ASCII letters, digits, _ or -. Each part must be entirely uppercase or lowercase (e.g. README.txt). Mixed case such as Readme.txt requires unsupported long names.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                 input,
                 new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, accept } }
             }

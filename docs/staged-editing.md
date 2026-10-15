@@ -46,12 +46,26 @@ are not silently repaired to make them writable. Some original read-test goldens
 omit auxiliary metadata and intentionally remain read-only; write tests prepare
 separate clean disposable fixtures without changing the immutable archives.
 
-The whole existing tree must use uppercase DOS 8.3 names consisting of A-Z,
-0-9, underscore and hyphen (with one optional extension separator). Long-name
-trees remain browseable but read-only for editing. New names obey the same
-rules and reject reserved device names. Case-only renames are explicitly
-unsupported. No silent truncation, case normalization or long-name loss is
-permitted.
+The whole existing tree must use DOS 8.3 short names consisting of ASCII
+letters, digits, underscore and hyphen (with one optional extension separator).
+The basename and extension can independently be entirely uppercase or lowercase:
+`CTMOUSE.EXE`, `ctmouse.exe`, `ctmouse.EXE` and `CTMOUSE.exe` are supported.
+FAT's short-name case flags preserve this display spelling without long-name
+records. Mixed case within either component, such as `CtMouse.exe`, requires
+long-name records and remains unsupported.
+
+Lookup, duplicate detection and operation targets are case-insensitive.
+Lookups may use arbitrary casing, but new/renamed names must have representable
+display case. Parent paths retain their actual spelling, including when callers
+use a differently cased path. Case-only file and directory renames are supported,
+including undo/redo and descendant edits; exact no-op renames remain rejected.
+New names reject reserved device names regardless of case.
+
+Long-name trees remain browseable but read-only for editing. Live LFN records
+are rejected even when their display name equals their short alias. There is no
+silent truncation, uppercase normalization or long-name loss. This case support
+is an owner-requested Phase 2 refinement, not a feature deferred to Phase 3.
+Phase 3 does not automatically broaden the naming or container write envelope.
 
 These are deliberate initial writer restrictions, not changes to the broader
 Phase 1 reader. NTFS formatting already fails on the development host because
@@ -181,6 +195,12 @@ The independent checks found issues that tree/hash comparison alone missed:
 - Rename-directory followed by adding a child exposed a stale dependency parent
   cache. Reopening the bounded adapter between ordered operations prevents that
   cache from changing target identity.
+- DiscUtils writes uppercase short names and resets parent-directory case flags
+  when updating directory modification times. Restore display flags on the
+  changed entry and its ancestors after disposing each writer adapter. Case-only
+  renames update these flags rather than attempting a move onto the same FAT
+  identity. Exact-spelling output-tree checks reject lost case even if every
+  file hash matches.
 
 These findings reinforce the distinction between readable content, consistent
 allocation metadata and independently verified output. The approved dependency
@@ -192,7 +212,7 @@ review remains required.
 On Linux Mint 22 x64/X11, 2026-10-14:
 
 - `./scripts/verify.sh`: locked restore, zero-warning Release build,
-  **287 passing tests / zero skips**, formatting, UI resources and unchanged
+  **313 passing tests / zero skips**, formatting, UI resources and unchanged
   authoritative specification/design copies.
 - `./scripts/publish.sh all`: all six self-contained outputs refreshed.
   Native executable architecture headers checked for each target; published
@@ -204,8 +224,21 @@ On Linux Mint 22 x64/X11, 2026-10-14:
   validated new output, close cancellation and discard. Native FAT checks pass
   on its output, with valid dates. Screenshot reviewed against the desktop
   references; Pending Changes remains usable after Save As.
+- The short-name case refinement adds all-four-flag and FAT12/FAT16/FAT32
+  round trips with native tools, case-insensitive path/conflict checks,
+  replacement and parent-case preservation, case-only file/directory rename
+  with descendants and undo/redo, LFN rejection including identical aliases,
+  and failure injection for lost spelling despite matching hashes.
+  Rendered UI commands preserve lower names and case-only renames through save.
+- A disposable copy of the owner's `starter.img` accepts Add and validated
+  Save As, preserving all original file hashes/names and source SHA-256.
+  Its pre-existing blank boot-label warning remains unchanged; native `fsck`
+  returns 1 for source and output, not a claimed clean check or automatic repair.
+  Neither the owner image nor its diagnostic output is redistributed.
 
-The final smoke artifacts are in `artifacts/phase2-verified-x11/`. To repeat it,
+Original smoke artifacts are in `artifacts/phase2-verified-x11/`; the refined
+code's repeat is in `artifacts/fat-case-x11/`. Owner-image diagnostic output is
+in `artifacts/fat-case-starter-check/`. To repeat the generated smoke,
 use a **new** artifact directory; fixture creation refuses existing directories:
 
 ```sh

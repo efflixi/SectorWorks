@@ -33,10 +33,16 @@ public static class FatEditNames
 {
     public static bool IsSupported(string name)
     {
+        return IsValidShortName(name) && name.Split('.').All(part =>
+            !part.Any(c => c is >= 'A' and <= 'Z') || !part.Any(c => c is >= 'a' and <= 'z'));
+    }
+
+    public static bool IsValidShortName(string name)
+    {
         string[] parts = name.Split('.');
         return parts.Length is 1 or 2 && parts[0].Length is >= 1 and <= 8
             && (parts.Length == 1 || parts[1].Length is >= 1 and <= 3)
-            && parts.All(part => part.All(c => c is >= 'A' and <= 'Z' or >= '0' and <= '9' or '_' or '-'));
+            && parts.All(part => part.All(c => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_' or '-'));
     }
 }
 

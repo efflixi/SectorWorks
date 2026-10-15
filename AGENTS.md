@@ -47,3 +47,10 @@ Keep write fixtures separate from immutable read goldens, whose readable layouts
 may intentionally fail stricter writer qualification.
 See [Phase 2 restrictions and evidence](docs/staged-editing.md) before broadening
 FAT capabilities, especially DOS 8.3 naming and legacy floppy exclusions.
+
+FAT lowercase short names use NT-reserved display flags, not necessarily LFN
+records. DiscUtils resets ancestor-directory case flags during timestamp updates;
+restore the changed entry and its ancestors after disposing the writer adapter.
+Keep FAT lookup case-insensitive but output spelling validation ordinal/exact.
+Mixed case within a basename/extension and all live LFN records remain a separate,
+unsupported write capability; do not silently normalize them.

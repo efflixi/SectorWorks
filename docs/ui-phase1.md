@@ -5,6 +5,11 @@ staging and Save As commands; see [staged editing](staged-editing.md) for curren
 behavior. The original disabled-write descriptions below describe Phase 1,
 not a removal of Phase 2 functionality.
 
+Current Phase 2 Add/New Folder/Rename accept uppercase or lowercase DOS 8.3
+components and case-only renames. The browser, pending review and saved output
+retain their spelling; mixed case requiring long-name records is reported as
+unsupported rather than silently uppercased.
+
 ## Boundary and composition
 
 `SectorWorks.UI` contains Avalonia views, presentation-only behavior, view models,

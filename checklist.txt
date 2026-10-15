@@ -624,7 +624,7 @@ Make logical changes without immediately altering the source; review changes and
 [x] Enable operations only when full stack supports them.
 [x] Check capacity/free space, duplicate names, case/file naming rules, conflicts, and expected output/temp space.
 [x] Explain unavailable operations.
-    NOTE: Strict conventional unpartitioned raw FAT only; uppercase DOS 8.3
+    NOTE: Strict conventional unpartitioned raw FAT only; case-preserving DOS 8.3
     names, read-only attributes/ancestors, root slots and conservative allocation
     margins checked. Bounds: 64 GiB image, 8 MiB per FAT, 1048576 data clusters.
 
@@ -661,6 +661,9 @@ Make logical changes without immediately altering the source; review changes and
     Consistent labels/mirrors and FAT32 backup/FSInfo required; no source repair.
     NTFS Windows SID/format limitation reviewed; portable writes still unproven
     and disabled. Partitioned raw/VHD/VHDX/ISO/LFN trees remain nonwritable.
+    NOTE: Upper/lowercase short-name components and case-only renames supported;
+    lookups/conflicts are case-insensitive. Mixed case within a component needs
+    unsupported LFN records. Phase 3 does not implicitly expand this envelope.
 
 2.7 Round-trip validation
 [x] Reopen saved image.
@@ -695,6 +698,20 @@ PHASE 2 VERIFICATION AND USER REVIEW GATE
     Phase 2 runtime on Windows/ARM64 and native picker/manual desktop integration
     remain unverified. No direct commit, ISO rebuild, recovery journal, metadata
     editor, bootability or exact-layout guarantee. Ready for owner review.
+[x] Verify owner-requested FAT short-name case refinement and stop again for review.
+    NOTE: Owner authorized this Phase 2 refinement on 2026-10-14. Preserve
+    lowercase display flags, case-insensitive lookup and case-only rename;
+    qualify all three FAT variants without enabling long-name writes or Phase 3.
+    NOTE: Full verification passes: 313 tests / zero skips (141 services,
+    79 storage, 63 UI, 30 foundation/dependency), zero-warning build, formatting,
+    resources and unchanged reference copies. All six publishes refreshed;
+    architecture/legal checks and real X11 regression pass. All case-flag
+    combinations, lowercase replacement, case-only rename/history/descendants,
+    ordinal output validation and LFN rejection independently tested.
+    NOTE: Disposable starter.img Add/Save As preserves all five original
+    file names/hashes and unchanged source SHA-256. Original blank-label native
+    fsck warning retained, not repaired or called clean. Sample remains ignored.
+    Phase 3/4 remain unstarted; other-platform runtime evidence unchanged.
 
 PHASE 2 EXIT CRITERIA
 [x] At least one supported combination can queue add/replace/delete/rename/create-directory.

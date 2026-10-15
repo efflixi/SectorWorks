@@ -77,7 +77,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
                 if (++count > 100000 || entry.IsLink || !FatEditNames.IsSupported(entry.Name)
                     || (entry.ShortName is not null && entry.Name != entry.ShortName))
                 {
-                    return new(false, "FAT writing is qualified only for uppercase DOS 8.3 trees (A-Z, 0-9, underscore and hyphen), without long filenames.");
+                    return new(false, "FAT writing is qualified only for DOS 8.3 trees (ASCII letters, digits, underscore and hyphen), with each name/extension entirely uppercase or lowercase, without long filenames.");
                 }
                 if (entry.IsDirectory) { pending.Push((entry.Path, item.Depth + 1)); }
             }
@@ -176,73 +176,95 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         var changedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (StagedWriteOperation operation in operations)
         {
-            // Directory moves leave stale parent-entry IDs in DiscUtils's directory cache.
-            using var fs = new DiscUtils.Fat.FatFileSystem(stream);
             cancellationToken.ThrowIfCancellationRequested();
             ImageChangeRequest request = operation.Request;
             string path = Native(request.Path);
-            switch (request.Kind)
+            string? changedPath = request.Kind == ImageChangeKind.Delete ? null : request.Path;
+            // Directory moves leave stale parent-entry IDs in DiscUtils's directory cache.
+            using (var fs = new DiscUtils.Fat.FatFileSystem(stream))
             {
-                case ImageChangeKind.CreateDirectory:
-                    fs.CreateDirectory(path);
-                    changedDirectories.Add(request.Path);
-                    break;
-                case ImageChangeKind.AddFile:
-                case ImageChangeKind.ReplaceFile:
-                    FileAttributes? attributes = request.Kind == ImageChangeKind.ReplaceFile ? fs.GetAttributes(path) : null;
-                    // DiscUtils truncation to zero leaks the original first cluster; release the chain explicitly.
-                    if (request.Kind == ImageChangeKind.ReplaceFile) { fs.DeleteFile(path); }
-                    using (Stream input = operation.OpenContent!())
-                    using (Stream output = fs.OpenFile(path, FileMode.CreateNew, FileAccess.Write))
-                    {
-                        byte[] buffer = new byte[65536];
-                        int count;
-                        while ((count = input.Read(buffer)) != 0)
+                switch (request.Kind)
+                {
+                    case ImageChangeKind.CreateDirectory:
+                        fs.CreateDirectory(path);
+                        changedDirectories.Add(request.Path);
+                        break;
+                    case ImageChangeKind.AddFile:
+                    case ImageChangeKind.ReplaceFile:
+                        FileAttributes? attributes = request.Kind == ImageChangeKind.ReplaceFile ? fs.GetAttributes(path) : null;
+                        // DiscUtils truncation to zero leaks the original first cluster; release the chain explicitly.
+                        if (request.Kind == ImageChangeKind.ReplaceFile) { fs.DeleteFile(path); }
+                        using (Stream input = operation.OpenContent!())
+                        using (Stream output = fs.OpenFile(path, FileMode.CreateNew, FileAccess.Write))
                         {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            output.Write(buffer, 0, count);
+                            byte[] buffer = new byte[65536];
+                            int count;
+                            while ((count = input.Read(buffer)) != 0)
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                                output.Write(buffer, 0, count);
+                            }
+                            output.Flush();
                         }
-                        output.Flush();
-                    }
-                    if (attributes.HasValue) { fs.SetAttributes(path, attributes.Value); }
-                    break;
-                case ImageChangeKind.Delete:
-                    changedDirectories.RemoveWhere(directory => directory.Equals(request.Path, StringComparison.OrdinalIgnoreCase)
-                        || directory.StartsWith(request.Path + "/", StringComparison.OrdinalIgnoreCase));
-                    if (fs.DirectoryExists(path))
-                    {
-                        fs.DeleteDirectory(path, true);
-                    }
-                    else
-                    {
-                        fs.DeleteFile(path);
-                    }
-                    break;
-                case ImageChangeKind.Rename:
-                    string renamed = Native(request.Path[..(request.Path.LastIndexOf('/') + 1)] + request.NewName);
-                    DateTime modified = fs.GetLastWriteTime(path);
-                    bool directory = fs.DirectoryExists(path);
-                    if (directory)
-                    {
-                        fs.MoveDirectory(path, renamed);
-                        string renamedPath = renamed.Replace('\\', '/');
-                        foreach (string oldPath in changedDirectories.Where(candidate => candidate.Equals(request.Path, StringComparison.OrdinalIgnoreCase)
-                            || candidate.StartsWith(request.Path + "/", StringComparison.OrdinalIgnoreCase)).ToArray())
+                        if (attributes.HasValue) { fs.SetAttributes(path, attributes.Value); }
+                        break;
+                    case ImageChangeKind.Delete:
+                        changedDirectories.RemoveWhere(directory => directory.Equals(request.Path, StringComparison.OrdinalIgnoreCase)
+                            || directory.StartsWith(request.Path + "/", StringComparison.OrdinalIgnoreCase));
+                        if (fs.DirectoryExists(path))
                         {
-                            changedDirectories.Remove(oldPath);
-                            changedDirectories.Add(renamedPath + oldPath[request.Path.Length..]);
+                            fs.DeleteDirectory(path, true);
                         }
-                        changedDirectories.Add(renamedPath);
-                    }
-                    else
-                    {
-                        fs.MoveFile(path, renamed);
-                    }
-                    // DiscUtils's entry copy omits the modification date during both file and directory moves.
-                    fs.SetLastWriteTime(renamed, modified);
-                    break;
-                default:
-                    throw new NotSupportedException("Metadata changes are reserved, not implemented.");
+                        else
+                        {
+                            fs.DeleteFile(path);
+                        }
+                        break;
+                    case ImageChangeKind.Rename:
+                        string renamed = Native(request.Path[..(request.Path.LastIndexOf('/') + 1)] + request.NewName);
+                        changedPath = renamed.Replace('\\', '/');
+                        if (renamed.Equals(path, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (fs.DirectoryExists(path)) { changedDirectories.Add(changedPath); }
+                            break;
+                        }
+                        DateTime modified = fs.GetLastWriteTime(path);
+                        bool directory = fs.DirectoryExists(path);
+                        if (directory)
+                        {
+                            fs.MoveDirectory(path, renamed);
+                            string renamedPath = renamed.Replace('\\', '/');
+                            foreach (string oldPath in changedDirectories.Where(candidate => candidate.Equals(request.Path, StringComparison.OrdinalIgnoreCase)
+                                || candidate.StartsWith(request.Path + "/", StringComparison.OrdinalIgnoreCase)).ToArray())
+                            {
+                                changedDirectories.Remove(oldPath);
+                                changedDirectories.Add(renamedPath + oldPath[request.Path.Length..]);
+                            }
+                            changedDirectories.Add(renamedPath);
+                        }
+                        else
+                        {
+                            fs.MoveFile(path, renamed);
+                        }
+                        // DiscUtils's entry copy omits the modification date during both file and directory moves.
+                        fs.SetLastWriteTime(renamed, modified);
+                        break;
+                    default:
+                        throw new NotSupportedException("Metadata changes are reserved, not implemented.");
+                }
+            }
+            string restorePath = changedPath ?? request.Path[..request.Path.LastIndexOf('/')];
+            if (restorePath.Length != 0)
+            {
+                // DiscUtils also resets parent-directory case flags when updating their modification times.
+                stream.Flush();
+                using var device = new StreamBlockDevice(stream, new ParserContext());
+                using var reader = new FatFileSystem(device);
+                while (restorePath.Length != 0)
+                {
+                    reader.SetShortNameCase(stream, restorePath, cancellationToken);
+                    restorePath = restorePath[..restorePath.LastIndexOf('/')];
+                }
             }
         }
         if (changedDirectories.Count != 0)

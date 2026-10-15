@@ -7,6 +7,30 @@ namespace SectorWorks.StorageTests;
 public sealed class WriterEligibilityTests
 {
     [Theory]
+    [InlineData("CTMOUSE.EXE", true)]
+    [InlineData("ctmouse.exe", true)]
+    [InlineData("ctmouse.EXE", true)]
+    [InlineData("CTMOUSE.exe", true)]
+    [InlineData("a_1-2.txt", true)]
+    [InlineData("123.456", true)]
+    [InlineData("Mixed.txt", false)]
+    [InlineData("NAME.tXt", false)]
+    [InlineData("longfilename.txt", false)]
+    [InlineData("NAME.", false)]
+    [InlineData("caf\u00e9.txt", false)]
+    public void ShortNamesPreserveRepresentableCaseWithoutRequiringLongNames(string name, bool supported)
+    {
+        Assert.Equal(supported, FatEditNames.IsSupported(name));
+    }
+
+    [Fact]
+    public void ShortNameLookupsAllowMixedCaseWithoutClaimingItCanBeStored()
+    {
+        Assert.True(FatEditNames.IsValidShortName("CtMoUsE.eXe"));
+        Assert.False(FatEditNames.IsSupported("CtMoUsE.eXe"));
+    }
+
+    [Theory]
     [InlineData(137438953472L, 8192U)]
     [InlineData(536870912L, 65536U)]
     [InlineData(2199023255040L, 4294967295U)]

@@ -381,13 +381,15 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
         {
             throw new InvalidDataException("Directory exceeds the 100000-entry resource limit.");
         }
-        var seen = new HashSet<string>(fs.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        StringComparer comparer = fs.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        var seen = new HashSet<string>(comparer);
         foreach (FileEntry entry in entries)
         {
             token.ThrowIfCancellationRequested();
             ValidateImagePath(entry.Path);
             string expected = (path == "/" ? string.Empty : path) + "/" + entry.Name;
-            if (entry.Path != expected || entry.Name.Length == 0 || entry.Name.Contains('/') || entry.Name.Contains('\\')
+            if (!comparer.Equals(entry.Path, expected) || entry.Name != entry.Path[(entry.Path.LastIndexOf('/') + 1)..]
+                || entry.Name.Length == 0 || entry.Name.Contains('/') || entry.Name.Contains('\\')
                 || entry.Name is "." or ".." || entry.Length < 0 || !seen.Add(entry.Path))
             {
                 throw new InvalidDataException("Invalid, duplicate, or non-child directory entry: " + entry.Path);
@@ -423,7 +425,8 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
             throw new ArgumentException("Select the root directory's contents rather than the volume root itself.", nameof(path));
         }
         int slash = path.LastIndexOf('/');
-        return ReadDirectory(fs, slash == 0 ? "/" : path[..slash], token).SingleOrDefault(e => e.Path == path)
+        StringComparer comparer = fs.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        return ReadDirectory(fs, slash == 0 ? "/" : path[..slash], token).SingleOrDefault(e => comparer.Equals(e.Path, path))
             ?? throw new FileNotFoundException("The selected image entry was not found.", path);
     }
 

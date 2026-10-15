@@ -46,8 +46,11 @@ exact-layout preservation capability is advertised.
 The writing envelope additionally requires 512-byte sectors, two mirrored FATs,
 extended BPB/signature, exact declared image size and zero hidden sectors.
 Read-only restrictions are explained by capabilities, not guessed from file
-extensions. Case-only rename, metadata editing and general long-name writes are
-not supported.
+extensions. DOS 8.3 basenames/extensions may independently be uppercase or
+lowercase; display case is preserved and lookup/conflicts are case-insensitive.
+Case-only file/directory renames are supported. Mixed case within a component,
+live long-name records (even redundant aliases), metadata editing and general
+long-name writes remain unsupported.
 
 ## Filesystem and entry restrictions
 

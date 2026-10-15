@@ -22,7 +22,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
     private bool _disposed;
     private static readonly Encoding Oem = CreateOem();
 
-    private sealed record Entry(FileEntry File, uint Cluster);
+    private sealed record Entry(FileEntry File, uint Cluster, long DirectoryOffset);
 
     internal static bool LooksLikeFat(byte[] boot) => boot.Length >= 90
         && (boot.AsSpan(54, 3).SequenceEqual("FAT"u8) || boot.AsSpan(82, 3).SequenceEqual("FAT"u8)
@@ -180,7 +180,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
         {
             throw new ImageFormatException($"Not a directory: {normalized}");
         }
-        return DirectoryEntries(normalized, directory?.Cluster ?? _rootCluster, normalized == "/",
+        return DirectoryEntries(directory?.File.Path ?? "/", directory?.Cluster ?? _rootCluster, normalized == "/",
             cancellationToken).Select(e => e.File).ToArray();
     }
 
@@ -280,6 +280,19 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
         }
     }
 
+    internal void SetShortNameCase(Stream output, string path, CancellationToken token)
+    {
+        string name = path[(path.LastIndexOf('/') + 1)..];
+        if (!FatEditNames.IsSupported(name)) { throw new ImageFormatException("Filename case requires an unsupported FAT long-name entry."); }
+        Entry entry = Resolve(path, token) ?? throw new ImageFormatException("Changed FAT entry was not found.");
+        string[] parts = name.Split('.');
+        byte flags = (byte)(parts[0].Any(c => c is >= 'a' and <= 'z') ? 0x08 : 0);
+        if (parts.Length == 2 && parts[1].Any(c => c is >= 'a' and <= 'z')) { flags |= 0x10; }
+        byte reserved = Bounds.Read(_device, entry.DirectoryOffset + 12, 1)[0];
+        output.Position = entry.DirectoryOffset + 12;
+        output.WriteByte((byte)((reserved & ~0x18) | flags));
+    }
+
     internal long ValidateWritableAllocation(CancellationToken token = default)
     {
         if (_clusterCount > MaxChainClusters) { throw new NotSupportedException("FAT write validation is limited to 1048576 data clusters."); }
@@ -304,7 +317,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
             token.ThrowIfCancellationRequested();
             if (directory.Depth > 128) { throw new ImageFormatException("FAT write traversal exceeds depth limits."); }
             if (!directory.Root || _bits == 32) { Claim(Chain(directory.Cluster, token)); }
-            foreach (Entry entry in DirectoryEntries(directory.Path, directory.Cluster, directory.Root, token))
+            foreach (Entry entry in DirectoryEntries(directory.Path, directory.Cluster, directory.Root, token, requireShortNames: true))
             {
                 if (++count > 100000) { throw new ImageFormatException("FAT write traversal exceeds entry limits."); }
                 if (entry.File.IsDirectory) { pending.Push((entry.File.Path, entry.Cluster, false, directory.Depth + 1)); }
@@ -345,7 +358,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
         }
     }
 
-    private List<Entry> DirectoryEntries(string parent, uint cluster, bool root, CancellationToken token)
+    private List<Entry> DirectoryEntries(string parent, uint cluster, bool root, CancellationToken token, bool requireShortNames = false)
     {
         var entries = new List<Entry>();
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -382,6 +395,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
                 byte attributes = raw[11];
                 if (attributes == 0x0f)
                 {
+                    if (requireShortNames) { throw new NotSupportedException("FAT writing requires DOS 8.3 short-name records; long filename records, including redundant short-name aliases, are not supported."); }
                     int ordinal = raw[0] & 0x1f;
                     if ((raw[0] & 0x40) != 0)
                     {
@@ -445,7 +459,7 @@ internal sealed class FatFileSystem : IReadOnlyFileSystem
                 ushort time = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[22..]);
                 var file = new FileEntry(child, name, directory, directory ? 0 : length, FatTime(date, time),
                     ((FileAttributes)attributes).ToString(), shortName);
-                entries.Add(new(file, start));
+                entries.Add(new(file, start, offset + i));
             }
             position += count;
         }

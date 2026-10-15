@@ -40,11 +40,22 @@ public sealed partial class ExplorerService
             {
                 throw new FileNotFoundException("The staged target does not exist.", path);
             }
+            if (!adding) { path = existing!.Entry.Path; }
             string parent = StagedFileSystem.Parent(path);
-            if (parent != "/" && (!next.TryGetValue(parent, out StagedNode? parentNode) || !parentNode.Entry.IsDirectory))
+            if (parent != "/")
             {
-                throw new DirectoryNotFoundException("The target's parent directory does not exist.");
+                if (!next.TryGetValue(parent, out StagedNode? parentNode) || !parentNode.Entry.IsDirectory)
+                {
+                    throw new DirectoryNotFoundException("The target's parent directory does not exist.");
+                }
+                parent = parentNode.Entry.Path;
             }
+            if (adding)
+            {
+                path = (parent == "/" ? "" : parent) + "/" + request.Path[(request.Path.LastIndexOf('/') + 1)..];
+                ValidateFatPath(path, requireDisplayCase: true);
+            }
+            request = request with { Path = path };
             for (string ancestor = parent; ancestor != "/"; ancestor = StagedFileSystem.Parent(ancestor))
             {
                 if (next[ancestor].Entry.Attributes.Split(", ").Contains("ReadOnly", StringComparer.Ordinal))
@@ -54,8 +65,6 @@ public sealed partial class ExplorerService
             }
             if (!adding)
             {
-                path = existing!.Entry.Path;
-                request = request with { Path = path };
                 if (next.Values.Any(node => IsWithin(node.Entry.Path, path)
                     && node.Entry.Attributes.Split(", ").Contains("ReadOnly", StringComparer.Ordinal)))
                 {
@@ -115,12 +124,15 @@ public sealed partial class ExplorerService
                             throw new ArgumentException("Rename requires a single filename.");
                         }
                         string renamed = (parent == "/" ? "" : parent) + "/" + request.NewName;
-                        ValidateFatPath(renamed);
-                        if (renamed.Equals(path, StringComparison.OrdinalIgnoreCase))
+                        ValidateFatPath(renamed, requireDisplayCase: true);
+                        if (renamed.Equals(path, StringComparison.Ordinal))
                         {
-                            throw new IOException("Case-only/no-op renames are not qualified for the FAT writer.");
+                            throw new IOException("The rename does not change the filename.");
                         }
-                        if (next.ContainsKey(renamed)) { throw new IOException("The rename destination already exists."); }
+                        if (next.ContainsKey(renamed) && !renamed.Equals(path, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new IOException("The rename destination already exists.");
+                        }
                         foreach (string oldPath in next.Keys.Where(p => IsWithin(p, path)).ToArray())
                         {
                             StagedNode node = next[oldPath];
@@ -414,20 +426,20 @@ public sealed partial class ExplorerService
     private static bool IsWithin(string candidate, string root) =>
         candidate.Equals(root, StringComparison.OrdinalIgnoreCase) || candidate.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
 
-    private static void ValidateFatPath(string path)
+    private static void ValidateFatPath(string path, bool requireDisplayCase = false)
     {
         ValidateImagePath(path);
         if (path == "/" || path.Length > 240) { throw new InvalidDataException("FAT edit paths must be non-root and at most 240 characters."); }
         foreach (string name in path.Split('/').Skip(1))
         {
             string stem = name.Split('.')[0];
-            if (!FatEditNames.IsSupported(name)
+            if (!(requireDisplayCase ? FatEditNames.IsSupported(name) : FatEditNames.IsValidShortName(name))
                 || stem.Equals("CON", StringComparison.OrdinalIgnoreCase) || stem.Equals("PRN", StringComparison.OrdinalIgnoreCase)
                 || stem.Equals("AUX", StringComparison.OrdinalIgnoreCase) || stem.Equals("NUL", StringComparison.OrdinalIgnoreCase)
                 || (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || stem.StartsWith("LPT", StringComparison.OrdinalIgnoreCase))
                     && stem[3] is >= '1' and <= '9'))
             {
-                throw new InvalidDataException("FAT writing requires uppercase DOS 8.3 names (A-Z, 0-9, underscore and hyphen); reserved names are not allowed.");
+                throw new InvalidDataException("FAT writing requires DOS 8.3 names (ASCII letters, digits, underscore and hyphen), with each name/extension entirely uppercase or lowercase; mixed case within a component requires unsupported long filenames. Reserved names are not allowed.");
             }
         }
     }

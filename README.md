@@ -22,12 +22,18 @@ new image for individually qualified raw/FAT combinations; source images remain
 read-only. See [staged editing and safety](docs/staged-editing.md). Direct commit
 (Phase 3), ISO rebuild (Phase 4) and audio workflows (Phase 6) are not enabled.
 
-Final Phase 2 verification: **287 tests passed, zero skipped**, zero-warning
+Latest Phase 2 verification, including the short-name case refinement:
+**313 tests passed, zero skipped**, zero-warning
 Release build, formatting/reference-copy/resource checks, all six refreshed
 self-contained publishes, and a real Linux Mint/X11 staged-edit/Save As workflow.
 FAT12/FAT16/FAT32 outputs pass independent `fsck.fat -n` and mtools checks.
-Editing requires a qualified unpartitioned conventional raw FAT image with an
-uppercase DOS 8.3 tree; FAT12 writes are limited to 1,474,560-byte floppy images.
+Editing requires a qualified unpartitioned conventional raw FAT image with a
+DOS 8.3 tree; FAT12 writes are limited to 1,474,560-byte floppy images.
+Uppercase and lowercase short names are supported, with case-insensitive lookup
+and preserved display case. Each basename and extension must independently be
+entirely uppercase or lowercase, such as `ctmouse.exe` or `README.txt`.
+Case-only file/directory renames are supported; mixed case within a component
+(such as `Readme.txt`) requires long-filename records and remains unsupported.
 Long-name trees, partitioned images, VHD/VHDX, NTFS and ISO remain nonwritable.
 
 ## Prerequisites

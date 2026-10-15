@@ -66,6 +66,13 @@ DiscUtils writer types remain within Storage.
 staging directories and payload creation. Services does not scatter OS-specific
 permission handling through the overlay.
 
+FAT editing uses case-insensitive identity with case-preserving paths. Services
+canonicalizes existing parents/targets without normalizing desired names.
+Storage writes representable 8.3 display case into the short-entry case flags,
+including ancestors rewritten by DiscUtils. Case-only rename does not move file
+data. Final output fingerprints still compare exact spelling, not just folded
+identity or content hashes; long-name writing remains separately unsupported.
+
 Extraction destination access lives
 behind `SafeExtractionTarget` in Platform, using OS directory handles to prevent
 symlink/reparse redirection. These small system API integrations are necessary

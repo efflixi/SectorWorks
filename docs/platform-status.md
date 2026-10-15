@@ -17,9 +17,9 @@ workflow validation on Windows or ARM64.
 Verification date: 2026-10-14. Host: Linux Mint 22 x86-64, X11.
 SDK 10.0.402 / runtime 10.0.13.
 
-Final locked restore, Release build with zero warnings/errors, **287 tests**
+Latest locked restore, Release build with zero warnings/errors, **313 tests**
 with zero skips, formatting, UI resources and all authoritative reference-copy
-comparisons passed. Counts: 128 services/platform, 67 storage, 62 UI (including
+comparisons passed. Counts: 141 services/platform, 79 storage, 63 UI (including
 private staging-platform primitives), and 30 foundation/dependency tests.
 No tests were disabled to obtain these results.
 
@@ -43,6 +43,24 @@ The original generated source hash is unchanged. The final output passes
 `fsck.fat -n` (dosfstools 4.2) and `mdir` (mtools 4.0.43), including valid renamed
 file and directory-special-entry dates. The app-only screenshot and output are
 in `artifacts/phase2-verified-x11/`.
+
+The owner-requested short-name case refinement also passes FAT12/FAT16/FAT32
+round trips, native FAT checks, all four display-flag combinations, mixed-case
+lookup, case-insensitive conflicts, parent-case preservation, replacement,
+case-only file/directory rename with descendant edits and undo/redo, and
+exact-spelling failure injection. A new rendered-command test exercises lower
+names and case-only rename through Save As. The existing real X11 workflow was
+rerun with the refined code; its output passes `fsck.fat -n` and mtools. Artifacts:
+`artifacts/fat-case-x11/`. No case-specific native-picker review is claimed.
+
+A disposable copy of the owner's `starter.img` now qualifies and successfully
+saves a new lowercase `test.txt`, retaining all five original names/file hashes,
+including `ctmouse.exe`, and unchanged original/source-copy SHA-256.
+Its original blank boot-sector label warning remains identical in source and
+output: `fsck.fat -n` returns 1 for both, so this image is not described as a clean
+native-check fixture or silently repaired. mtools confirms the original/new
+lowercase names. Diagnostic output is local-only in
+`artifacts/fat-case-starter-check/`; the owner image is ignored and not bundled.
 
 Automated round trips independently cover the qualified FAT12, FAT16 and FAT32
 write envelopes with both native FAT tools available locally. Regressions cover
