@@ -340,6 +340,17 @@
       "sectorworks.core": {
         "type": "Project"
       },
+      "sectorworks.managedntfs": {
+        "type": "Project",
+        "dependencies": {
+          "DiscUtils.Core": "[0.16.13, )",
+          "DiscUtils.Streams": "[0.16.13, )",
+          "SectorWorks.NtfsSecurity": "[1.0.0, )"
+        }
+      },
+      "sectorworks.ntfssecurity": {
+        "type": "Project"
+      },
       "sectorworks.platform": {
         "type": "Project",
         "dependencies": {
@@ -362,7 +373,8 @@
           "DiscUtils.Ntfs": "[0.16.13, )",
           "DiscUtils.Vhd": "[0.16.13, )",
           "DiscUtils.Vhdx": "[0.16.13, )",
-          "SectorWorks.Core": "[1.0.0, )"
+          "SectorWorks.Core": "[1.0.0, )",
+          "SectorWorks.ManagedNtfs": "[1.0.0, )"
         }
       },
       "sectorworks.ui": {

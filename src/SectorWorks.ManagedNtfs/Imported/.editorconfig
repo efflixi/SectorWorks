@@ -1,0 +1,3 @@
+[*.cs]
+# Pinned third-party import plus recorded repair delta; retain upstream layout.
+generated_code = true

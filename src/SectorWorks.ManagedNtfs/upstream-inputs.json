@@ -1,0 +1,638 @@
+{
+  "repository": "https://github.com/DiscUtils/DiscUtils",
+  "commit": "59d7cadab839c6d8dfcf52f8be5efe6d2ced190f",
+  "licenseSha256": "7f62225e8d08b717f9e580e3768d64791df324dd1ff509a6b5d2a684b9e058c4",
+  "transformations": [
+    "UTF-8 BOM removal and CRLF to LF",
+    "DiscUtils.Ntfs -> SectorWorks.ManagedNtfs",
+    "DiscUtils.Internal -> SectorWorks.ManagedNtfs.Internal",
+    "prepend using DiscUtils for public signed Core API",
+    "Local surgical repairs follow this reproducible baseline; see repair-provenance.json"
+  ],
+  "files": [
+    {
+      "input": "Library/DiscUtils.Ntfs/AllocateFileFn.cs",
+      "inputSha256": "6eb6464ce55cd4e6fd77d83e5021c036f33cffee9c7ed86f9694097634951ebe",
+      "output": "Imported/AllocateFileFn.cs",
+      "namespaceBaselineSha256": "93d766d4bca6ea6f659fcc4bd1b6bd2162723469e3a158c072385793dfb257ec"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeCollationRule.cs",
+      "inputSha256": "c13eb71cc656757d35bc7b9982e464d0b7c6d420a2956d07501724d9b383626b",
+      "output": "Imported/AttributeCollationRule.cs",
+      "namespaceBaselineSha256": "67fcdcafeefd4b8d225ac55eef5ff0dd44b0bb45c74c8e6ad8a0ff28459da85b"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeDefinitionRecord.cs",
+      "inputSha256": "3ca818d7848fcd981104a63355aeea74743ae446e2058d21536b6c716cb4a731",
+      "output": "Imported/AttributeDefinitionRecord.cs",
+      "namespaceBaselineSha256": "ca2c986d70eff80109438622ff1003d6b31c84be801104fbf9c0d9ad083eeab8"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeDefinitions.cs",
+      "inputSha256": "d234961e94a873857fef7b2a8f15e964e90ea0c6fff6f38f9f3030688a779efb",
+      "output": "Imported/AttributeDefinitions.cs",
+      "namespaceBaselineSha256": "6d60552bf0d63d0ce2fbdfce31d31066e83d7b3901e2245ab439630c08fecaa5"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeFlags.cs",
+      "inputSha256": "d925be133f07afa8800ea7d4d28ebcb7e21349d0cd4a4cbbb5b9ff871ebefa7a",
+      "output": "Imported/AttributeFlags.cs",
+      "namespaceBaselineSha256": "c21cd3447d8ed09f623f9ca3f856741b1226e6bd814be987e5f78e53e15c318c"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeList.cs",
+      "inputSha256": "d1ddb0621941d68d6cc00239b7e7b018e42c4113ac232ee70a4e8da791336a5a",
+      "output": "Imported/AttributeList.cs",
+      "namespaceBaselineSha256": "045a954e89f1effc6bded9862e713868ee7b317c4a8a0a46ed07a6825a97d6f8"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeListRecord.cs",
+      "inputSha256": "3647d5ff7169601eb54d984a53175b23a1411808f585ad2bc29bf39d615cad95",
+      "output": "Imported/AttributeListRecord.cs",
+      "namespaceBaselineSha256": "2570c47af9e4c3fdf5444269a16ae1274892287a4bb234b6df1ff0f9961b77d2"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeRecord.cs",
+      "inputSha256": "f5a95e51d29e09a8fcd293716ccbd1deba39ec73f91e100e5e032995d94bda3c",
+      "output": "Imported/AttributeRecord.cs",
+      "namespaceBaselineSha256": "eeb19acf476c79870b897aa6c8b87cf94421b78c4c5a1c818964be24a08446d5"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeReference.cs",
+      "inputSha256": "6b76bacd45e184b7df45a9c1f3217356154681a90a1a27a4f2b4508e8001bf1d",
+      "output": "Imported/AttributeReference.cs",
+      "namespaceBaselineSha256": "f92a6fa010d4e93f5c798cb3d1f78a119de6b38a96d9fb6bbf7cc318f0423e09"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeType.cs",
+      "inputSha256": "c63e0bcc348a17b6dbe4556f3e5d56589dc3bd917ab9dba44320d0b7ce518659",
+      "output": "Imported/AttributeType.cs",
+      "namespaceBaselineSha256": "ac009f98cacf69337d4f36d2a49e0d0215111660bb33999fe686d409a3bcd5c4"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/AttributeTypeFlags.cs",
+      "inputSha256": "194841187714679b100f0180485f721a24dc3a4cc70b91790a54cf0c545f0402",
+      "output": "Imported/AttributeTypeFlags.cs",
+      "namespaceBaselineSha256": "72ce4867577b2e790e6aed609e5b7f02cd764cf68400f48593970f3bed8a2338"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/BiosParameterBlock.cs",
+      "inputSha256": "8d3e915cc1ef71ac804d2a4ade9713785bddab9b29097540bbea7ffe34bc7255",
+      "output": "Imported/BiosParameterBlock.cs",
+      "namespaceBaselineSha256": "e778f80b0bef385c62fe8f590704f596440c0b4a77ff0dc8c5116f3202b34355"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Bitmap.cs",
+      "inputSha256": "75e878891acc9d41694f704fd8ed97043e9d7b782c7f7ffd67e15c0895e0c2aa",
+      "output": "Imported/Bitmap.cs",
+      "namespaceBaselineSha256": "10f332a5c9229bf61baf920171eca419ce5b1f1b13fd91ceaf1179933d382701"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ClusterBitmap.cs",
+      "inputSha256": "d958626dd31f5f7762df3ab583ed95325a0b9a1ee7ee2a5eccc6abe0503bcc23",
+      "output": "Imported/ClusterBitmap.cs",
+      "namespaceBaselineSha256": "e1c82d6b5f39e318bdd37e8c087a6959681d9bd5e2c3c1a028d29ba969a131d0"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ClusterStream.cs",
+      "inputSha256": "c51fd1e9733573b3466a08dc42f7717f27e1f95625167f6df18b7b1e73ebe49b",
+      "output": "Imported/ClusterStream.cs",
+      "namespaceBaselineSha256": "9dd660d7685dcea2c7206d8141532a71578b8d4c5ee897505006f17f5ae733a1"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/CompressedClusterStream.cs",
+      "inputSha256": "ae13bf98026574098db318de9e100b7d79c18970471b32a8cc850a48be0fc8db",
+      "output": "Imported/CompressedClusterStream.cs",
+      "namespaceBaselineSha256": "61dd6a3b90dd9a2b012dab967e2003a27715a9ac906cdbfc749fd05b1e6d75fa"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/CookedDataRun.cs",
+      "inputSha256": "90a27fb70edf5eb8891075509f29d1e46195803d1084771eb54cad137cab8917",
+      "output": "Imported/CookedDataRun.cs",
+      "namespaceBaselineSha256": "ae7e02ebde3a197ce06577440b0726be09fe38342b76b659512766222167fa80"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/CookedDataRuns.cs",
+      "inputSha256": "0b8d7e28d9fa9d8877ef87a03407c0ae434ec2509aa0c296adede6c634770f1e",
+      "output": "Imported/CookedDataRuns.cs",
+      "namespaceBaselineSha256": "a85356a5ed5144ba0a4331c71c2f954b61721fc7cc26283295186d60c148ad95"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/DataRun.cs",
+      "inputSha256": "1549b1712a1cfcbe5b4841df66d8e11f25bcba6da3725f164143d0d4197dd796",
+      "output": "Imported/DataRun.cs",
+      "namespaceBaselineSha256": "a069b0e87c66222922921133e572cdf9ff78e96f70fe8c86a272799a8889d03e"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Directory.cs",
+      "inputSha256": "72670f6ae758394e100daabec52f2c32fa10fabe09717f423d42a9d9fb32d784",
+      "output": "Imported/Directory.cs",
+      "namespaceBaselineSha256": "14bcf3f7f42e53e828dcd2f8114d12ccc8af084b2748458e654c7dfd6bec5e3e"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/DirectoryEntry.cs",
+      "inputSha256": "a92523698562ec481ffdaca2166cb11017a0b43ff4e0618a8fd1ba24276ce252",
+      "output": "Imported/DirectoryEntry.cs",
+      "namespaceBaselineSha256": "581608618ad22407dd44404f279d8273a60149187bcedbe79888bf2779391539"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/File.cs",
+      "inputSha256": "7a693577a48bc49037a180f691ee0e955c57e0f8fb1630a1d7b226a6a11ccba6",
+      "output": "Imported/File.cs",
+      "namespaceBaselineSha256": "88b89ceeb07afa8fe032751e32d7749e2a0fec25293bd15eeef0ea93b63f0230"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FileAttributeFlags.cs",
+      "inputSha256": "927fd017001c58b6d2b3705d2831db7befe8af38fe6935b396f45120ee8d753b",
+      "output": "Imported/FileAttributeFlags.cs",
+      "namespaceBaselineSha256": "7e4a9a2a3f75be10c0b3da5aeb29dc7508e726358ba8a29db2ee2d24ec1a6d64"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FileNameNamespace.cs",
+      "inputSha256": "d75125fcd870cd447ea790224e3427cae2b1520504b470a5a2a98f736df461f4",
+      "output": "Imported/FileNameNamespace.cs",
+      "namespaceBaselineSha256": "7e1f5b79e5bed561de4e8713fe2e2f790b2d34e67f03c367a749f501de7d6a16"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FileNameRecord.cs",
+      "inputSha256": "86d66e87df417ee9b1a895d587bd9463e8a9f30d580894743dc13bd858ccab84",
+      "output": "Imported/FileNameRecord.cs",
+      "namespaceBaselineSha256": "c9d2330b0c0a085cb48a583db6496aef3751065a77caeb108e78d1e28b4196a9"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FileRecord.cs",
+      "inputSha256": "2c3a9bc5d0e922460af8dd43c0e470116bd78daa3c11556ab42d44748568354f",
+      "output": "Imported/FileRecord.cs",
+      "namespaceBaselineSha256": "e13c8ef64b9e25889cc69eae35f768b64833aa67962aca51401756f2f34f1eb2"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FileRecordFlags.cs",
+      "inputSha256": "c4c48d054860668bac1a7056a81fff410baeebc1029bcda07f819b06afc206bd",
+      "output": "Imported/FileRecordFlags.cs",
+      "namespaceBaselineSha256": "749a2fe64de0d3e77b8d8ee66d7942a6e6cb50eb47cf773658de0870f89bf87a"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FileRecordReference.cs",
+      "inputSha256": "7dab81e77a66bfbdff7bd3479652fa7b0fe4514e01ff0dcd7af186ec3952a925",
+      "output": "Imported/FileRecordReference.cs",
+      "namespaceBaselineSha256": "1e8a2a010ae909cbaa47bf2a5328ebed308757ed6d1fc29de74c2f698ac6d205"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FileSystemFactory.cs",
+      "inputSha256": "ae72faa4aeb2775f513988566dcd2359cf97561f62c2fe23a46fe503abcdac15",
+      "output": "Imported/FileSystemFactory.cs",
+      "namespaceBaselineSha256": "361a9091222ec1398b703a0a377b20d40f628657d9f2f229bd4ecfe10a8c2f01"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/FixupRecordBase.cs",
+      "inputSha256": "3e0b1af29e9c09e41eb35ca6c289a4141ce983d188eb599f02b6e7e14eac6f31",
+      "output": "Imported/FixupRecordBase.cs",
+      "namespaceBaselineSha256": "5fd763a3bf27a05aeec9e5a26681a27bfbebac50674a687ab6055fd566baa759"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ForgetFileFn.cs",
+      "inputSha256": "bda171c1d91abc0da83a8e64cd2fb67c144c973ba916deb09730d24a9ad41db0",
+      "output": "Imported/ForgetFileFn.cs",
+      "namespaceBaselineSha256": "f3416e4be2c26bb820b8fd03abca43b0de918e7621af657c5e8b90827d4faa77"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/GenericFixupRecord.cs",
+      "inputSha256": "1d8c31313ed514dc92d74585a9cc280898037e076f6cb54784f4f1fafd3a236a",
+      "output": "Imported/GenericFixupRecord.cs",
+      "namespaceBaselineSha256": "1555692fdee9409fde4129687c154cff0a1bc03850b0d2dd717421863c599d12"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/GetDirectoryByIndexFn.cs",
+      "inputSha256": "9531d8d73d321dbc437d3159aaa943f03dd846542a1241b4fc566cd1b68be90d",
+      "output": "Imported/GetDirectoryByIndexFn.cs",
+      "namespaceBaselineSha256": "f1d49566b59c6db36dfdbb40d98862bf90922d541e9019b85eaed76416391567"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/GetDirectoryByRefFn.cs",
+      "inputSha256": "fd5a35e2700d95facddfaea9d3bdc48a9aa75f382176f34ffd6add18695cdef2",
+      "output": "Imported/GetDirectoryByRefFn.cs",
+      "namespaceBaselineSha256": "0750c9b5c5e552eb67ad9b93a00de6a3ec2c8c58efe550c2b8d90c0c44d7adfd"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/GetFileByIndexFn.cs",
+      "inputSha256": "d9929faca4db88e934e5c9c33db10d22240b09b37dd9a946bd219328b0b6cb5d",
+      "output": "Imported/GetFileByIndexFn.cs",
+      "namespaceBaselineSha256": "28ee567e1cc76d3e9ce523704ef26115cbef41456ae78510ecc5b13d8075e8d7"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/GetFileByRefFn.cs",
+      "inputSha256": "bf54a4693d0eeb9cef04b0b9bc70f103c80fb83f8602944dafa8c8985312877e",
+      "output": "Imported/GetFileByRefFn.cs",
+      "namespaceBaselineSha256": "33cf268973dd44334c95220f9b847f4956d9ff6d23386cd28ea8ca6e6a542985"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/INtfsContext.cs",
+      "inputSha256": "1d28aeac9b1c98ab0b3be577108e7a85f8ed4723e5e62858572a4b7659464728",
+      "output": "Imported/INtfsContext.cs",
+      "namespaceBaselineSha256": "e65690dccb44f2908916650d5406ba26ebc46985299bef07462a8cf8caf68b15"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Index.cs",
+      "inputSha256": "51caec511629c0e6449edc899bc58e6128ee502b75900219f87a6f1542e7cfb9",
+      "output": "Imported/Index.cs",
+      "namespaceBaselineSha256": "489cccb142a9e952e5a72e9768d3f4718b378871a7e36847adc8ebb84db7b3d1"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexBlock.cs",
+      "inputSha256": "65f5a1f1ffc148a4f22c134b52547bb851021a7532ca0f458a16737ba633d4fa",
+      "output": "Imported/IndexBlock.cs",
+      "namespaceBaselineSha256": "eccf84389b54f9056085af5303fcf8ac481de81d66e42102bdb274fba2f7bb4d"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexEntry.cs",
+      "inputSha256": "cf1d77cb1c500fc6b86814d5df1c75d255bbb549128ee323e983301239745381",
+      "output": "Imported/IndexEntry.cs",
+      "namespaceBaselineSha256": "ec5de7db3694ecf1eae69c9fc0b2fe56cc639d9906fb900aa0706a86a7e74aaf"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexEntryFlags.cs",
+      "inputSha256": "8594970cf0e534f11f6917e531f71bf2e113c6d88cb20dcf97f909683716304e",
+      "output": "Imported/IndexEntryFlags.cs",
+      "namespaceBaselineSha256": "4652d21128595e6a86a4a1fa9406c1cb696482d6281a12aa1aa8165812880cb7"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexHeader.cs",
+      "inputSha256": "96199845c57f2d0d2c66edf77e618b7f7ae96ac859018bffcf796f965f86fece",
+      "output": "Imported/IndexHeader.cs",
+      "namespaceBaselineSha256": "9cd404bf5d81415a4d9092f7dd64ac5534838bb9f06cca5aa13ca7ddf858bf72"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexNode.cs",
+      "inputSha256": "3d66acb495b89eef9edb4a18cacfa451e96f8c102eb9856b002a15d807538b5b",
+      "output": "Imported/IndexNode.cs",
+      "namespaceBaselineSha256": "53e310e2aed39df2d19db510597a889d6c95d8119128cb073171e6352d60f51a"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexNodeSaveFn.cs",
+      "inputSha256": "c2544251b5af69a43bddef0940288a909196a176a3fe10e5b428a48744473611",
+      "output": "Imported/IndexNodeSaveFn.cs",
+      "namespaceBaselineSha256": "be6baec6bc7830d4492a656ac577c07131d5c5ada9600ee3a7e8b4663b1c5a04"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexRoot.cs",
+      "inputSha256": "652bb74a7188c43b68d3227cedc231fdda900a2e8666aa8fc66d790a64505223",
+      "output": "Imported/IndexRoot.cs",
+      "namespaceBaselineSha256": "4b3d6936774b4cbfce9109beb23692ed487252e859504951ec1d09b3e140c6dc"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/IndexView.cs",
+      "inputSha256": "d585e6a7f2d2d8012244f69d40d90c88746df9b362fb266fbb968199b6789ac2",
+      "output": "Imported/IndexView.cs",
+      "namespaceBaselineSha256": "933ee93c7be1d4fc750639d0c1a9eea063e4a416a74e4b816352652d4e51feba"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/AttributeFlags.cs",
+      "inputSha256": "bd8ca0dee8052cc3f4ce434bdfa37f454d764ec8f3b635e6c829573e44c5366d",
+      "output": "Imported/Internals/AttributeFlags.cs",
+      "namespaceBaselineSha256": "1a8bae2d18f09b53a0f5c392afdb5841efed87c2714c1a12e5fa4e1e4ed534f1"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/AttributeListAttribute.cs",
+      "inputSha256": "5e46bf164947fea314589e9a7c561ae7cca23f9b871254ada26a8b02f8b14a1f",
+      "output": "Imported/Internals/AttributeListAttribute.cs",
+      "namespaceBaselineSha256": "5eda839097fbbcbd75e543820adaada12b625a7ef09d833759d4e0b61bfbd2ca"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/AttributeListEntry.cs",
+      "inputSha256": "b7a842c91feba5d51fb039d4a0759d0b8da2a51f22b28f7d1c7dc6d13b0dbd45",
+      "output": "Imported/Internals/AttributeListEntry.cs",
+      "namespaceBaselineSha256": "5969a46055fa441d66026eea133656d04f92caab76fab5d81b344ab1139c48eb"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/EntryState.cs",
+      "inputSha256": "fddba31a4d6176467303dd409f7be94348f1223e39ccd4ea5318962744ed488b",
+      "output": "Imported/Internals/EntryState.cs",
+      "namespaceBaselineSha256": "298ce2e8f0028542c5a2b5d1adbda66aa3d8e2bc3284719f7b709873533ab60b"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/EntryStates.cs",
+      "inputSha256": "a53026146102aedafbadaa0f1f933df2c32a68ed7a75b398f797a25b92b00a5e",
+      "output": "Imported/Internals/EntryStates.cs",
+      "namespaceBaselineSha256": "b7009c80a6e78934bb27c1b50516577149d89c0fb118be6766794d762d0df29f"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/FileNameAttribute.cs",
+      "inputSha256": "0d56e50b17fefa47c36d6e8dac8b49580e871eacf531158b27227fe6004afc32",
+      "output": "Imported/Internals/FileNameAttribute.cs",
+      "namespaceBaselineSha256": "17cb21df4aeb0663e8d735c02b42e0761d23e7f8df4be6b91f143c8218a8d3b6"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/GenericAttribute.cs",
+      "inputSha256": "9056eddbe9f4ae5183c8735c61417e4efff3c5aa3e412813caaf451d9f1a3d2e",
+      "output": "Imported/Internals/GenericAttribute.cs",
+      "namespaceBaselineSha256": "bf6f063424c86bdc9824457f107591608ff0e295d8e4e6ceb6e85fd7cc8a06c0"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/MasterFileTable.cs",
+      "inputSha256": "10d5f86c7cde0940fcdd85c1a546a0570169d6bbfb1faa8c34b2b0795f30984b",
+      "output": "Imported/Internals/MasterFileTable.cs",
+      "namespaceBaselineSha256": "dd9ec33d2919186afbecf157295a8652d4250e23245f28ce4a1de487a4c6e5ad"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/MasterFileTableAttribute.cs",
+      "inputSha256": "2e8ef1c376d1401a3bfbf22dbb6f2b2614cabe034f49dea587f17f6270ecacd5",
+      "output": "Imported/Internals/MasterFileTableAttribute.cs",
+      "namespaceBaselineSha256": "3d041d6cde72f04cdc91365dc488f3bdf7087620d51bce4369bfea9ca1bfa8d1"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/MasterFileTableEntry.cs",
+      "inputSha256": "7147c16b4d0600a57ed603dd56bbf6f86b212fde23e7887294b7d794125e234b",
+      "output": "Imported/Internals/MasterFileTableEntry.cs",
+      "namespaceBaselineSha256": "31cabf2dbd6d93d4d982c1780028b73950826ac7a8b6f14c22da440a5edd7962"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/MasterFileTableEntryFlags.cs",
+      "inputSha256": "197f067c16890fc04ba4168a4b04e2f834cf33f27b8a403b019cebb6357c28e5",
+      "output": "Imported/Internals/MasterFileTableEntryFlags.cs",
+      "namespaceBaselineSha256": "011f9b5203ea4ecfa82170ea650c3abef7ad6d1e7c7feebc8d54b54644c65f67"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/MasterFileTableRecord.cs",
+      "inputSha256": "c6a115bc42ef016fdfa29f005259b4b5cbccd4252cbcc68a0f909d7863201a2d",
+      "output": "Imported/Internals/MasterFileTableRecord.cs",
+      "namespaceBaselineSha256": "3c19523893daa429f21bcde3fa68d497f64141188860038779b33c198d703c3b"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/MasterFileTableRecordFlags.cs",
+      "inputSha256": "6e1ddc57669c453ff489bcc5c0818911d4dbef87b5b54fc740864cf01a3878b0",
+      "output": "Imported/Internals/MasterFileTableRecordFlags.cs",
+      "namespaceBaselineSha256": "5624a193bbbbbe9f4f14892757306f00a7903abc188847f6f0a62b1735b756e1"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/MasterFileTableReference.cs",
+      "inputSha256": "a97e6d09c1879ec81fb9da461fdce0925d83e6eaecc989482461604936f33a72",
+      "output": "Imported/Internals/MasterFileTableReference.cs",
+      "namespaceBaselineSha256": "efd6a084570b0e08df61d9df88956d5d391336aaf862efc101c323c2b3d21133"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/NtfsFileAttributes.cs",
+      "inputSha256": "9777919c9a009a7139ccaf4d986751e917725f002a3c471242a6ae01a2c83ae2",
+      "output": "Imported/Internals/NtfsFileAttributes.cs",
+      "namespaceBaselineSha256": "57a170c5e90cf2c509beba6483f640303e2d25b5a425f49afc4b4e78e712efb5"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/NtfsNamespace.cs",
+      "inputSha256": "f7d2ab4d31040aa38a6d7de74bad7bb18cc0d4b9cb8d8d9c321c64cfaa9a49a4",
+      "output": "Imported/Internals/NtfsNamespace.cs",
+      "namespaceBaselineSha256": "374bfa92834742e8d948f4d94b12a4d152d753c968e9ff639bc9a17463dd16be"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/StandardInformationAttribute.cs",
+      "inputSha256": "4e60f9da17ac2a6ed61c4b5ad4a66145943b305950d0c10ff188a57c49ca0164",
+      "output": "Imported/Internals/StandardInformationAttribute.cs",
+      "namespaceBaselineSha256": "81eade3a103fdb9a7d8cb89049415ec874d812162bc692bf05d437cbcdb9c595"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Internals/UnknownAttribute.cs",
+      "inputSha256": "d60c5f906c69bf2d8b5912db5e950ff0a7b0cf3944999487556e44bbe4c2f73f",
+      "output": "Imported/Internals/UnknownAttribute.cs",
+      "namespaceBaselineSha256": "fb6d983972d3ed08990ac82ed5dcb28c94dfe32426b3b0963849977515a0f1a3"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/LZNT1.cs",
+      "inputSha256": "8871fbf82527d626442183c5cb0f78481a2566d448f07022c3f45997f0e1d625",
+      "output": "Imported/LZNT1.cs",
+      "namespaceBaselineSha256": "ce763c2528aeac59fd521e228d30c913f8b83f6545ad6f5673fad09463bf8b0c"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/LzWindowDictionary.cs",
+      "inputSha256": "5b386164a667f483b04e65d253267a2fa8e4c4709f9a5d4a78734ad368a758d5",
+      "output": "Imported/LzWindowDictionary.cs",
+      "namespaceBaselineSha256": "71aed746ca771859b7ba9d17f72ae088e3342e09ec8d7e4df1927ca730e4790f"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/MasterFileTable.cs",
+      "inputSha256": "e1726c1bcfa220aca82cab947c6cc73c66d04a516ffabff2d2b63fe56a37e74c",
+      "output": "Imported/MasterFileTable.cs",
+      "namespaceBaselineSha256": "d10efc0f93f3aba74a1804b5cea76f3d2bc14d3d05e171553d95e111ced4a0c9"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NewFileOptions.cs",
+      "inputSha256": "8f1468e2f64b5094bf322a43a1a651b935cfc9fb3646e6a17a29eaddfd5ba199",
+      "output": "Imported/NewFileOptions.cs",
+      "namespaceBaselineSha256": "b67d5929b2dacebd6ff34e8b4f1793244f00e4870814849ce55362e76c811ebb"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NonResidentAttributeBuffer.cs",
+      "inputSha256": "1dbf558aba3338bd5cedddfde7665ba85a6c646cd88b11c76cce4a00aca980c2",
+      "output": "Imported/NonResidentAttributeBuffer.cs",
+      "namespaceBaselineSha256": "3c8aeba46c2765e58d062bc4e5ab6c44d4172d3f771d58bb9a58af160f9f64c0"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NonResidentAttributeRecord.cs",
+      "inputSha256": "239720041eb1eb285ea3d91e8c44f5c8d8fec087244658a834815eef7e7d276e",
+      "output": "Imported/NonResidentAttributeRecord.cs",
+      "namespaceBaselineSha256": "7b1e216866dcda42850ae65fd3c3ab46e5a5bb74ec4d6305504af0a30a852292"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NonResidentDataBuffer.cs",
+      "inputSha256": "48d54f03eac30a8e04deb1fb25664eca78056cb3ed73426b955114453a994b9a",
+      "output": "Imported/NonResidentDataBuffer.cs",
+      "namespaceBaselineSha256": "9503a1966107686e98747fbee897844722c805780d40c791206cdae77ad09be0"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsAttribute.cs",
+      "inputSha256": "52d00547866dfd4ef78c57291dce57101632c3526359bf3050de559d161f21a8",
+      "output": "Imported/NtfsAttribute.cs",
+      "namespaceBaselineSha256": "981a524a84dd844fe79f8da12946bf2b194dab913a1d59258332544e75946b44"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsAttributeBuffer.cs",
+      "inputSha256": "36821521fdddebae1d2cd00ccd577557d4bc978b8637e6065012e11feb0c5164",
+      "output": "Imported/NtfsAttributeBuffer.cs",
+      "namespaceBaselineSha256": "28084d56236cecc2998a801332c85c5e22c9e2466532189e7e7d9ab2605011a4"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsContext.cs",
+      "inputSha256": "3ff1d5322203c3831bd04613ad4f744f49b589fe32b13ef6afec438f84b31bb2",
+      "output": "Imported/NtfsContext.cs",
+      "namespaceBaselineSha256": "d8264ec37b7d254841f90b45ee9737accf9833d43cb9dbc0f4dc3c1a1bb52b4f"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsFileStream.cs",
+      "inputSha256": "f06acbd9694d42459ef84c58016884143e50d70c68cb3511426f68f0b9145279",
+      "output": "Imported/NtfsFileStream.cs",
+      "namespaceBaselineSha256": "4ceda70b87140367410c8af45b0ff008fadb982edc4c8f05ff94f5764c818982"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsFileSystem.cs",
+      "inputSha256": "3ae01059512f04cd8b57ebd79a52f30d9a2f9d2f0cf94d913761fd928a428fe2",
+      "output": "Imported/NtfsFileSystem.cs",
+      "namespaceBaselineSha256": "ee38f1a558c110660b2e21adc5b48e468052ce7fb64ddf18daf783c4baf8035b"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsFileSystemChecker.cs",
+      "inputSha256": "d78fdc48add3abc3e26aa81ff75321b331ddfd7d9ed787e29a2b9a8c56bab395",
+      "output": "Imported/NtfsFileSystemChecker.cs",
+      "namespaceBaselineSha256": "e31a8d5dae8146cfb5720d1d6e57209e84bbbfb5344adc4ce2dfa422bf68e4a7"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsFormatOptions.cs",
+      "inputSha256": "05297a90f76ec1ecb8e86f7c5de9600fb865c8783281b417ed38fb1eb0c5bea5",
+      "output": "Imported/NtfsFormatOptions.cs",
+      "namespaceBaselineSha256": "5790d3b1b014d735a35154b83086d8d8c990476774d936978fab434330879c36"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsFormatter.cs",
+      "inputSha256": "e10a2efd9ed59d78bd78be4af9fa103ed006f82a1da345a79749b3efb4c2674f",
+      "output": "Imported/NtfsFormatter.cs",
+      "namespaceBaselineSha256": "8449096ac5edcc496e599ec35368b8689cf0f200305fd4bffd344865b3719bf7"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsOptions.cs",
+      "inputSha256": "83dca15c95f7dfc3786828a0195db2f1175fb978dae7db8c388364cb2d20f2a7",
+      "output": "Imported/NtfsOptions.cs",
+      "namespaceBaselineSha256": "d53fe729601b02f8841362d347fd2fd6cd6abd3572d5ab7154e752ebab4fba80"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsStream.cs",
+      "inputSha256": "cd1eeb1a05b59015a3c0a6aaac06919964f56a13373676ee2198fdf854b785cc",
+      "output": "Imported/NtfsStream.cs",
+      "namespaceBaselineSha256": "bf41b0c6fe8f731490271ed45f952c670b0d12dd2f93c25218381e2e154c1e64"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/NtfsTransaction.cs",
+      "inputSha256": "ccf308fda9ea575ecef2d15db1da9296e5144349c4bdb35c82194fbc9cfb2cbe",
+      "output": "Imported/NtfsTransaction.cs",
+      "namespaceBaselineSha256": "7d7bbd9cb2263890f53c4463981abe2f7316de53e96d1fa0e761c553bb209f7e"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ObjectId.cs",
+      "inputSha256": "e465950386a61ea85ba6eb22f55d7d7975d38e7a784706c5adf0475ae7949d8c",
+      "output": "Imported/ObjectId.cs",
+      "namespaceBaselineSha256": "4de467cfa4cbdce8282ece757fea1e75f6de9d0dd9c14e9c373a5e3688336506"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ObjectIdRecord.cs",
+      "inputSha256": "f8e320263329799bbcbca5b80c9a44cdadaaf0ad0a57a4899605cfaad29ba882",
+      "output": "Imported/ObjectIdRecord.cs",
+      "namespaceBaselineSha256": "44834c5fa34ab27c91ef166db8b4c30bea7e21578fa7b52a7788385a1bd56eb2"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ObjectIds.cs",
+      "inputSha256": "bc4c6b80d738f7ff701e51e55411607d4b3a1b964e5b475d5724d6ab49a4c25a",
+      "output": "Imported/ObjectIds.cs",
+      "namespaceBaselineSha256": "c99891a439adeb9015b633a1a4fa7a501913a2db4cafaddfbe8e1fcbcbb61362"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Properties/AssemblyInfo.cs",
+      "inputSha256": "9ed9920dccdc1040526860a47cb388fff636113d762f0443ff237e6b2b49cd00",
+      "output": "Imported/Properties/AssemblyInfo.cs",
+      "namespaceBaselineSha256": "b41a3b6be5a63f6869aac9fe3dc75c916d09fd019012f9f6c728689f13517d53"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/Quotas.cs",
+      "inputSha256": "ff1364ae63dcb17db6842964b2dffd634b94644dbbd9b21fce6a1d8f0ff2c13a",
+      "output": "Imported/Quotas.cs",
+      "namespaceBaselineSha256": "fd0910c403e3c958b396015930058db21e3dcc0b6fa900e957855555eb8b1486"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/RawClusterStream.cs",
+      "inputSha256": "b77ba84d54cf1b42efc1f01b2846e8d01d6949caa9e84dfe75ccb4885ad13a09",
+      "output": "Imported/RawClusterStream.cs",
+      "namespaceBaselineSha256": "d7747d0fc8f37792df2c2b9916b14d00b2498938ab4d8d06a68eb7dfa09e8c94"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ReparsePointRecord.cs",
+      "inputSha256": "08d7f4ddffee5fb27b5b711b7a96ecbc111bca42726a7f1f7ebfbfcf816aa4a1",
+      "output": "Imported/ReparsePointRecord.cs",
+      "namespaceBaselineSha256": "ecb7a6124656b65d6608e08d90707bff9ba25e9d0c05d51d4e55d2da718ffa23"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ReparsePoints.cs",
+      "inputSha256": "256fab698e04c466f0131c6f3e10b646b2ddc2a55987239aade993f190ead8f9",
+      "output": "Imported/ReparsePoints.cs",
+      "namespaceBaselineSha256": "28b2e5871425ee4841bf5f85f5506e3538273d6b47c5f4184f6aab58f08b92a2"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ResidentAttributeRecord.cs",
+      "inputSha256": "1f0cffc95d9c2a0dc2eba451f78ac5bae4150a5debd32c9fb96c71aca20737d9",
+      "output": "Imported/ResidentAttributeRecord.cs",
+      "namespaceBaselineSha256": "f2a055e3d8ba03a3153c9bc5c99145558f00919fcd2370ecfc67f494dc3766eb"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/SecurityDescriptor.cs",
+      "inputSha256": "688abcb937e5230ea4636bd09700837c188563a2c7fb1862fc7fcb12b42fc215",
+      "output": "Imported/SecurityDescriptor.cs",
+      "namespaceBaselineSha256": "52db2e1803d5d768d9457a549d63241db59e00072c8da7c0b8a05ea0c49b5de8"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/SecurityDescriptorRecord.cs",
+      "inputSha256": "6517adc1b4440307d04c82a93215eeb17fa131bbba93e3bd851717be15e22467",
+      "output": "Imported/SecurityDescriptorRecord.cs",
+      "namespaceBaselineSha256": "64571bea5b9eef5a2386c0f1df99193e1d3fb3a3679313a5228beabe05ef84eb"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/SecurityDescriptors.cs",
+      "inputSha256": "806cbc837ac7021fce831b19d8215973c538d98f540522e24d9d4bdac7feabc1",
+      "output": "Imported/SecurityDescriptors.cs",
+      "namespaceBaselineSha256": "f0455786d91b8dcc4f986e310d2389479a1cc4a13592d0056e8731b27e4a2993"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/ShortFileNameOption.cs",
+      "inputSha256": "6ce98b5b4a9e150e000ce627787c321e17dbfbba8fe6ba0f2b22472677ccdc60",
+      "output": "Imported/ShortFileNameOption.cs",
+      "namespaceBaselineSha256": "986ad0f9d3ea3cee837bc8b542f8b3fc7ee07c7e18105a45d9dbf8fc8e4bba9d"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/SparseClusterStream.cs",
+      "inputSha256": "0779ec4588c985a12157f6800010378f5a2e6d14d7ba3e5ca35fd3a2c93e81a9",
+      "output": "Imported/SparseClusterStream.cs",
+      "namespaceBaselineSha256": "264fa11e2cc66af647f97f3928766f66383a0ebbc6759b614e554e7209fcb5ca"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/StandardInformation.cs",
+      "inputSha256": "5e9cdae6994bab337f8a6094664d58b9ea000a726e63d5890400e6080df5df73",
+      "output": "Imported/StandardInformation.cs",
+      "namespaceBaselineSha256": "dce76c064d5411030aedd75b464f72e08a3cc40f07282e43e9ff531ba049527c"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/StructuredNtfsAttribute.cs",
+      "inputSha256": "3f2c181552cc72bf51e80d04df9e3960aeea6a653c167bcae5afb5d9e20fdc90",
+      "output": "Imported/StructuredNtfsAttribute.cs",
+      "namespaceBaselineSha256": "1197bc00f337c43410550abc8fdf9d725de6d5691cede7292d3e6c32abece765"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/UpperCase.cs",
+      "inputSha256": "3bd3852cdc4bb80443ceaf201336d017ab385d51c2895f207507ba3b84ac85cc",
+      "output": "Imported/UpperCase.cs",
+      "namespaceBaselineSha256": "5c0fdea170d3c0b589f6d47028f902737d5eb89e63f79aa2b825b4466bf9e74e"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/VolumeInformation.cs",
+      "inputSha256": "d72d7b9d5134f05fa5319b75022e95cc8edd0feba530e7206fc27480e57a6ad4",
+      "output": "Imported/VolumeInformation.cs",
+      "namespaceBaselineSha256": "69aa7624e15bae33b7e3d59f41e0cb9bde25f037dfc3a68dfc2e4007206ae307"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/VolumeInformationFlags.cs",
+      "inputSha256": "a3f557a9d26e54533886f1163536cfffce30fe4424a359cb5a15be1bd2fe708b",
+      "output": "Imported/VolumeInformationFlags.cs",
+      "namespaceBaselineSha256": "3ddf14d04d65dd26c73c83c1330a7b061f7c80bfc80f1c6efc217584f6ac4b25"
+    },
+    {
+      "input": "Library/DiscUtils.Ntfs/VolumeName.cs",
+      "inputSha256": "be54f317925e946472b3d7f22cfef887ddb258cdb33a63e71ce1f76622409085",
+      "output": "Imported/VolumeName.cs",
+      "namespaceBaselineSha256": "3a720ede1902cd615dfe47162f986c4c250faf761dcf501162d39dd969503a44"
+    },
+    {
+      "input": "Library/DiscUtils.Core/Internal/ObjectCache.cs",
+      "inputSha256": "932ccb9a10b32aabf8877d980c5b043acc2a4e67dc4ef88b00f6f702bfb6c570",
+      "output": "Internal/ObjectCache.cs",
+      "namespaceBaselineSha256": "41e047653dff5b0d286ceae8b50ea2e4bc8da62a8052e0a195349048a2acb306"
+    },
+    {
+      "input": "Library/DiscUtils.Core/Internal/Utilities.cs",
+      "inputSha256": "94b26ae38813c729f1f5157a5679a5c833383000bdcbb5405f53625cb62312d7",
+      "output": "Internal/Utilities.cs",
+      "namespaceBaselineSha256": "ae298e6b4dc4588f70d6c15f93ae5192345b4132505dc4554bdbf4b92ccdb49f"
+    }
+  ]
+}

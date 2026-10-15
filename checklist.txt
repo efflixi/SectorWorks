@@ -775,8 +775,9 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
     resizing are not added by this milestone.
     NOTE: 2026-10-15 delivery is PARTIAL/BLOCKED, not Phase 2B complete.
     Qualified FAT is delivered across 63 container/layout/filesystem/sector
-    rows, including shared staged workflows. Required NTFS creation is blocked
-    by concrete portable ACL inheritance failures; no NTFS writer is enabled.
+    rows, including shared staged workflows. The subsequent owner-authorized
+    managed repair enables qualified NTFS subsets across 21 disk rows; actual
+    Windows-authored media/reference and LFS 2.0 safety remain mandatory gaps.
     No Phase 3 implementation has begun.
 
 2B.1 Per-stack qualification and shared staged integration
@@ -786,7 +787,8 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
 [x] Keep capabilities per volume; isolate changes to selected volumes and support staged edits to multiple qualified volumes without corrupting unchanged volumes.
 [x] Keep source images read-only and preserve the Phase 2 Save As safety contract, including flush, independent reopen, validation and non-overwriting publication.
 [x] Regress the existing raw/FAT writer and its allocation, FSInfo, timestamp and short-name case fixes.
-    NOTE: Qualified rows are FAT only; mandatory NTFS delivery remains 2B.6.
+    NOTE: Qualified rows include FAT and the managed NTFS subset. Windows-media
+    interoperability gaps remain mandatory under 2B.6, not silently deferred.
     Capabilities never transfer from qualified FAT to an unqualified sibling.
     Global ordered history has independent volume trees and one payload budget.
 
@@ -806,7 +808,8 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
 
 2B.3 Partitioned raw Save As
 [!] Implement bounded writes to FAT12/16/32 and qualified NTFS volumes within valid primary MBR and GPT raw images.
-    NOTE: Required FAT rows pass; ordinary NTFS delivery is blocked by 2B.6.
+    NOTE: Required FAT and managed NTFS rows pass; Windows-media/LFS 2.0
+    qualification remains incomplete under 2B.6.
 [x] Validate partition-relative addressing and BPB hidden-sector/geometry expectations without silently repairing source metadata.
 [x] Preserve partition offsets/sizes/types/IDs/names/flags, MBR boot code, GPT primary/backup headers and arrays, and untouched partitions/unallocated or opaque regions.
 [x] Test multiple volumes, first/last-sector boundaries, invalid overlaps, damaged backup GPT and attempts to write outside the selected volume.
@@ -816,7 +819,8 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
 
 2B.4 VHD staged editing and Save As
 [!] Qualify fixed and dynamic VHD separately with the required filesystem-only/MBR/GPT and FAT/NTFS rows.
-    NOTE: Both variants/layouts/FAT subsets pass; NTFS remains blocked by 2B.6.
+    NOTE: Both variants/layouts/FAT and managed NTFS subsets pass; remaining
+    Windows-media qualification is recorded under 2B.6.
 [x] Produce a new VHD retaining its fixed/dynamic variant and virtual size unless the user explicitly requests a separately qualified conversion.
 [x] Validate headers/footer/checksums, block allocation tables, dynamic block growth and zero/unallocated reads without unnecessarily expanding sparse containers.
 [x] Preserve supported container and partition metadata and unchanged virtual-sector contents; document any necessary container identity changes.
@@ -828,7 +832,8 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
 
 2B.5 VHDX staged editing and Save As
 [!] Qualify fixed and dynamic VHDX separately with the required filesystem-only/MBR/GPT and FAT/NTFS rows.
-    NOTE: Both variants/layouts/FAT subsets pass; NTFS remains blocked by 2B.6.
+    NOTE: Both variants/layouts/FAT and managed NTFS subsets pass; remaining
+    Windows-media qualification is recorded under 2B.6.
 [x] Produce a new VHDX retaining its variant, virtual size and supported logical/physical sector sizes; declare and test supported sector-size combinations.
 [x] Validate headers/checksums, region/metadata tables, block allocation and output log state, including dynamic allocation and zero/unallocated reads.
 [x] Preserve supported container and partition metadata and unchanged virtual-sector contents without unnecessarily expanding dynamic images.
@@ -848,40 +853,70 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
     allocate/index an empty Security-ID-0 file; ntfsfix -n alone misses this.
     Existing replace/transitions/delete/Unicode rename experiments pass bitmap,
     metadata/content and independent-tool checks but do not qualify all required
-    operations. Sixteen regressions added; NTFS remains disabled on every stack.
-    Owner decision: portable-security dependency remediation or explicit required
-    NTFS scope revision. See docs/dependency-evaluation.md for concrete evidence.
+    operations. Sixteen original-package regressions retain this baseline.
+    Owner reaffirmed NTFS writing as required for 1.0 and authorized a bounded
+    managed-repair investigation, then explicitly authorized its implementation
+    and qualification. Separately named managed backend/security assemblies now
+    enable all five operations across 21 disk rows, eight native cluster sizes
+    and six actual Mint/X11 workflows. Original packages remain unchanged.
+    Actual Windows-authored media/reference and LFS 2.0/cached-metadata safety
+    remain incomplete; qualified native/synthetic subsets are not blanket
+    Windows support. No NTFS 1.0 requirement is removed. See dependency evidence.
+[x] Perform the owner-authorized bounded managed NTFS repair investigation and stop before a broad security-component/dependency change.
+    NOTE: Seven new boundary tests verify five unsupported binary/SDDL security
+    constructors and installed-assembly IL: directory creation incorrectly
+    passes the file-inheritance flag. Source/rule review also found missing
+    object-only propagation and generic-rights/creator-SID handling. Existing
+    16 NTFS regressions pass again, including native checks and source hashes.
+    This is investigation evidence, not delivery of a portable NTFS writer.
+    The owner subsequently authorized that pinned-source component; the managed
+    implementation above supersedes this historical investigation stop.
+    Complete dependency suite: 27 tests / zero skips; added-file format/analyzer
+    checks, authoritative spec comparison and owner-sample hashes pass. No new
+    full-solution/platform/publish run is claimed for this investigation.
 [x] Separate modification of an existing NTFS volume from NTFS creation/formatting; the known Windows SID formatting failure is not evidence that all modification is impossible.
-[!] Verify allocation bitmap/MFT/index consistency, resident/nonresident transitions, directory growth, full-volume behavior and supported timestamp/attribute/security metadata preservation.
-    NOTE: Narrow existing-file probes pass, but complete creation/growth/full
-    workflow qualification cannot proceed safely until the ACL blocker is resolved.
-[!] Detect unsupported sparse/compressed/encrypted/reparse/alternate-stream/attribute-list features and reject unsafe modifications without dropping opaque data or metadata.
-    NOTE: Read restrictions and universal NTFS write gating remain intact;
-    the required portable writer preflight/preservation path is not delivered.
-[!] Validate changed and unchanged files, allocation and metadata with independent NTFS tooling where available, not content hashes alone.
-    NOTE: Probe evidence includes bitmap/MFT/security/native checks; this is
-    not qualification of complete staged/Save As across required NTFS rows.
+[x] Verify allocation bitmap/MFT/index consistency, resident/nonresident transitions, directory growth, full-volume behavior and supported timestamp/attribute/security metadata preservation.
+    NOTE: Independent raw validator, native tools, full-volume deletion and
+    near-full replacement with exactly 16 free clusters pass. SI, independent
+    filename/index/DOS-alias dates, raw security bytes and identity are retained.
+    MFT mirror extent follows max(4 * recordSize, clusterSize), not always four.
+[x] Detect unsupported sparse/compressed/encrypted/reparse/alternate-stream/attribute-list features and reject unsafe modifications without dropping opaque data or metadata.
+    NOTE: Per-volume preflight gates unsupported metadata, quotas/ObjectIDs,
+    unsafe security and logs. Optional new ObjectID generation is disabled
+    before allocation; existing metadata is never stripped to qualify.
+[x] Validate changed and unchanged files, allocation and metadata with independent NTFS tooling where available, not content hashes alone.
+    NOTE: 21 actual Services disk rows and eight native cluster sizes pass,
+    including qemu/native checks. Raw allocation/security/MFT/index/SDS checks
+    and supported metadata preservation are separate from tree/hash validation.
 [!] Keep storage integration replaceable; resolve portable writer defects or record a blocker for owner decision rather than declaring evaluation alone sufficient.
-    NOTE: Dependency integration remains replaceable and no unsafe writer is
-    enabled. Material portable-security remediation awaits owner decision;
-    recording the blocker does not complete required NTFS delivery.
+    NOTE: Isolated pinned source repair and portable component are implemented;
+    original signed packages and replaceable Core/Services boundaries remain.
+    Actual Windows-authored media/reference and modern LFS 2.0 cache safety
+    need further qualification/review. Unsupported volumes remain read-only;
+    recording these gaps does not complete the ordinary NTFS requirement.
     NOTE: Formatting is a separate capability and remains subject to the
     release-quality dependency review. Phase 2B requires existing-volume writes,
     not a Windows-only formatter or an automatic DiscUtils replacement.
+[!] Qualify actual Windows-authored ordinary NTFS and the Windows security reference; resolve LFS 2.0/cached-metadata safety without unqualified replay/reset.
+    NOTE: Targeted managed suite: 382 passed, one explicit Windows-only skip,
+    383 total. Clean LFS 1.1 has bounded synthetic restart-page tests, not
+    Windows-media/runtime evidence. LFS 2.0 remains safely disabled. Required
+    NTFS writing stays in 1.0; no read-only scope reduction or future date promised.
 
 2B.7 Verification and coverage evidence
 [!] Add legal repeatable disposable fixtures for every required container/layout/filesystem row and meaningful naming/sector/allocation variants.
-    NOTE: FAT 63-row matrix and meaningful variants delivered; NTFS probes/
-    mixed read-only sibling evidence do not complete all required NTFS rows.
+    NOTE: FAT 63 rows, managed NTFS 21 disk rows/eight native cluster sizes and
+    multi-volume composition delivered. Actual Windows fixture/LFS 2.0 gaps remain.
 [!] Exercise all staged operations, history/discard, Save As/reopen and unchanged source hashes per row.
     NOTE: All 63 qualified FAT rows pass actual shared Services workflows;
-    required NTFS staged rows remain disabled, not counted as successful.
+    21 managed NTFS disk rows also pass; unsupported Windows-media/log variants
+    remain disabled, not counted as successful qualification.
 [x] Test low space, cancellation, source/destination races, I/O/flush/validation failures, corrupt metadata and unsupported features without false success or source modification.
 [x] Verify container/partition/filesystem metadata and allocation separately from tree/content hashes; use independent tools where available and document unavailable checks.
 [x] Run cross-target builds and representative runtime workflows on physically available platforms; keep deferred macOS and other unavailable physical evidence explicit.
 [x] Publish the exact qualified envelope and unresolved rows in the support matrix and staged-editing documentation.
-    NOTE: These verified checks cover newly writable FAT rows, not a completed
-    NTFS writer. Source/sample hashes remain unchanged; samples are not bundled.
+    NOTE: These checks cover FAT and the explicit managed NTFS subset, not all
+    ordinary Windows media. Source/sample hashes remain unchanged and unpackaged.
 
 ----------------------------------------
 PHASE 2B VERIFICATION AND USER REVIEW GATE
@@ -890,12 +925,23 @@ PHASE 2B VERIFICATION AND USER REVIEW GATE
 [x] Run restore/build/verify and all available cross-target publishes.
 [x] Run per-stack round-trip/failure tests and independent-tool checks.
 [!] Exercise shared staged/Save As workflows for raw, fixed/dynamic VHD and fixed/dynamic VHDX with FAT and ordinary NTFS.
-    NOTE: Qualified FAT complete; required NTFS blocked, no partial writer.
+    NOTE: FAT and managed NTFS subset workflows pass across every disk variant;
+    actual Windows-media/reference and LFS 2.0 gates remain incomplete.
 [x] Review every required coverage row, TODO/stub/disabled test and capability reason; keep unresolved work visibly incomplete/blocked.
 [x] Update checklist, support matrix, limitations and physical-platform evidence honestly.
 [x] Review all Phase 2B exit criteria and prepare the user review summary.
 [x] STOP and request user approval. Do not begin Phase 3.
-    NOTE: Final verification: 561 tests / zero skips (309 storage/integration,
+    NOTE: Managed-repair final verification: 956 passed / one Windows-only
+    reference skip, 957 total (691 storage passes/one skip, 156 Services,
+    68 UI, 14 foundation, 27 dependency). Locked restore, zero-warning/error
+    Release build, formatting/resources/reference comparisons pass. All six
+    final publishes/AppImage pass architecture/legal/payload checks; Linux
+    published and both AppImage resource modes pass. Six actual Mint/X11
+    NTFS workflows pass independent native output checks and unchanged hashes.
+    Required Windows-media/reference and LFS 2.0/cache safety remain blocked;
+    this is a PARTIAL development update, not full Phase 2B or 1.0.
+    NOTE: Historical FAT prerelease verification: 561 tests / zero skips
+    (309 storage/integration,
     156 services/platform, 66 UI, 30 foundation/dependency), zero-warning
     Release build; locked restore, formatting/resources/reference-copy checks.
     All six self-contained publishes plus Linux x64 AppImage pass architecture,
@@ -905,18 +951,24 @@ PHASE 2B VERIFICATION AND USER REVIEW GATE
     pass; mtype bytes match staged extraction. Native dialogs, Windows/ARM64
     Phase 2B runtime remain unverified; macOS runtime/signing deferred.
     Owner-authorized publication is an intermediate PARTIAL development
-    prerelease, not 1.0 or full Phase 2B. Await NTFS owner decision/review.
+    prerelease, not 1.0 or full Phase 2B. Subsequent bounded NTFS investigation
+    reached its stop point, then the owner authorized the managed implementation.
+    The current native/synthetic NTFS subset is delivered; broader Windows
+    media/LFS 2.0 qualification remains pending, not full Phase 2B completion.
 
 PHASE 2B EXIT CRITERIA
 [!] Required raw/VHD/VHDX filesystem-only/MBR/GPT FAT/ordinary-NTFS rows have verified staged editing and validated Save As.
-    NOTE: Required FAT delivered; ordinary NTFS remains blocked by 2B.6.
+    NOTE: FAT and managed NTFS subsets delivered; required Windows-media/LFS 2.0
+    qualification remains incomplete under 2B.6.
 [x] FAT LFN/mixed-case/Unicode editing is qualified within an explicit subset without losing existing names or aliases.
 [x] Partition/container structures and unchanged data are preserved as claimed; source images remain unchanged.
 [x] Allocation/metadata validation and failure tests pass for every newly writable row.
 [x] Unsupported variants remain safely gated with reasons; no blanket write, formatting, bootability or exact-layout claim is made.
 [!] All required rows are verified or have explicit owner-approved scope decisions with named follow-up milestones; a single working stack cannot satisfy this phase.
-    NOTE: No NTFS scope revision or portable-security remediation authorized.
-    Blocker documentation is not an approved reduction or phase completion.
+    NOTE: Owner explicitly retained required NTFS writing for 1.0. The bounded
+    managed repair is authorized, implemented and qualified for the documented
+    native/synthetic subset. No scope reduction or phase completion follows:
+    actual Windows-media/reference and LFS 2.0/cache safety need review and proof.
 
 
 ============================================================
@@ -1389,7 +1441,8 @@ CROSS-PHASE FEASIBILITY MILESTONES
 [x] Modified image can Save As.
 [x] Saved image reopens/validates.
     NOTE: Phase 2 qualified conventional unpartitioned raw FAT initially;
-    partial Phase 2B broadens qualified FAT stacks. Required NTFS stays blocked.
+    partial Phase 2B broadens FAT and managed NTFS subsets. Required Windows
+    NTFS reference/media and LFS 2.0 cache qualification remain incomplete.
 [ ] linux-arm64 runs on Raspberry Pi 5.
     NOTE: Raspberry Pi 500 success is recorded separately; exact Pi 5 testing
     and Phase 5 performance/OS qualification remain incomplete.
@@ -1407,9 +1460,10 @@ Storage dependency production-readiness review
 [ ] Review then-current maintenance, maintained forks/alternatives, licensing, security/error behavior, and all six OS/architecture targets.
 [ ] Revisit the NTFS formatting failure and independently verify any advertised NTFS write/format capabilities.
     NOTE: Format throws PlatformNotSupportedException on Linux .NET 10 due to
-    Windows principal/SID APIs. Existing-volume Add/mkdir independently fail
-    through portable ACL inheritance (2B.6); complete NTFS writing remains
-    blocked, despite successful narrower mutation probes. Reads remain available.
+    Windows principal/SID APIs. The original package's Add/mkdir ACL failures
+    are addressed by the isolated managed repair for qualified ordinary volumes.
+    Actual Windows-authored media/reference and LFS 2.0 cached-metadata safety
+    remain incomplete under 2B.6; no blanket writing/formatting claim is made.
 [ ] Record the keep/patch/replace decision, resolve release-blocking limitations, and run regression/preservation tests for any dependency changes.
     NOTE: Development approval does not waive per-phase verification, input
     safety, data-integrity rules, or honest capability reporting. Keep library

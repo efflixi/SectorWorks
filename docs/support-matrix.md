@@ -28,8 +28,8 @@ filesystem repair and source-image write paths are unavailable.
 ## Staged editing
 
 See [staged editing](staged-editing.md) for the independently qualified
-Phase 2B FAT subset, Save As validation, resource limits and failure behavior.
-NTFS and optical reader support does not imply editing support.
+Phase 2B FAT and managed NTFS subsets, Save As validation, resource limits and
+failure behavior. Reader support alone never implies editing support.
 Sources always remain read-only; no direct-commit, ISO rebuild, bootability or
 exact-layout preservation capability is advertised.
 
@@ -40,10 +40,11 @@ exact-layout preservation capability is advertised.
 | Fixed/dynamic VHDX, filesystem-only/primary MBR/GPT, qualified FAT | Qualified separately, 512/512 and 512/4096 | Validated same-variant VHDX |
 | 360K/720K or early-DOS FAT12 raw | Disabled; existing read-only compatibility retained | Disabled |
 | FAT outside qualified naming/metadata/BPB/geometry bounds | Disabled; reader remains available where supported | Disabled |
-| Ordinary NTFS in any required container/layout | Blocked: portable existing-volume ACL inheritance | Disabled |
+| Qualified ordinary NTFS 3.1 in raw/fixed-dynamic VHD/fixed-dynamic VHDX, filesystem-only/primary MBR/GPT | Qualified managed subset; Windows-media/LFS 2.0 gaps remain | Validated same-layout/variant copy |
+| NTFS outside qualified metadata/security/log bounds | Disabled with concrete per-volume reason | Disabled |
 | ISO/Joliet/Rock Ridge/UDF | Disabled until Phase 4 | Disabled |
 
-The writing envelope additionally requires 512-byte sectors, two mirrored FATs,
+The FAT writing envelope additionally requires 512-byte sectors, two mirrored FATs,
 extended BPB/signature, exact bounded-volume size and the correct absolute
 hidden-sector count (zero for filesystem-only images).
 Read-only restrictions are explained by capabilities, not guessed from file
@@ -70,9 +71,23 @@ encrypted and link/reparse content, alternate streams and attribute-list
 continuation records are rejected explicitly. An entry being listed does not
 establish that every feature of its contents can be read. NTFS formatting fails
 on Linux due to the dependency's Windows SID APIs and is not enabled anywhere.
-Separately, ordinary existing-volume Add/mkdir fail in ACL inheritance on Linux;
-other successful operation probes do not qualify a complete portable NTFS writer.
+The original dependency's existing-volume Add/mkdir fail in ACL inheritance on
+Linux; the owner-authorized isolated managed repair removes that blocker for
+the separately qualified subset, without changing the original reader/package.
 See the [concrete blocker](dependency-evaluation.md#phase-2b-existing-volume-ntfs-blocker-2026-10-15).
+The owner reaffirmed NTFS writing as a 1.0 requirement. The subsequent
+[bounded managed investigation](dependency-evaluation.md#bounded-managed-ntfs-repair-investigation-2026-10-15)
+reached its stop point, then the owner authorized implementation/qualification.
+The [managed repair](dependency-evaluation.md#managed-ntfs-repair-implementation-and-qualification)
+now has native/Linux evidence, not complete ordinary Windows-media qualification.
+Writing accepts 512-byte logical sectors, matching primary/final backup boot
+records and original hidden sectors, clean volume/allocation metadata and
+supported basic ACL semantics. All eight cluster sizes 512 through 65536 have
+native raw-volume workflow evidence; the 21 container rows use 4096-byte clusters.
+Clean LFS 1.1 has synthetic restart-page evidence; actual Windows-authored media,
+Windows security-reference execution and LFS 2.0/cached-metadata safety remain
+unverified/blocked. Unsupported logs are not replayed, reset or normalized.
+NTFS formatting and all direct-source commit remain disabled.
 
 For all supported entries: bounded plain-text preview and paginated hex are
 available without execution; recursive filename search is cancellable; extraction
@@ -116,26 +131,27 @@ determine application support. Record platform limitations only from evidence.
 
 `Qualified` means the bounded FAT subset described above, with independent
 operation/preservation checks, not every reader-supported variation.
-`Blocked` means mandatory NTFS delivery remains unresolved and disabled.
+`Managed subset` means the bounded NTFS subset above, not all Windows media;
+mandatory Windows reference/LFS 2.0 qualification remains incomplete.
 Layouts must be structurally valid; **Phase 2B is not complete**.
 
 | Container variant | Layout | FAT12 | FAT16 | FAT32 | Ordinary NTFS |
 | --- | --- | --- | --- | --- | --- |
-| Raw | Filesystem-only | Qualified | Qualified | Qualified | Blocked |
-| Raw | Primary MBR | Qualified | Qualified | Qualified | Blocked |
-| Raw | GPT | Qualified | Qualified | Qualified | Blocked |
-| Fixed VHD | Filesystem-only | Qualified | Qualified | Qualified | Blocked |
-| Fixed VHD | Primary MBR | Qualified | Qualified | Qualified | Blocked |
-| Fixed VHD | GPT | Qualified | Qualified | Qualified | Blocked |
-| Dynamic VHD | Filesystem-only | Qualified | Qualified | Qualified | Blocked |
-| Dynamic VHD | Primary MBR | Qualified | Qualified | Qualified | Blocked |
-| Dynamic VHD | GPT | Qualified | Qualified | Qualified | Blocked |
-| Fixed VHDX | Filesystem-only | Qualified | Qualified | Qualified | Blocked |
-| Fixed VHDX | Primary MBR | Qualified | Qualified | Qualified | Blocked |
-| Fixed VHDX | GPT | Qualified | Qualified | Qualified | Blocked |
-| Dynamic VHDX | Filesystem-only | Qualified | Qualified | Qualified | Blocked |
-| Dynamic VHDX | Primary MBR | Qualified | Qualified | Qualified | Blocked |
-| Dynamic VHDX | GPT | Qualified | Qualified | Qualified | Blocked |
+| Raw | Filesystem-only | Qualified | Qualified | Qualified | Managed subset |
+| Raw | Primary MBR | Qualified | Qualified | Qualified | Managed subset |
+| Raw | GPT | Qualified | Qualified | Qualified | Managed subset |
+| Fixed VHD | Filesystem-only | Qualified | Qualified | Qualified | Managed subset |
+| Fixed VHD | Primary MBR | Qualified | Qualified | Qualified | Managed subset |
+| Fixed VHD | GPT | Qualified | Qualified | Qualified | Managed subset |
+| Dynamic VHD | Filesystem-only | Qualified | Qualified | Qualified | Managed subset |
+| Dynamic VHD | Primary MBR | Qualified | Qualified | Qualified | Managed subset |
+| Dynamic VHD | GPT | Qualified | Qualified | Qualified | Managed subset |
+| Fixed VHDX | Filesystem-only | Qualified | Qualified | Qualified | Managed subset |
+| Fixed VHDX | Primary MBR | Qualified | Qualified | Qualified | Managed subset |
+| Fixed VHDX | GPT | Qualified | Qualified | Qualified | Managed subset |
+| Dynamic VHDX | Filesystem-only | Qualified | Qualified | Qualified | Managed subset |
+| Dynamic VHDX | Primary MBR | Qualified | Qualified | Qualified | Managed subset |
+| Dynamic VHDX | GPT | Qualified | Qualified | Qualified | Managed subset |
 
 Qualification bounds: conventional 512-byte FAT sectors, FAT12
 1,474,560-byte volumes only (360K/720K excluded); FAT16/32 within the existing
@@ -164,10 +180,10 @@ section 6.6 records the same delivery policy.
 | --- | --- | --- | --- |
 | Qualified unpartitioned raw FAT12/16/32 | Phase 2 verified; Phase 2B broadens naming | Phase 3 item 3.7 | Normally not needed; copy-and-apply Save As |
 | Conventional FAT12/16/32 with qualified LFN/mixed-case/Unicode | Phase 2B FAT delivered, bounded subset | Phase 3 item 3.7 on qualified disk stacks | Normally not needed |
-| Raw primary MBR/GPT with qualified FAT or ordinary NTFS | FAT delivered; NTFS blocked, items 2B.3/2B.6 | Phase 3 item 3.7 | Normally not needed; preserve partition layout |
-| Fixed VHD and dynamic VHD, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT delivered per variant; NTFS blocked, items 2B.4/2B.6 | Phase 3 item 3.7 | Normally not needed; retain variant/virtual size |
-| Fixed VHDX and dynamic VHDX, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT delivered per variant/sector subset; NTFS blocked, items 2B.5/2B.6 | Phase 3 item 3.7 | Normally not needed; validate container metadata/log state |
-| Ordinary NTFS in filesystem-only raw | Blocked, item 2B.6; no writer enabled | Phase 3 item 3.7 | Normally not needed; formatting is separate |
+| Raw primary MBR/GPT with qualified FAT or ordinary NTFS | FAT and managed NTFS subsets delivered; Windows-media gaps, items 2B.3/2B.6 | Phase 3 item 3.7 | Normally not needed; preserve partition layout |
+| Fixed VHD and dynamic VHD, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS subsets per variant; Windows-media gaps, items 2B.4/2B.6 | Phase 3 item 3.7 | Normally not needed; retain variant/virtual size |
+| Fixed VHDX and dynamic VHDX, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS per variant/sector subset; Windows-media gaps, items 2B.5/2B.6 | Phase 3 item 3.7 | Normally not needed; validate container metadata/log state |
+| Ordinary NTFS in filesystem-only raw | Managed subset delivered; Windows reference/LFS 2.0 gaps, item 2B.6 | Phase 3 item 3.7 | Normally not needed; formatting is separate |
 | ISO 9660/Joliet/supported Rock Ridge | Phase 4 items 4.2/4.5 | Not an in-place filesystem-write target | Phase 4 validated rebuild; source replacement requires Phase 3 safeguards |
 | Declared UDF and ISO/UDF bridge subsets | Phase 4 item 4.6, including UDF reads beyond detection | Not an in-place filesystem-write target | Phase 4; preserve consistent bridge namespaces |
 | Qualified BIN/CUE data and mixed-mode layouts | Phase 6 items 6.8-6.9 | Not an in-place track-write target | Phase 6 validated new output sets; source-set replacement requires recovery safeguards |

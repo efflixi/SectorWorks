@@ -146,10 +146,7 @@ public sealed class DiskWriterTests
             Assert.True(writer.QualifyVolume(image, fatId).Available);
             Capability ntfs = writer.QualifyVolume(image, ntfsId);
             Assert.False(ntfs.Available);
-            Assert.Contains("Add/mkdir", ntfs.Reason, StringComparison.Ordinal);
-            Assert.Contains("ACL inheritance (RawSecurityDescriptor on Linux)", ntfs.Reason, StringComparison.Ordinal);
-            Assert.Contains("independently of formatting", ntfs.Reason, StringComparison.Ordinal);
-            Assert.Contains("No NTFS writer is qualified", ntfs.Reason, StringComparison.Ordinal);
+            Assert.Contains("hidden sectors", ntfs.Reason, StringComparison.Ordinal);
         }
         File.Copy(source, output);
         writer.Apply(output, Operations(fatId), default);
@@ -412,7 +409,7 @@ internal static class DiskWriterFixtures
     internal static string Create(WorkDirectory work, string container, string layout, string fat, bool twoFatVolumes = false, int physical = 512, bool withLongNames = false, bool readOnlyNtfs = false)
     {
         string volume = work.Golden(fat + ".img");
-        PrepareFat(volume, fat == "fat32");
+        if (fat != "ntfs") { PrepareFat(volume, fat == "fat32"); }
         if (withLongNames)
         {
             StagedWriteOperation[] operations =
@@ -621,7 +618,7 @@ internal static class DiskWriterFixtures
     {
         const long start = 1024 * 1024;
         long length = new FileInfo(volume).Length;
-        long second = ((start + length + 1024 * 1024 - 1) / (1024 * 1024)) * 1024 * 1024;
+        long second = ((start + length + 2 * 1024 * 1024 - 1) / (1024 * 1024)) * 1024 * 1024;
         long secondLength = readOnlyVolume is not null ? new FileInfo(readOnlyVolume).Length : twoFat ? length : 1024 * 1024;
         long total = ((second + secondLength + 2 * 1024 * 1024 - 1) / (1024 * 1024)) * 1024 * 1024;
         using var output = new FileStream(raw, FileMode.CreateNew, FileAccess.ReadWrite);
@@ -631,7 +628,7 @@ internal static class DiskWriterFixtures
         mbr[510] = 0x55; mbr[511] = 0xaa;
         if (layout == "mbr")
         {
-            byte fatType = fat == "fat12" ? (byte)0x01 : fat == "fat32" ? (byte)0x0c : (byte)0x06;
+            byte fatType = fat == "ntfs" ? (byte)0x07 : fat == "fat12" ? (byte)0x01 : fat == "fat32" ? (byte)0x0c : (byte)0x06;
             MbrEntry(mbr, 446, fatType, start, length);
             MbrEntry(mbr, 462, readOnlyVolume is not null ? (byte)0x07 : twoFat ? fatType : (byte)0x83, second, secondLength);
         }
@@ -673,7 +670,12 @@ internal static class DiskWriterFixtures
             output.ReadExactly(boot);
             W32(boot, 28, checked((uint)(offset / 512)));
             output.Position = offset; output.Write(boot);
-            if (U16(boot, 22) == 0)
+            if (fat == "ntfs")
+            {
+                output.Position = offset + length - 512;
+                output.Write(boot);
+            }
+            else if (U16(boot, 22) == 0)
             {
                 output.Position = offset + U16(boot, 50) * 512L;
                 output.Write(boot);

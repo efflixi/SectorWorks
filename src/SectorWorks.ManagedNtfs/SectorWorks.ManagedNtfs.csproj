@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>SectorWorks.ManagedNtfs</AssemblyName>
+    <RootNamespace>SectorWorks.ManagedNtfs</RootNamespace>
+    <SignAssembly>false</SignAssembly>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SectorWorks.StorageTests" />
+    <Compile Remove="Imported/NtfsFormatter.cs;Imported/Quotas.cs" />
+    <PackageReference Include="DiscUtils.Core" Version="0.16.13" />
+    <PackageReference Include="DiscUtils.Streams" Version="0.16.13" />
+    <ProjectReference Include="../SectorWorks.NtfsSecurity/SectorWorks.NtfsSecurity.csproj" />
+  </ItemGroup>
+</Project>

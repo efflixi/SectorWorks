@@ -83,8 +83,28 @@ LBA, including its FAT32 backup, without rewriting it to qualify the volume.
 Existing-volume NTFS creation fails independently of formatting: DiscUtils ACL
 inheritance calls unsupported RawSecurityDescriptor APIs on Linux and can leave
 an indexed Security-ID-0 file before throwing. `ntfsfix -n` may still pass;
-retain bitmap/index/security checks and keep NTFS staging disabled pending
-owner-approved remediation. See [dependency evidence](docs/dependency-evaluation.md).
+retain bitmap/index/security checks. Owner reaffirmed NTFS writing as required
+for 1.0; the bounded investigation found binary SID/ACL/ACE/descriptor APIs fail
+too and installed NTFS directory creation uses file inheritance. The owner
+subsequently authorized the managed repair's implementation and qualification,
+superseding that investigation's stop point, not the Phase 2B/Phase 3 boundary.
+Keep the isolated source-repair assembly distinct from unchanged signed packages;
+only independently qualified ordinary-volume subsets may enable writing.
+Do not demote required NTFS writing to read-only or treat narrower probes as
+complete delivery.
+See [dependency evidence](docs/dependency-evaluation.md).
+
+Existing `$SDS` descriptor hashes cover the original stored bytes; canonicalize
+new insertions only, not the input before checking an existing record's hash.
+Self-relative component order/alignment can differ while the descriptor remains
+valid, so a canonical reserialization is not necessarily its original byte span.
+
+Imported NTFS code must retain checked address/count arithmetic. Intentional
+bitmap low-byte complements and signed run-delta reinterpretation need narrowly
+scoped unchecked conversions; run lengths remain unsigned/bounded and header
+zero is a one-byte terminator. MFT mirror extent is
+`max(4 * recordSize, clusterSize)`, not always four records; regress large-cluster
+fixtures and native backward/full-volume runs before broadening the writer.
 
 DiscUtils VHDX ContentStream.Flush is unimplemented. The qualified writer uses
 synchronous payload/BAT writes, disposes the container, flushes the underlying

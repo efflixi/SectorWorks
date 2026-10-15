@@ -1,0 +1,1084 @@
+--- namespace-baseline/Imported/BiosParameterBlock.cs
++++ repaired/Imported/BiosParameterBlock.cs
+@@ -189,7 +189,8 @@
+         {
+             if ((rawSize & 0x80) != 0)
+             {
+-                return 1 << -(sbyte)rawSize;
++                int exponent = 256 - rawSize;
++                return exponent < 31 ? 1 << exponent : 0;
+             }
+             return rawSize * SectorsPerCluster * BytesPerSector;
+         }
+--- namespace-baseline/Imported/Bitmap.cs
++++ repaired/Imported/Bitmap.cs
+@@ -113,7 +113,7 @@
+ 
+             if (byteIdx < _stream.Length)
+             {
+-                SetByte(byteIdx, (byte)(GetByte(byteIdx) & ~mask));
++                SetByte(byteIdx, (byte)(GetByte(byteIdx) & unchecked((byte)~mask)));
+             }
+ 
+             if (index < _nextAvailable)
+@@ -149,7 +149,7 @@
+                 long byteIdx = i / 8 - firstByte;
+                 byte mask = (byte)(1 << (byte)(i % 8));
+ 
+-                buffer[byteIdx] &= (byte)~mask;
++                buffer[byteIdx] &= unchecked((byte)~mask);
+             }
+ 
+             SetBytes(firstByte, buffer);
+--- namespace-baseline/Imported/ClusterBitmap.cs
++++ repaired/Imported/ClusterBitmap.cs
+@@ -113,18 +113,18 @@
+ 
+                 if (numFound < count)
+                 {
+-                    numFound = FindClusters(count - numFound, result, totalClusters / 16, totalClusters / 8, isMft, false, 0);
+-                }
+-
+-                if (numFound < count)
+-                {
+-                    numFound = FindClusters(count - numFound, result, totalClusters / 32, totalClusters / 16, isMft, false,
++                    numFound += FindClusters(count - numFound, result, totalClusters / 16, totalClusters / 8, isMft, false, 0);
++                }
++
++                if (numFound < count)
++                {
++                    numFound += FindClusters(count - numFound, result, totalClusters / 32, totalClusters / 16, isMft, false,
+                         0);
+                 }
+ 
+                 if (numFound < count)
+                 {
+-                    numFound = FindClusters(count - numFound, result, 0, totalClusters / 32, isMft, false, 0);
++                    numFound += FindClusters(count - numFound, result, 0, totalClusters / 32, isMft, false, 0);
+                 }
+             }
+ 
+@@ -185,7 +185,7 @@
+         private long ExtendRun(long count, List<Tuple<long, long>> result, long start, long end)
+         {
+             long focusCluster = start;
+-            while (!_bitmap.IsPresent(focusCluster) && focusCluster < end && focusCluster - start < count)
++            while (focusCluster < end && focusCluster - start < count && !_bitmap.IsPresent(focusCluster))
+             {
+                 ++focusCluster;
+             }
+@@ -241,7 +241,8 @@
+                     long runStart = focusCluster;
+                     ++focusCluster;
+ 
+-                    while (!_bitmap.IsPresent(focusCluster) && focusCluster - runStart < count - numFound)
++                    while (focusCluster < end && focusCluster - runStart < count - numFound &&
++                           !_bitmap.IsPresent(focusCluster))
+                     {
+                         ++focusCluster;
+                         ++numInspected;
+--- namespace-baseline/Imported/DataRun.cs
++++ repaired/Imported/DataRun.cs
+@@ -22,6 +22,7 @@
+ //
+ 
+ using System.Globalization;
++using System.IO;
+ 
+ namespace SectorWorks.ManagedNtfs
+ {
+@@ -54,11 +55,31 @@
+ 
+         public int Read(byte[] buffer, int offset)
+         {
++            if (buffer == null || offset < 0 || offset >= buffer.Length)
++            {
++                throw new IOException("Truncated NTFS data-run header.");
++            }
++            if (buffer[offset] == 0)
++            {
++                RunLength = 0;
++                RunOffset = 0;
++                IsSparse = true;
++                return 1;
++            }
+             int runOffsetSize = (buffer[offset] >> 4) & 0x0F;
+             int runLengthSize = buffer[offset] & 0x0F;
++            if (runLengthSize < 1 || runLengthSize > 8 || runOffsetSize > 8 ||
++                buffer.Length - offset - 1 < runLengthSize + runOffsetSize)
++            {
++                throw new IOException("Invalid or truncated NTFS data-run widths.");
++            }
+ 
+-            RunLength = ReadVarLong(buffer, offset + 1, runLengthSize);
+-            RunOffset = ReadVarLong(buffer, offset + 1 + runLengthSize, runOffsetSize);
++            RunLength = ReadVarLong(buffer, offset + 1, runLengthSize, false);
++            if (RunLength <= 0)
++            {
++                throw new IOException("NTFS data runs must contain at least one cluster.");
++            }
++            RunOffset = ReadVarLong(buffer, offset + 1 + runLengthSize, runOffsetSize, true);
+             IsSparse = runOffsetSize == 0;
+ 
+             return 1 + runLengthSize + runOffsetSize;
+@@ -79,7 +100,7 @@
+             return 1 + runLengthSize + runOffsetSize;
+         }
+ 
+-        private static long ReadVarLong(byte[] buffer, int offset, int size)
++        private static long ReadVarLong(byte[] buffer, int offset, int size, bool signed)
+         {
+             ulong val = 0;
+             bool signExtend = false;
+@@ -91,7 +112,7 @@
+                 signExtend = (b & 0x80) != 0;
+             }
+ 
+-            if (signExtend)
++            if (signed && signExtend)
+             {
+                 for (int i = size; i < 8; ++i)
+                 {
+@@ -99,7 +120,7 @@
+                 }
+             }
+ 
+-            return (long)val;
++            return signed ? unchecked((long)val) : checked((long)val);
+         }
+ 
+         private static int WriteVarLong(byte[] buffer, int offset, long val)
+--- namespace-baseline/Imported/File.cs
++++ repaired/Imported/File.cs
+@@ -232,7 +232,7 @@
+ 
+             StandardInformation.InitializeNewFile(newFile, fileFlags);
+ 
+-            if (context.ObjectIds != null)
++            if (context.ObjectIds != null && context.Options.CreateObjectIds)
+             {
+                 Guid newId = CreateNewGuid(context);
+                 NtfsStream stream = newFile.CreateStream(AttributeType.ObjectId, null);
+--- namespace-baseline/Imported/FileSystemFactory.cs
++++ repaired/Imported/FileSystemFactory.cs
+@@ -23,6 +23,7 @@
+ 
+ using System.IO;
+ using DiscUtils.Vfs;
++using FileSystemInfo = DiscUtils.FileSystemInfo;
+ 
+ namespace SectorWorks.ManagedNtfs
+ {
+--- namespace-baseline/Imported/INtfsContext.cs
++++ repaired/Imported/INtfsContext.cs
+@@ -29,7 +29,6 @@
+ 
+         NtfsOptions Options { get; }
+ 
+-        Quotas Quotas { get; }
+         Stream RawStream { get; }
+ 
+         bool ReadOnly { get; }
+--- namespace-baseline/Imported/Index.cs
++++ repaired/Imported/Index.cs
+@@ -248,16 +248,7 @@
+             }
+             else if (fileName == "$Quota")
+             {
+-                if (indexName == "$O")
+-                {
+-                    keyValue = new Quotas.OwnerKey();
+-                    dataValue = new Quotas.OwnerRecord();
+-                }
+-                else if (indexName == "$Q")
+-                {
+-                    keyValue = new Quotas.OwnerRecord();
+-                    dataValue = new Quotas.QuotaRecord();
+-                }
++                return "Quota presentation is unsupported by the portable NTFS backend.";
+             }
+             else if (fileName == "$Secure")
+             {
+--- namespace-baseline/Imported/Internals/MasterFileTable.cs
++++ repaired/Imported/Internals/MasterFileTable.cs
+@@ -25,7 +25,7 @@
+ 
+ namespace SectorWorks.ManagedNtfs.Internals
+ {
+-    using InternalMasterFileTable = Ntfs.MasterFileTable;
++    using InternalMasterFileTable = SectorWorks.ManagedNtfs.MasterFileTable;
+ 
+     /// <summary>
+     /// Provides read-only access to the Master File Table of an NTFS file system.
+--- namespace-baseline/Imported/MasterFileTable.cs
++++ repaired/Imported/MasterFileTable.cs
+@@ -416,13 +416,18 @@
+ 
+             // Need to update Mirror.  OpenRaw is OK because this is short duration, and we don't
+             // extend or otherwise modify any meta-data, just the content of the Data stream.
+-            if (record.MasterFileTableIndex < 4 && _self.Context.GetFileByIndex != null)
++            long mirrorLength = Math.Max(4L * RecordSize, _self.Context.BiosParameterBlock.BytesPerCluster);
++            if (record.MasterFileTableIndex < mirrorLength / RecordSize && _self.Context.GetFileByIndex != null)
+             {
+                 File mftMirror = _self.Context.GetFileByIndex(MftMirrorIndex);
+                 if (mftMirror != null)
+                 {
+                     using (Stream s = mftMirror.OpenStream(AttributeType.Data, null, FileAccess.ReadWrite))
+                     {
++                        if (s.Length != mirrorLength)
++                        {
++                            throw new IOException("MFT mirror length does not match the NTFS cluster/record geometry.");
++                        }
+                         s.Position = record.MasterFileTableIndex * RecordSize;
+                         s.Write(buffer, 0, RecordSize);
+                     }
+@@ -437,76 +442,7 @@
+ 
+         public ClusterMap GetClusterMap()
+         {
+-            int totalClusters =
+-                (int)
+-                MathUtilities.Ceil(_self.Context.BiosParameterBlock.TotalSectors64,
+-                    _self.Context.BiosParameterBlock.SectorsPerCluster);
+-
+-            ClusterRoles[] clusterToRole = new ClusterRoles[totalClusters];
+-            object[] clusterToFile = new object[totalClusters];
+-            Dictionary<object, string[]> fileToPaths = new Dictionary<object, string[]>();
+-
+-            for (int i = 0; i < totalClusters; ++i)
+-            {
+-                clusterToRole[i] = ClusterRoles.Free;
+-            }
+-
+-            foreach (FileRecord fr in Records)
+-            {
+-                if (fr.BaseFile.Value != 0 || (fr.Flags & FileRecordFlags.InUse) == 0)
+-                {
+-                    continue;
+-                }
+-
+-                File f = new File(_self.Context, fr);
+-
+-                foreach (NtfsStream stream in f.AllStreams)
+-                {
+-                    string fileId;
+-
+-                    if (stream.AttributeType == AttributeType.Data && !string.IsNullOrEmpty(stream.Name))
+-                    {
+-                        fileId = f.IndexInMft.ToString(CultureInfo.InvariantCulture) + ":" + stream.Name;
+-                        fileToPaths[fileId] = Utilities.Map(f.Names, n => n + ":" + stream.Name);
+-                    }
+-                    else
+-                    {
+-                        fileId = f.IndexInMft.ToString(CultureInfo.InvariantCulture);
+-                        fileToPaths[fileId] = f.Names.ToArray();
+-                    }
+-
+-                    ClusterRoles roles = ClusterRoles.None;
+-                    if (f.IndexInMft < FirstAvailableMftIndex)
+-                    {
+-                        roles |= ClusterRoles.SystemFile;
+-
+-                        if (f.IndexInMft == BootIndex)
+-                        {
+-                            roles |= ClusterRoles.BootArea;
+-                        }
+-                    }
+-                    else
+-                    {
+-                        roles |= ClusterRoles.DataFile;
+-                    }
+-
+-                    if (stream.AttributeType != AttributeType.Data)
+-                    {
+-                        roles |= ClusterRoles.Metadata;
+-                    }
+-
+-                    foreach (Range<long, long> range in stream.GetClusters())
+-                    {
+-                        for (long cluster = range.Offset; cluster < range.Offset + range.Count; ++cluster)
+-                        {
+-                            clusterToRole[cluster] = roles;
+-                            clusterToFile[cluster] = fileId;
+-                        }
+-                    }
+-                }
+-            }
+-
+-            return new ClusterMap(clusterToRole, clusterToFile, fileToPaths);
++            throw new NotSupportedException("Cluster-map presentation requires an internal signed-Core constructor and is not exposed by this isolated backend.");
+         }
+ 
+         private static void Wipe(Stream s)
+--- namespace-baseline/Imported/NewFileOptions.cs
++++ repaired/Imported/NewFileOptions.cs
+@@ -22,6 +22,8 @@
+ //
+ 
+ using System.Security.AccessControl;
++using System.Runtime.Versioning;
++using SectorWorks.NtfsSecurity;
+ 
+ namespace SectorWorks.ManagedNtfs
+ {
+@@ -30,6 +32,8 @@
+     /// </summary>
+     public sealed class NewFileOptions
+     {
++        internal PortableSecurityDescriptor PortableDescriptor { get; private set; }
++
+         /// <summary>
+         /// Initializes a new instance of the NewFileOptions class.
+         /// </summary>
+@@ -37,7 +41,6 @@
+         {
+             Compressed = null;
+             CreateShortNames = null;
+-            SecurityDescriptor = null;
+         }
+ 
+         /// <summary>
+@@ -56,6 +59,29 @@
+         /// Gets or sets the security descriptor that to set for the new file.
+         /// </summary>
+         /// <remarks>The default (<c>null</c>) value indicates the security descriptor is inherited.</remarks>
+-        public RawSecurityDescriptor SecurityDescriptor { get; set; }
++        [SupportedOSPlatform("windows")]
++        public RawSecurityDescriptor SecurityDescriptor
++        {
++            get { return PortableDescriptor == null ? null : new RawSecurityDescriptor(PortableDescriptor.ToBinary(), 0); }
++            set
++            {
++                if (value == null)
++                {
++                    PortableDescriptor = null;
++                    return;
++                }
++
++                byte[] bytes = new byte[value.BinaryLength];
++                value.GetBinaryForm(bytes, 0);
++                PortableDescriptor = PortableSecurityDescriptor.Parse(bytes);
++            }
++        }
++
++        /// <summary>Gets or sets an explicit descriptor as portable self-relative bytes.</summary>
++        public byte[] SecurityDescriptorBytes
++        {
++            get { return PortableDescriptor == null ? null : PortableDescriptor.ToBinary(); }
++            set { PortableDescriptor = value == null ? null : PortableSecurityDescriptor.Parse(value); }
++        }
+     }
+ }
+\ No newline at end of file
+--- namespace-baseline/Imported/NtfsContext.cs
++++ repaired/Imported/NtfsContext.cs
+@@ -45,8 +45,6 @@
+ 
+         public ReparsePoints ReparsePoints { get; set; }
+ 
+-        public Quotas Quotas { get; set; }
+-
+         public NtfsOptions Options { get; set; }
+ 
+         public GetFileByIndexFn GetFileByIndex { get; set; }
+--- namespace-baseline/Imported/NtfsFileSystem.cs
++++ repaired/Imported/NtfsFileSystem.cs
+@@ -25,8 +25,10 @@
+ using System.Collections.Generic;
+ using System.Globalization;
+ using System.IO;
++using System.Runtime.Versioning;
+ using System.Security.AccessControl;
+ using System.Text.RegularExpressions;
++using SectorWorks.NtfsSecurity;
+ using SectorWorks.ManagedNtfs.Internal;
+ using DiscUtils.Streams;
+ 
+@@ -35,7 +37,7 @@
+     /// <summary>
+     /// Class for accessing NTFS file systems.
+     /// </summary>
+-    public sealed class NtfsFileSystem : DiscFileSystem, IClusterBasedFileSystem, IWindowsFileSystem,
++    public sealed partial class NtfsFileSystem : DiscFileSystem, IClusterBasedFileSystem, IWindowsFileSystem,
+                                          IDiagnosticTraceable
+     {
+         private const FileAttributes NonSettableFileAttributes =
+@@ -108,7 +110,6 @@
+                 _context.SecurityDescriptors = new SecurityDescriptors(GetFile(MasterFileTable.SecureIndex));
+                 _context.ObjectIds = new ObjectIds(GetFile(GetDirectoryEntry(@"$Extend\$ObjId").Reference));
+                 _context.ReparsePoints = new ReparsePoints(GetFile(GetDirectoryEntry(@"$Extend\$Reparse").Reference));
+-                _context.Quotas = new Quotas(GetFile(GetDirectoryEntry(@"$Extend\$Quota").Reference));
+             }
+ #if false
+             byte[] buffer = new byte[1024];
+@@ -1040,11 +1041,7 @@
+                 _context.ReparsePoints.Dump(writer, linePrefix);
+             }
+ 
+-            if (_context.Quotas != null)
+-            {
+-                writer.WriteLine(linePrefix);
+-                _context.Quotas.Dump(writer, linePrefix);
+-            }
++            writer.WriteLine(linePrefix + "Quota presentation is unsupported by the portable NTFS backend.");
+ 
+             writer.WriteLine(linePrefix);
+             GetDirectory(MasterFileTable.RootDirIndex).Dump(writer, linePrefix);
+@@ -1095,7 +1092,14 @@
+         /// </summary>
+         /// <param name="path">The file or directory to inspect.</param>
+         /// <returns>The security descriptor.</returns>
++        [SupportedOSPlatform("windows")]
+         public RawSecurityDescriptor GetSecurity(string path)
++        {
++            return new RawSecurityDescriptor(GetSecurityBytes(path), 0);
++        }
++
++        /// <summary>Gets the canonical self-relative security descriptor without host ACL APIs.</summary>
++        public byte[] GetSecurityBytes(string path)
+         {
+             using (new NtfsTransaction())
+             {
+@@ -1105,7 +1109,7 @@
+                     throw new FileNotFoundException("File not found", path);
+                 }
+                 File file = GetFile(dirEntry.Reference);
+-                return DoGetSecurity(file);
++                return DoGetSecurity(file).ToBinary();
+             }
+         }
+ 
+@@ -1114,8 +1118,18 @@
+         /// </summary>
+         /// <param name="path">The file or directory to change.</param>
+         /// <param name="securityDescriptor">The new security descriptor.</param>
++        [SupportedOSPlatform("windows")]
+         public void SetSecurity(string path, RawSecurityDescriptor securityDescriptor)
+         {
++            byte[] bytes = new byte[securityDescriptor.BinaryLength];
++            securityDescriptor.GetBinaryForm(bytes, 0);
++            SetSecurityBytes(path, bytes);
++        }
++
++        /// <summary>Sets a validated self-relative descriptor without host ACL APIs.</summary>
++        public void SetSecurityBytes(string path, byte[] bytes)
++        {
++            PortableSecurityDescriptor securityDescriptor = PortableSecurityDescriptor.Parse(bytes);
+             using (new NtfsTransaction())
+             {
+                 DirectoryEntry dirEntry = GetDirectoryEntry(path);
+@@ -1313,10 +1327,10 @@
+         /// Sets the short name for a given file or directory.
+         /// </summary>
+         /// <param name="path">The full path to the file or directory to change.</param>
+-        /// <param name="shortName">The shortName, which should not include a path.</param>
++        /// <param name="shortName">The short name without a path, or <c>null</c> to remove the DOS alias.</param>
+         public void SetShortName(string path, string shortName)
+         {
+-            if (!Utilities.Is8Dot3(shortName))
++            if (shortName != null && !Utilities.Is8Dot3(shortName))
+             {
+                 throw new ArgumentException("Short name is not a valid 8.3 file name", nameof(shortName));
+             }
+@@ -1345,6 +1359,11 @@
+                 FileNameNamespace givenNamespace = givenEntry.Details.FileNameNamespace;
+                 File file = GetFile(givenEntry.Reference);
+ 
++                if (shortName == null && givenNamespace == FileNameNamespace.Dos)
++                {
++                    throw new ArgumentException("Use the long-name path when removing a DOS alias.", nameof(path));
++                }
++
+                 if (givenNamespace == FileNameNamespace.Posix && file.HasWin32OrDosName)
+                 {
+                     throw new InvalidOperationException("Cannot set a short name on hard links");
+@@ -1370,7 +1389,10 @@
+                     }
+                 }
+ 
+-                dir.AddEntry(file, shortName, FileNameNamespace.Dos);
++                if (shortName != null)
++                {
++                    dir.AddEntry(file, shortName, FileNameNamespace.Dos);
++                }
+ 
+                 parentEntry.UpdateFrom(dir);
+             }
+@@ -1412,19 +1434,35 @@
+         /// <param name="info">The standard file information.</param>
+         public void SetFileStandardInformation(string path, WindowsFileInformation info)
+         {
+-            using (new NtfsTransaction())
+-            {
+-                UpdateStandardInformation(
+-                    path,
+-                    delegate(StandardInformation si)
+-                    {
+-                        si.CreationTime = info.CreationTime;
+-                        si.LastAccessTime = info.LastAccessTime;
+-                        si.MftChangedTime = info.ChangeTime;
+-                        si.ModificationTime = info.LastWriteTime;
+-                        si.FileAttributes = StandardInformation.SetFileAttributes(info.FileAttributes, si.FileAttributes);
+-                    });
+-            }
++            if (info == null)
++            {
++                throw new ArgumentNullException(nameof(info));
++            }
++            if (NtfsTransaction.Current != null)
++            {
++                throw new InvalidOperationException("Explicit metadata restoration cannot run inside a timestamping transaction.");
++            }
++
++            DirectoryEntry entry = GetDirectoryEntry(path);
++            if (entry == null)
++            {
++                throw new FileNotFoundException("File not found", path);
++            }
++
++            File file = GetFile(entry.Reference);
++            NtfsStream stream = file.GetStream(AttributeType.StandardInformation, null);
++            StandardInformation si = stream.GetContent<StandardInformation>();
++            si.CreationTime = info.CreationTime;
++            si.LastAccessTime = info.LastAccessTime;
++            si.MftChangedTime = info.ChangeTime;
++            si.ModificationTime = info.LastWriteTime;
++            si.FileAttributes = StandardInformation.SetFileAttributes(info.FileAttributes, si.FileAttributes);
++            stream.SetContent(si);
++            if (file.IndexInMft != MasterFileTable.RootDirIndex)
++            {
++                entry.UpdateFrom(file);
++            }
++            file.UpdateRecordInMft();
+         }
+ 
+         /// <summary>
+@@ -1496,12 +1534,7 @@
+             long firstSector,
+             long sectorCount)
+         {
+-            NtfsFormatter formatter = new NtfsFormatter();
+-            formatter.Label = label;
+-            formatter.DiskGeometry = diskGeometry;
+-            formatter.FirstSector = firstSector;
+-            formatter.SectorCount = sectorCount;
+-            return formatter.Format(stream);
++            throw new NotSupportedException("NTFS formatting is not qualified or enabled in this backend.");
+         }
+ 
+         /// <summary>
+@@ -1522,13 +1555,7 @@
+             long sectorCount,
+             byte[] bootCode)
+         {
+-            NtfsFormatter formatter = new NtfsFormatter();
+-            formatter.Label = label;
+-            formatter.DiskGeometry = diskGeometry;
+-            formatter.FirstSector = firstSector;
+-            formatter.SectorCount = sectorCount;
+-            formatter.BootCode = bootCode;
+-            return formatter.Format(stream);
++            throw new NotSupportedException("NTFS formatting is not qualified or enabled in this backend.");
+         }
+ 
+         /// <summary>
+@@ -1549,14 +1576,7 @@
+             long sectorCount,
+             NtfsFormatOptions options)
+         {
+-            NtfsFormatter formatter = new NtfsFormatter();
+-            formatter.Label = label;
+-            formatter.DiskGeometry = diskGeometry;
+-            formatter.FirstSector = firstSector;
+-            formatter.SectorCount = sectorCount;
+-            formatter.BootCode = options.BootCode;
+-            formatter.ComputerAccount = options.ComputerAccount;
+-            return formatter.Format(stream);
++            throw new NotSupportedException("NTFS formatting is not qualified or enabled in this backend.");
+         }
+ 
+         /// <summary>
+@@ -1569,12 +1589,7 @@
+             VolumeInfo volume,
+             string label)
+         {
+-            NtfsFormatter formatter = new NtfsFormatter();
+-            formatter.Label = label;
+-            formatter.DiskGeometry = volume.BiosGeometry ?? Geometry.Null;
+-            formatter.FirstSector = volume.PhysicalStartSector;
+-            formatter.SectorCount = volume.Length / Sizes.Sector;
+-            return formatter.Format(volume.Open());
++            throw new NotSupportedException("NTFS formatting is not qualified or enabled in this backend.");
+         }
+ 
+         /// <summary>
+@@ -1589,13 +1604,7 @@
+             string label,
+             byte[] bootCode)
+         {
+-            NtfsFormatter formatter = new NtfsFormatter();
+-            formatter.Label = label;
+-            formatter.DiskGeometry = volume.BiosGeometry ?? Geometry.Null;
+-            formatter.FirstSector = volume.PhysicalStartSector;
+-            formatter.SectorCount = volume.Length / Sizes.Sector;
+-            formatter.BootCode = bootCode;
+-            return formatter.Format(volume.Open());
++            throw new NotSupportedException("NTFS formatting is not qualified or enabled in this backend.");
+         }
+ 
+         /// <summary>
+@@ -1610,14 +1619,7 @@
+             string label,
+             NtfsFormatOptions options)
+         {
+-            NtfsFormatter formatter = new NtfsFormatter();
+-            formatter.Label = label;
+-            formatter.DiskGeometry = volume.BiosGeometry ?? Geometry.Null;
+-            formatter.FirstSector = volume.PhysicalStartSector;
+-            formatter.SectorCount = volume.Length / Sizes.Sector;
+-            formatter.BootCode = options.BootCode;
+-            formatter.ComputerAccount = options.ComputerAccount;
+-            return formatter.Format(volume.Open());
++            throw new NotSupportedException("NTFS formatting is not qualified or enabled in this backend.");
+         }
+ 
+         /// <summary>
+@@ -1684,23 +1686,12 @@
+                             }
+                         }
+ 
++                        PortableSecurityDescriptor newSd = ResolveNewSecurity(focusDir, options, true);
+                         Directory childDir = Directory.CreateNew(_context, newDirAttrs);
+                         try
+                         {
++                            DoSetSecurity(childDir, newSd);
+                             childDirEntry = AddFileToDirectory(childDir, focusDir, pathElements[i], options);
+-
+-                            RawSecurityDescriptor parentSd = DoGetSecurity(focusDir);
+-                            RawSecurityDescriptor newSd;
+-                            if (options != null && options.SecurityDescriptor != null)
+-                            {
+-                                newSd = options.SecurityDescriptor;
+-                            }
+-                            else
+-                            {
+-                                newSd = SecurityDescriptor.CalcNewObjectDescriptor(parentSd, false);
+-                            }
+-
+-                            DoSetSecurity(childDir, newSd);
+                             childDirEntry.UpdateFrom(childDir);
+ 
+                             // Update the directory entry by which we found the directory we've just modified
+@@ -2020,23 +2011,12 @@
+                 }
+             }
+ 
++            PortableSecurityDescriptor newSd = ResolveNewSecurity(parentDir, options, false);
+             File file = File.CreateNew(_context, newFileAttrs);
+             try
+             {
++                DoSetSecurity(file, newSd);
+                 result = AddFileToDirectory(file, parentDir, Utilities.GetFileFromPath(path), options);
+-
+-                RawSecurityDescriptor parentSd = DoGetSecurity(parentDir);
+-                RawSecurityDescriptor newSd;
+-                if (options != null && options.SecurityDescriptor != null)
+-                {
+-                    newSd = options.SecurityDescriptor;
+-                }
+-                else
+-                {
+-                    newSd = SecurityDescriptor.CalcNewObjectDescriptor(parentSd, false);
+-                }
+-
+-                DoSetSecurity(file, newSd);
+                 result.UpdateFrom(file);
+ 
+                 parentDirEntry.UpdateFrom(parentDir);
+@@ -2178,7 +2158,19 @@
+             }
+         }
+ 
+-        private RawSecurityDescriptor DoGetSecurity(File file)
++        private PortableSecurityDescriptor ResolveNewSecurity(Directory parent, NewFileOptions options, bool isDirectory)
++        {
++            if (options != null && options.PortableDescriptor != null)
++            {
++                return options.PortableDescriptor;
++            }
++
++            PortableSecurityDescriptor descriptor = DoGetSecurity(parent);
++            descriptor.ValidateSupportedInheritance();
++            return descriptor.Inherit(isDirectory);
++        }
++
++        private PortableSecurityDescriptor DoGetSecurity(File file)
+         {
+             NtfsStream legacyStream = file.GetStream(AttributeType.SecurityDescriptor, null);
+             if (legacyStream != null)
+@@ -2190,7 +2182,7 @@
+             return _context.SecurityDescriptors.GetDescriptorById(si.SecurityId);
+         }
+ 
+-        private void DoSetSecurity(File file, RawSecurityDescriptor securityDescriptor)
++        private void DoSetSecurity(File file, PortableSecurityDescriptor securityDescriptor)
+         {
+             NtfsStream legacyStream = file.GetStream(AttributeType.SecurityDescriptor, null);
+             if (legacyStream != null)
+--- namespace-baseline/Imported/NtfsOptions.cs
++++ repaired/Imported/NtfsOptions.cs
+@@ -39,6 +39,7 @@
+             Compressor = new LZNT1();
+             ReadCacheEnabled = true;
+             FileLengthFromDirectoryEntries = true;
++            CreateObjectIds = true;
+         }
+ 
+         /// <summary>
+@@ -90,6 +91,12 @@
+         public ShortFileNameOption ShortNameCreation { get; set; }
+ 
+         /// <summary>
++        /// Gets or sets whether newly created files receive optional object IDs.
++        /// Existing object IDs and their index entries are never removed by this option.
++        /// </summary>
++        public bool CreateObjectIds { get; set; }
++
++        /// <summary>
+         /// Returns a string representation of the file system options.
+         /// </summary>
+         /// <returns>A string of the form Show: XX XX XX.</returns>
+--- namespace-baseline/Imported/Properties/AssemblyInfo.cs
++++ repaired/Imported/Properties/AssemblyInfo.cs
+@@ -11,10 +11,6 @@
+ 
+ [assembly: ComVisible(false)]
+ 
+-#if NET5_0_OR_GREATER
+-[assembly: SupportedOSPlatform("windows")]
+-#endif
+-
+ // The following GUID is for the ID of the typelib if this project is exposed to COM
+ 
+ [assembly: Guid("9095333e-08e4-4c13-b556-20b5fdb9db2a")]
+\ No newline at end of file
+--- namespace-baseline/Imported/SecurityDescriptor.cs
++++ repaired/Imported/SecurityDescriptor.cs
+@@ -21,8 +21,9 @@
+ // DEALINGS IN THE SOFTWARE.
+ //
+ 
++using System;
+ using System.IO;
+-using System.Security.AccessControl;
++using SectorWorks.NtfsSecurity;
+ using DiscUtils.Streams;
+ 
+ namespace SectorWorks.ManagedNtfs
+@@ -31,137 +32,57 @@
+     {
+         public SecurityDescriptor() {}
+ 
+-        public SecurityDescriptor(RawSecurityDescriptor secDesc)
++        public SecurityDescriptor(PortableSecurityDescriptor secDesc)
+         {
+             Descriptor = secDesc;
+         }
+ 
+-        public RawSecurityDescriptor Descriptor { get; set; }
++        public PortableSecurityDescriptor Descriptor { get; set; }
+ 
+         public int Size
+         {
+-            get { return Descriptor.BinaryLength; }
++            get { return Descriptor.ToBinary().Length; }
+         }
+ 
+         public int ReadFrom(byte[] buffer, int offset)
+         {
+-            Descriptor = new RawSecurityDescriptor(buffer, offset);
+-            return Descriptor.BinaryLength;
++            Descriptor = PortableSecurityDescriptor.ParsePrefix(buffer.AsSpan(offset), out int consumed);
++            return consumed;
+         }
+ 
+         public void WriteTo(byte[] buffer, int offset)
+         {
+-            // Write out the security descriptor manually because on NTFS the DACL is written
+-            // before the Owner & Group.  Writing the components in the same order means the
+-            // hashes will match for identical Security Descriptors.
+-            ControlFlags controlFlags = Descriptor.ControlFlags;
+-            buffer[offset + 0x00] = 1;
+-            buffer[offset + 0x01] = Descriptor.ResourceManagerControl;
+-            EndianUtilities.WriteBytesLittleEndian((ushort)controlFlags, buffer, offset + 0x02);
+-
+-            // Blank out offsets, will fill later
+-            for (int i = 0x04; i < 0x14; ++i)
+-            {
+-                buffer[offset + i] = 0;
+-            }
+-
+-            int pos = 0x14;
+-
+-            RawAcl discAcl = Descriptor.DiscretionaryAcl;
+-            if ((controlFlags & ControlFlags.DiscretionaryAclPresent) != 0 && discAcl != null)
+-            {
+-                EndianUtilities.WriteBytesLittleEndian(pos, buffer, offset + 0x10);
+-                discAcl.GetBinaryForm(buffer, offset + pos);
+-                pos += Descriptor.DiscretionaryAcl.BinaryLength;
+-            }
+-            else
+-            {
+-                EndianUtilities.WriteBytesLittleEndian(0, buffer, offset + 0x10);
+-            }
+-
+-            RawAcl sysAcl = Descriptor.SystemAcl;
+-            if ((controlFlags & ControlFlags.SystemAclPresent) != 0 && sysAcl != null)
+-            {
+-                EndianUtilities.WriteBytesLittleEndian(pos, buffer, offset + 0x0C);
+-                sysAcl.GetBinaryForm(buffer, offset + pos);
+-                pos += Descriptor.SystemAcl.BinaryLength;
+-            }
+-            else
+-            {
+-                EndianUtilities.WriteBytesLittleEndian(0, buffer, offset + 0x0C);
+-            }
+-
+-            EndianUtilities.WriteBytesLittleEndian(pos, buffer, offset + 0x04);
+-            Descriptor.Owner.GetBinaryForm(buffer, offset + pos);
+-            pos += Descriptor.Owner.BinaryLength;
+-
+-            EndianUtilities.WriteBytesLittleEndian(pos, buffer, offset + 0x08);
+-            Descriptor.Group.GetBinaryForm(buffer, offset + pos);
+-            pos += Descriptor.Group.BinaryLength;
+-
+-            if (pos != Descriptor.BinaryLength)
+-            {
+-                throw new IOException("Failed to write Security Descriptor correctly");
+-            }
++            Descriptor.ToBinary().CopyTo(buffer, offset);
+         }
+ 
+         public void Dump(TextWriter writer, string indent)
+         {
+-            writer.WriteLine(indent + "Descriptor: " + Descriptor.GetSddlForm(AccessControlSections.All));
++            writer.WriteLine(indent + "Descriptor (self-relative hex): " + Convert.ToHexString(Descriptor.ToBinary()));
+         }
+ 
+         public uint CalcHash()
+         {
+             byte[] buffer = new byte[Size];
+             WriteTo(buffer, 0);
++            return CalcHash(buffer);
++        }
++
++        internal static uint CalcHash(byte[] buffer)
++        {
++            if (buffer.Length % 4 != 0)
++            {
++                throw new IOException("NTFS security descriptor is not DWORD-aligned.");
++            }
++
+             uint hash = 0;
+             for (int i = 0; i < buffer.Length / 4; ++i)
+             {
+-                hash = EndianUtilities.ToUInt32LittleEndian(buffer, i * 4) + ((hash << 3) | (hash >> 29));
++                // NTFS defines this hash using modular unsigned 32-bit addition.
++                hash = unchecked(EndianUtilities.ToUInt32LittleEndian(buffer, i * 4) + ((hash << 3) | (hash >> 29)));
+             }
+ 
+             return hash;
+         }
+ 
+-        internal static RawSecurityDescriptor CalcNewObjectDescriptor(RawSecurityDescriptor parent, bool isContainer)
+-        {
+-            RawAcl sacl = InheritAcl(parent.SystemAcl, isContainer);
+-            RawAcl dacl = InheritAcl(parent.DiscretionaryAcl, isContainer);
+-
+-            return new RawSecurityDescriptor(parent.ControlFlags, parent.Owner, parent.Group, sacl, dacl);
+-        }
+-
+-        private static RawAcl InheritAcl(RawAcl parentAcl, bool isContainer)
+-        {
+-            AceFlags inheritTest = isContainer ? AceFlags.ContainerInherit : AceFlags.ObjectInherit;
+-
+-            RawAcl newAcl = null;
+-            if (parentAcl != null)
+-            {
+-                newAcl = new RawAcl(parentAcl.Revision, parentAcl.Count);
+-                foreach (GenericAce ace in parentAcl)
+-                {
+-                    if ((ace.AceFlags & inheritTest) != 0)
+-                    {
+-                        GenericAce newAce = ace.Copy();
+-
+-                        AceFlags newFlags = ace.AceFlags;
+-                        if ((newFlags & AceFlags.NoPropagateInherit) != 0)
+-                        {
+-                            newFlags &=
+-                                ~(AceFlags.ContainerInherit | AceFlags.ObjectInherit | AceFlags.NoPropagateInherit);
+-                        }
+-
+-                        newFlags &= ~AceFlags.InheritOnly;
+-                        newFlags |= AceFlags.Inherited;
+-
+-                        newAce.AceFlags = newFlags;
+-                        newAcl.InsertAce(newAcl.Count, newAce);
+-                    }
+-                }
+-            }
+-
+-            return newAcl;
+-        }
+     }
+ }
+\ No newline at end of file
+--- namespace-baseline/Imported/SecurityDescriptorRecord.cs
++++ repaired/Imported/SecurityDescriptorRecord.cs
+@@ -22,6 +22,7 @@
+ //
+ 
+ using System;
++using System.IO;
+ using DiscUtils.Streams;
+ 
+ namespace SectorWorks.ManagedNtfs
+@@ -41,7 +42,10 @@
+ 
+         public int ReadFrom(byte[] buffer, int offset)
+         {
+-            Read(buffer, offset);
++            if (!Read(buffer, offset))
++            {
++                throw new IOException("Empty $Secure descriptor record.");
++            }
+             return SecurityDescriptor.Length + 0x14;
+         }
+ 
+@@ -59,6 +63,11 @@
+ 
+         public bool Read(byte[] buffer, int offset)
+         {
++            if (buffer == null || offset < 0 || offset > buffer.Length - 0x14)
++            {
++                throw new IOException("Truncated $Secure descriptor header.");
++            }
++
+             Hash = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x00);
+             Id = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x04);
+             OffsetInFile = EndianUtilities.ToInt64LittleEndian(buffer, offset + 0x08);
+@@ -66,6 +75,12 @@
+ 
+             if (EntrySize > 0)
+             {
++                if (EntrySize < 0x14 + 20 || EntrySize > SectorWorks.NtfsSecurity.PortableSecurityDescriptor.MaximumBinaryLength + 0x14 ||
++                    EntrySize > buffer.Length - offset)
++                {
++                    throw new IOException("Invalid $Secure descriptor record length.");
++                }
++
+                 SecurityDescriptor = new byte[EntrySize - 0x14];
+                 Array.Copy(buffer, offset + 0x14, SecurityDescriptor, 0, SecurityDescriptor.Length);
+                 return true;
+--- namespace-baseline/Imported/SecurityDescriptors.cs
++++ repaired/Imported/SecurityDescriptors.cs
+@@ -25,7 +25,7 @@
+ using System.Collections.Generic;
+ using System.Globalization;
+ using System.IO;
+-using System.Security.AccessControl;
++using SectorWorks.NtfsSecurity;
+ using SectorWorks.ManagedNtfs.Internal;
+ using DiscUtils.Streams;
+ 
+@@ -96,8 +96,8 @@
+                     string secDescStr = "--unknown--";
+                     if (rec.SecurityDescriptor[0] != 0)
+                     {
+-                        RawSecurityDescriptor sd = new RawSecurityDescriptor(rec.SecurityDescriptor, 0);
+-                        secDescStr = sd.GetSddlForm(AccessControlSections.All);
++                        PortableSecurityDescriptor sd = PortableSecurityDescriptor.Parse(rec.SecurityDescriptor);
++                        secDescStr = Convert.ToHexString(sd.ToBinary());
+                     }
+ 
+                     writer.WriteLine(indent + "  SECURITY DESCRIPTOR RECORD");
+@@ -119,7 +119,7 @@
+             return new SecurityDescriptors(file);
+         }
+ 
+-        public RawSecurityDescriptor GetDescriptorById(uint id)
++        public PortableSecurityDescriptor GetDescriptorById(uint id)
+         {
+             IdIndexData data;
+             if (_idIndex.TryGetValue(new IdIndexKey(id), out data))
+@@ -127,10 +127,10 @@
+                 return ReadDescriptor(data).Descriptor;
+             }
+ 
+-            return null;
+-        }
+-
+-        public uint AddDescriptor(RawSecurityDescriptor newDescriptor)
++            throw new IOException("Security descriptor ID is absent from $Secure: " + id);
++        }
++
++        public uint AddDescriptor(PortableSecurityDescriptor newDescriptor)
+         {
+             // Search to see if this is a known descriptor
+             SecurityDescriptor newDescObj = new SecurityDescriptor(newDescriptor);
+@@ -151,6 +151,7 @@
+                 }
+             }
+ 
++            uint followingId = checked(_nextId + 1);
+             long offset = _nextSpace;
+ 
+             // Write the new descriptor to the end of the existing descriptors
+@@ -182,7 +183,7 @@
+ 
+             // Make the next descriptor land at the end of this one
+             _nextSpace = MathUtilities.RoundUp(_nextSpace + buffer.Length, 16);
+-            _nextId++;
++            _nextId = followingId;
+ 
+             // Update the indexes
+             HashIndexData hashIndexData = new HashIndexData();
+@@ -217,13 +218,35 @@
+         {
+             using (Stream s = _file.OpenStream(AttributeType.Data, "$SDS", FileAccess.Read))
+             {
++                if (data.SdsOffset < 0 || data.SdsLength < 40 ||
++                    data.SdsLength > PortableSecurityDescriptor.MaximumBinaryLength + 20 ||
++                    data.SdsOffset > s.Length - data.SdsLength)
++                {
++                    throw new IOException("$Secure descriptor index points outside $SDS.");
++                }
++
+                 s.Position = data.SdsOffset;
+                 byte[] buffer = StreamUtilities.ReadExact(s, data.SdsLength);
+ 
+                 SecurityDescriptorRecord record = new SecurityDescriptorRecord();
+-                record.Read(buffer, 0);
+-
+-                return new SecurityDescriptor(new RawSecurityDescriptor(record.SecurityDescriptor, 0));
++                if (!record.Read(buffer, 0))
++                {
++                    throw new IOException("Invalid $Secure descriptor record.");
++                }
++
++                if (record.Hash != data.Hash || record.Id != data.Id ||
++                    record.OffsetInFile != data.SdsOffset || record.EntrySize != data.SdsLength)
++                {
++                    throw new IOException("$Secure descriptor header does not match its index.");
++                }
++
++                if (SecurityDescriptor.CalcHash(record.SecurityDescriptor) != record.Hash)
++                {
++                    throw new IOException("$Secure descriptor hash is invalid.");
++                }
++
++                SecurityDescriptor descriptor = new SecurityDescriptor(PortableSecurityDescriptor.Parse(record.SecurityDescriptor));
++                return descriptor;
+             }
+         }
+ 

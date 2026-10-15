@@ -33,11 +33,13 @@ Actual restored NuGet metadata identifies MIT, upstream
 2021-09-13. Upstream's default branch latest commit at review is 2021-08-30
 (same commit). This is approximately five years without default-branch activity:
 **maintenance risk is high**; do not describe this package as actively maintained.
-No fork is substituted: none was demonstrated to solve the relevant limitations
+At the foundation decision no fork was substituted: none was demonstrated to solve the relevant limitations
 with sufficiently reviewed provenance/tests. The release-quality review will
 consider then-current upstream maintenance, forks, patches or replacements.
 Independently validate NTFS writes in their implementing phase before enabling
 them; postponing the dependency-choice review does not establish write support.
+The subsequently owner-authorized isolated NTFS source repair is documented
+below; it does not substitute NuGet assembly identities or change package versions.
 
 Sources reviewed:
 
@@ -99,7 +101,8 @@ native package or CLI is required to run the probe, materializer, or tests.
 
 ### Phase 2B existing-volume NTFS blocker (2026-10-15)
 
-This is new **modification** evidence, not the historical formatter limitation.
+This is historical original-package **modification** evidence, distinct from
+the formatter limitation. The subsequent managed repair is described below.
 `ExistingNtfsVolumeProbe` operates only on create-new disposable copies of an
 existing independently authored NTFS volume. Seven creation/security cases
 (resident/nonresident Add, Add without short names, explicit uncompressed Add,
@@ -126,11 +129,239 @@ Sixteen new regressions and 33 targeted NTFS/reader tests passed locally.
 Detailed executed output is retained locally in
 `artifacts/ntfs-existing-volume/regression.log`; repeat with the
 `NtfsExistingVolumeTests` selector in the storage-test project.
-NTFS staging/Save As remains disabled across raw/VHD/VHDX.
-**Owner decision required:** authorize portable-security dependency remediation
-(with licensing/architecture review as appropriate), or explicitly revise the
-required NTFS delivery scope. DiscUtils 0.16.13 remains approved; no replacement,
-ACL substitution, host mounting or formatting workaround was introduced.
+At that prerelease, NTFS staging/Save As remained disabled across raw/VHD/VHDX.
+At the partial-release review, portable-security remediation or an explicit
+scope decision required owner direction. The owner subsequently authorized the
+bounded managed investigation below and reaffirmed that NTFS writing remains
+required for 1.0; read-only NTFS is not an acceptable release-scope substitute.
+DiscUtils 0.16.13 remains approved; no replacement, ACL substitution, host
+mounting or formatting workaround was introduced.
+
+### Managed NTFS repair implementation and qualification
+
+The owner subsequently authorized the portable security component, managed
+repair implementation and qualification. This removes the constructor and
+inheritance blockers for the qualified subset, not for every NTFS feature.
+The original dependency-boundary diagnostics remain intentionally tied to the
+unchanged signed package; their expected failures are still valid baseline
+evidence, not tests to rewrite as repaired-backend successes.
+
+`SectorWorks.ManagedNtfs` is a separately named assembly importing only the
+pinned NTFS sources and two required internal Core helpers (`ObjectCache`,
+`Utilities`). Signed Core/Streams and all existing 0.16.13 packages remain
+unchanged. No private signing key, identity impersonation, reflection-based
+friend bypass or native runtime dependency is introduced. Portable byte APIs
+are separate from annotated Windows-only descriptor bridges. Formatting, quota
+management and the upstream optional `BuildClusterMap` diagnostic remain
+explicitly unsupported; product allocation validation does not call that API.
+
+`SectorWorks.NtfsSecurity` supplies bounded managed parsing/canonical serialization
+and corrected file/container inheritance. Unsupported semantics reject before
+allocation. Children inherit image-parent owner/group under the declared policy,
+not host SIDs or a permissive default. Existing raw descriptor bytes remain
+preserved; hashes of stored `$SDS` records use the stored bytes, not canonicalized
+input. See the [editing guide](staged-editing.md#managed-ntfs-subset-and-remaining-mandatory-qualification)
+for exact ACL/name/metadata/log restrictions.
+
+Qualification also exposed and repaired tightly coupled upstream defects:
+
+- Checked byte-complement casts overflowed while clearing allocation bits.
+  Only intentional low-byte bit reinterpretation is unchecked.
+- Backward run deltas require signed reinterpretation; lengths are unsigned
+  positive bounded counts. Mapping-pair terminators must be accepted before
+  nonterminal width checks. Compiled binary-vector tests cover these paths.
+- Fallback allocator zones overwrote rather than accumulated allocations;
+  scans also needed exclusive zone ends. Near-full replacement now leaves
+  exactly 16 independently verified free clusters.
+- MFT mirror writes were hardcoded to four records. The required extent is
+  `max(4 * recordSize, clusterSize)`, including user records for large clusters.
+- SI restoration regenerated independent filename/index dates and transaction
+  change times. Explicit byte snapshots preserve those dates and DOS aliases.
+- New-file creation automatically generated unsupported ObjectIDs on fresh
+  media. The qualified writer opts out before creation; it never strips
+  existing IDs or weakens the validator to accept them.
+
+The targeted suite passes **382 tests with one explicit Windows-only skip**
+(383 total): portable security vectors/flags/bounds, independent raw
+allocation/security/log validation, compiled mapping pairs, 21 actual Services
+container/layout/physical-sector rows, eight native cluster sizes, multi-volume
+and FAT/NTFS composition, transitions, growth, full/near-full media, metadata and
+source preservation, cancellation and actual I/O/flush/validation failures.
+Independent `qemu-img`/`ntfsinfo`/`ntfscluster`/`ntfscat` checks pass. Six actual
+Mint/X11 NTFS workflows pass separately, with app-window screenshots, unchanged
+sources and independent native output-byte checks.
+
+Final repository verification passes **956 tests, one Windows-only skip,
+957 total**, locked restore, zero-warning/error Release build, formatting,
+resources and authoritative-copy comparisons. Six final cross-publishes and
+the Linux x64 AppImage pass architecture/legal/payload and Linux resource checks.
+These do not supply missing Windows-runtime or modern-log evidence.
+
+**Mandatory gaps remain:** actual Windows-authored media, Windows reference
+execution, and LFS 2.0/cached-metadata safety. No normal-Windows-media or full
+Phase 2B completion claim follows. Clean LFS 1.1 has synthetic bounded
+restart-page coverage only; dirty/ambiguous/unsupported logs remain disabled,
+without replay or reset. Structural references are the
+[LFS definitions](https://github.com/tuxera/ntfs-3g/blob/edge/include/ntfs-3g/logfile.h)
+and [clean-state checks](https://github.com/tuxera/ntfs-3g/blob/edge/libntfs-3g/logfile.c);
+no source from those files is imported into the application.
+NTFS writing remains mandatory for 1.0. No new dependency replacement decision,
+scope reduction or Phase 3 authorization is implied.
+
+MIT originals and notices are retained verbatim. Original repair additions
+follow the repository's GPL-3.0-only terms. Imported sources, exact upstream
+input hashes, transformation/repair patch and final hashes are retained under
+`src/SectorWorks.ManagedNtfs/`; no generated binaries or owner samples belong
+in Corresponding Source. Verify provenance against the approved source snapshot:
+
+```sh
+python3 src/SectorWorks.ManagedNtfs/record-repairs.py --verify
+```
+
+New SDK projects and downstream lock files record the changed project graph;
+package versions are unchanged. The architecture boundary is Storage ->
+ManagedNtfs -> NtfsSecurity, with no dependency types exposed to Services/Core/UI.
+The existing Services test that expected all NTFS to be disabled was replaced
+with an explicit positive qualified-NTFS test; genuinely unqualified historical
+container/partition/optical fixtures retain their negative tests.
+
+### Bounded managed NTFS repair investigation (2026-10-15)
+
+**Historical investigation complete; agreed stop point reached, not a writer repair.**
+The owner selected Option 1: investigate a contained managed repair and stop
+before a broad security-subsystem rewrite or material dependency/architecture
+change. NTFS editing remains mandatory for 1.0 and Phase 2B remains blocked.
+During that investigation no product writer, dependency version, signing policy
+or release asset changed. The owner subsequently authorized the implementation
+and qualification below, superseding that stop point, not the Phase 3 boundary.
+
+The investigation traced the approved package's exact source commit
+`59d7cadab839c6d8dfcf52f8be5efe6d2ced190f`, checked the actual installed assembly's
+creation-call IL, and executed constructor and existing-volume probes on
+Linux x64 / .NET 10.0.13. The assembly version is `0.16.0.0`; the NuGet package
+version remains `0.16.13`. These are not conflicting dependency versions.
+
+#### Executed evidence
+
+- All five independently exercised constructors/parsers fail with
+  `PlatformNotSupportedException`: binary `SecurityIdentifier`, binary `RawAcl`,
+  binary `GenericAce`, binary `RawSecurityDescriptor`, and SDDL
+  `RawSecurityDescriptor`. Switching from SDDL to binary input does not remove
+  the platform dependency; constructing an explicit `NewFileOptions` descriptor
+  cannot bypass it either.
+- The installed `CreateDirectory(string, NewFileOptions)` and `CreateNewFile`
+  methods both pass literal `false` as `isContainer` to
+  `CalcNewObjectDescriptor`. This confirms a directory-inheritance defect in the
+  shipped package, not merely a discrepancy in downloaded source.
+- All 16 existing-volume regressions pass again: expected creation/security
+  failures, partial-mutation detection, narrower successful mutations, native
+  checks, create-new destination safety and unchanged synthetic sources.
+  Passing a regression that expects failure is not successful NTFS creation.
+- Seven new dependency-boundary tests preserve the five platform observations
+  and two installed-assembly call-site observations. These are baseline
+  diagnostics, not desired future writer behavior; intentionally update their
+  expectations when a reviewed patch changes the dependency.
+
+#### Source findings and repair surface
+
+The affected runtime path spans
+[`NtfsFileSystem`](https://github.com/DiscUtils/DiscUtils/blob/59d7cadab839c6d8dfcf52f8be5efe6d2ced190f/Library/DiscUtils.Ntfs/NtfsFileSystem.cs),
+[`SecurityDescriptor`](https://github.com/DiscUtils/DiscUtils/blob/59d7cadab839c6d8dfcf52f8be5efe6d2ced190f/Library/DiscUtils.Ntfs/SecurityDescriptor.cs)
+and
+[`SecurityDescriptors`](https://github.com/DiscUtils/DiscUtils/blob/59d7cadab839c6d8dfcf52f8be5efe6d2ced190f/Library/DiscUtils.Ntfs/SecurityDescriptors.cs).
+The Windows types are used for parsing, inheritance, NTFS-specific descriptor
+serialization, hashing/deduplication and `$Secure` lookup/insertion, not only for
+the public security-property API. Legacy per-file descriptors and shared
+security-ID descriptors both need portable handling.
+
+Comparison with Microsoft's
+[ACE inheritance rules](https://learn.microsoft.com/en-us/windows/win32/secauthz/ace-inheritance-rules)
+identifies additional semantic gaps in the source helper:
+
+| Case | Approved helper | Required behavior |
+| --- | --- | --- |
+| Container-only inheritance to a directory | Directory creation chooses the file branch and excludes the ACE | Inherit an effective directory ACE |
+| Object-only inheritance through a directory | Even changing the argument to `true` excludes this ACE; the current `false` branch makes it effective | Propagate an inherit-only ACE unless no-propagate forbids it |
+| Generic rights / CREATOR_OWNER or CREATOR_GROUP | Copies mask and SID without translation | Map effective rights/SIDs and retain a separate inheritable form when required |
+
+The last two findings are source/rule comparisons, not executed Windows ACL
+round trips. A constructor-only shim would retain them. The upstream
+[`AclInheritance` test](https://github.com/DiscUtils/DiscUtils/blob/59d7cadab839c6d8dfcf52f8be5efe6d2ced190f/Tests/LibraryTests/Ntfs/NtfsFileSystemTest.cs)
+is explicitly skipped, referring to
+[DiscUtils/DiscUtils#14](https://github.com/DiscUtils/DiscUtils/issues/14).
+Its presence is not evidence that inheritance was qualified.
+
+Both creation paths also read the parent descriptor unconditionally, even when
+an explicit descriptor is supplied, and do so after allocating/indexing the new
+entry. Merely setting an option cannot bypass that call. A future repair should
+validate and derive the supported descriptor before creating the entry;
+disposable Save As failure/publication safeguards remain necessary regardless.
+
+The public `IWindowsFileSystem` contract exposes `RawSecurityDescriptor`.
+A contained implementation could retain Windows-facing adapters while adding
+an internal portable byte representation; changing all public APIs or replacing
+FAT/container handlers is not established as necessary. A reproducible source
+patch/fork still requires a reviewed assembly-identity/build plan:
+[`DiscUtils.Core` friend declarations](https://github.com/DiscUtils/DiscUtils/blob/59d7cadab839c6d8dfcf52f8be5efe6d2ced190f/Library/DiscUtils.Core/Properties/AssemblyInfo.cs)
+bind NTFS access to a strong-name public key. Do not assume an independently
+named/signed NTFS assembly is a drop-in replacement or disable signing to force
+it through.
+
+#### Stop decision and proposed next bounded deliverable
+
+**No-go for an API-substitution-only patch.** The next meaningful implementation
+is a portable NTFS security component plus corrected inheritance and dependency
+integration, rather than a constructor fix. That exceeds this investigation's
+contained-patch stop boundary. No partial codec, permissive/default ACL,
+inheritance bypass, host mount or unqualified writer was introduced.
+This does not establish that a managed repair is infeasible or that NTFS needs
+to be demoted to read-only for 1.0.
+
+Recommended next authorization: implement and qualify that NTFS-only component
+in a reproducible, pinned source patch/fork, keeping the replaceable SectorWorks
+interfaces and existing FAT/container behavior. Before enabling any writer:
+
+1. Bound and validate self-relative descriptors, SIDs, ACEs and ACLs; preserve
+   owner/group, DACL/SACL, control flags and null-versus-empty ACL semantics.
+   Reject unsupported inheritance semantics explicitly, without discarding or
+   weakening existing permissions. Define the exact ordinary-security subset.
+2. Test file/directory inheritance, object/container/no-propagate/inherit-only
+   combinations, deny/allow ordering, generic masks and creator SID handling.
+   Establish independent expected bytes and Windows-reference interoperability;
+   Linux construction success alone is insufficient.
+3. Integrate both legacy/shared descriptors and verify `$Secure` security IDs,
+   hashes, `$SDS` duplicate records and `$SII`/`$SDH` indexes alongside existing
+   MFT/allocation/preservation checks. Do not replace this with `ntfsfix -n`.
+4. Review MIT notices/source distribution, assembly identity/signing and locked
+   dependency packaging, then run the required Phase 2B NTFS operation/layout/
+   container matrix and failure gates. Cross-publishes remain distinct from
+   physical Windows/ARM64/macOS evidence.
+
+No Phase 3 work or change to the NTFS 1.0 requirement follows from this report.
+Formatting and quota/SDDL presentation APIs remain separate evaluation surfaces;
+this investigation did not qualify them.
+
+Reproduce the boundary tests after sourcing `scripts/common.sh`:
+
+```sh
+"$DOTNET" test tests/SectorWorks.DependencyTests/SectorWorks.DependencyTests.csproj \
+  --configuration Release --no-restore --filter FullyQualifiedName~NtfsSecurityBoundaryTests
+"$DOTNET" test tests/SectorWorks.StorageTests/SectorWorks.StorageTests.csproj \
+  --configuration Release --no-restore --filter FullyQualifiedName~NtfsExistingVolumeTests
+```
+
+Local-only evidence: `artifacts/ntfs-security-investigation/` contains the source
+snapshot and detailed constructor/IL/baseline test logs. No owner sample or
+modified NTFS output is distributed.
+The complete dependency suite passes **27 tests**, and the separate
+existing-volume suite passes **16 tests**, with zero failures/skips in both.
+The added file passes formatting/analyzer verification; authoritative technical
+specification copies and ignored owner-sample hashes remain unchanged.
+No full-solution rerun, new physical-platform qualification, cross-publish or
+release is claimed for this test/documentation-only investigation. The previous
+561-test release evidence remains historical and is not relabeled as a new run.
+
+### Historical foundation malformed and streaming evidence
 
 The malformed tests run the direct library parser in a **separate process with
 a 15-second deadline**; timeout kills that process tree and fails the test.

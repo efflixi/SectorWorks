@@ -62,6 +62,17 @@
       },
       "sectorworks.core": {
         "type": "Project"
+      },
+      "sectorworks.managedntfs": {
+        "type": "Project",
+        "dependencies": {
+          "DiscUtils.Core": "[0.16.13, )",
+          "DiscUtils.Streams": "[0.16.13, )",
+          "SectorWorks.NtfsSecurity": "[1.0.0, )"
+        }
+      },
+      "sectorworks.ntfssecurity": {
+        "type": "Project"
       }
     },
     "net10.0/linux-arm64": {},

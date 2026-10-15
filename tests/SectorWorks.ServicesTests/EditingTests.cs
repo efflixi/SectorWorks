@@ -638,7 +638,6 @@ public sealed class EditingTests
     }
 
     [Theory]
-    [InlineData("ntfs.img")]
     [InlineData("dynamic.vhd")]
     [InlineData("dynamic.vhdx")]
     [InlineData("joliet.iso")]
@@ -653,6 +652,25 @@ public sealed class EditingTests
         Assert.False(info.Capabilities.SaveAs.Available);
         await Assert.ThrowsAsync<NotSupportedException>(() => service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/NO")));
         await Assert.ThrowsAsync<NotSupportedException>(() => service.SaveAsAsync(info.Id, Path.Combine(work.Path, "no.img")));
+    }
+
+    [Fact]
+    public async Task QualifiedNtfsUsesThePortableWriterWithoutEnablingSourceCommit()
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden("ntfs.img");
+        string baseline = Hash(source);
+        using var service = new ExplorerService(stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        Assert.True(info.Capabilities.Modify.Available, info.Capabilities.Modify.Reason);
+        Assert.True(info.Capabilities.SaveAs.Available);
+        Assert.False(info.Capabilities.CommitInPlace.Available);
+        await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/QUALIFIED"));
+        string output = Path.Combine(work.Path, "saved.img");
+        await service.SaveAsAsync(info.Id, output);
+        using IImageSession reopened = new ImageOpener().OpenReadOnly(output);
+        Assert.Contains(reopened.Volumes[0].FileSystem.ReadDirectory("/"), entry => entry.Name == "QUALIFIED");
+        Assert.Equal(baseline, Hash(source));
     }
 
     [Fact]

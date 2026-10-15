@@ -33,6 +33,7 @@ public static class DesktopSmoke
             Console.Error.WriteLine("Usage: SectorWorks.UITests <image path> <new extraction folder> <screenshot.png> [minimum]");
             Console.Error.WriteLine("   or: SectorWorks.UITests --phase2 <new generated-fixture folder> <screenshot.png> [minimum]");
             Console.Error.WriteLine("   or: SectorWorks.UITests --phase2b <new generated-fixture folder> <screenshot.png> [raw-mbr|vhd-fixed|vhd-dynamic|vhdx-fixed|vhdx-dynamic]");
+            Console.Error.WriteLine("       Prefix a Phase 2B variant with ntfs- for independently authored NTFS instead of FAT12 (ntfs-raw also supported).");
             return 2;
         }
         Arguments = args;

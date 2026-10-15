@@ -65,12 +65,33 @@ authored NTFS fixture; fresh `mkntfs` media independently reproduces creation's
 ACL blocker. Native NTFS tools and managed bitmap/index/security checks provide
 evidence beyond content hashes. Failed probes are not product outputs or
 qualified write fixtures; see [the dependency finding](dependency-evaluation.md#phase-2b-existing-volume-ntfs-blocker-2026-10-15).
+The subsequent bounded managed-repair investigation adds seven read-only
+dependency-boundary tests: five security-primitive constructor probes and two
+installed-assembly inheritance-call checks. They describe the approved
+dependency's defects, not a qualified fix or an NTFS write fixture. Update those
+baseline expectations deliberately when a reviewed dependency patch is adopted.
+
+The managed repair is a separate assembly; the original-package diagnostics
+therefore remain unchanged. `NtfsStagedWorkflowTests` adds 21 actual Services
+disk rows and fresh `mkntfs` fixtures covering cluster sizes 512 through 65536,
+all five operations, transitions, growth, independent metadata/ACL preservation,
+multiple NTFS volumes and FAT/NTFS composition. `ntfsfallocate` authors a genuinely
+full volume independently; near-full replacement must leave exactly 16 free
+clusters. Allocation/security checks and native tools are not replaced by hashes.
+`ManagedNtfsRunTests` supplies compiled mapping-pair binary vectors.
+Clean LFS 1.1 fixtures are independently specified synthetic restart pages,
+not Windows-authored media. Actual Windows reference fixtures and LFS 2.0 remain
+qualification gaps. The one Windows-only codec oracle is explicitly skipped on
+Linux; it is not counted as passed.
 
 The actual desktop `--phase2b` harness authors its own legal FAT12 MBR disk and
 optionally converts it with qemu. It exercises rendered commands with mixed-case
 directory and Unicode file names, not owner-supplied or operating-system media.
 Diagnostic output and screenshots stay in ignored `artifacts/`; no proprietary
-sample enters a fixture, archive or release.
+owner media is used. Prefix its variant with `ntfs-` to author a fresh NTFS
+fixture with `mkntfs`/`ntfscp`; `ntfs-raw`, `ntfs-raw-mbr`, and both VHD/VHDX
+variants have real Mint/X11 evidence and independent output checks.
+No proprietary sample enters a fixture, archive or release.
 
 ## Repeatable verification
 
@@ -92,7 +113,8 @@ SDK discovery honors `SECTORWORKS_DOTNET`, then `dotnet` on PATH, then the
 user-local SectorWorks SDK installation. No developer-specific path is required.
 The full `./scripts/verify.sh` workflow also includes these dependency tests.
 
-The dependency suite contains **20 tests**, no skips. It hashes/decompresses
+The dependency suite contains **27 tests**, no skips: the 20 foundation cases
+below plus seven NTFS security-boundary cases. It hashes/decompresses
 every golden, reopens all nine normal images with the
 direct library and checks structures/sentinels, runs three disposable FAT write
 round trips, checks read-only rejection, asserts complete catalog membership,

@@ -1,12 +1,55 @@
 # Build and physical-platform status
 
-## Phase 2B partial delivery and physical evidence
+## Managed NTFS repair: current qualification and remaining gaps
+
+The owner authorized implementation after the bounded investigation. The
+isolated managed backend/security component now passes the 383-case targeted
+suite: **382 passed, one explicit Windows-only security-reference skip**.
+The 21 NTFS disk rows include actual Services history/preview/hex/search/
+extraction/Save As, qemu interoperability and unchanged source hashes.
+Native fixtures separately qualify all eight 512-byte-sector cluster sizes
+512 through 65536, including complete cluster-dependent MFT mirrors,
+resident/nonresident transitions, index/MFT growth, independent SI/FN/index/
+DOS-alias/security preservation, full-volume deletion, near-full allocation with
+exactly 16 free clusters, cancellation and real I/O/flush/validation failures.
+Existing FAT qualification remains separate and unchanged.
+
+Final `./scripts/verify.sh` passes **956 tests, one explicit Windows-only skip,
+957 total**: 691 storage passes/one skip, 156 Services, 68 UI, 14 foundation and
+27 dependency tests. Locked restore, Release build with zero warnings/errors,
+formatting, UI resources, AppImage contracts and authoritative reference-copy
+comparisons pass. All six final self-contained publishes and the AppImage
+prototype pass; ELF/PE/Mach-O architecture headers, repaired/original assembly
+presence, matching legal inventory and owner/test-media exclusion are checked.
+Published Linux x64 and both AppImage FUSE/extraction-and-run resource checks pass.
+
+Six actual Mint 22 x64/X11 workflows pass for NTFS filesystem-only raw,
+primary-MBR raw, fixed/dynamic VHD and fixed/dynamic VHDX. They use newly
+`mkntfs`/`ntfscp`-authored disposable media, rendered commands, all five edits,
+history/review, staged preview/extraction, Save As/reopen, cancelled close and
+discard. Each source hash remains unchanged. Independent qemu conversion,
+bounded `ntfsfix -n`, `ntfsinfo`, `ntfscluster`, `ntfscat` and exact comparison
+against the staged replacement bytes pass for all six outputs.
+Evidence and app-window-only screenshots are local under
+`artifacts/ntfs-managed-x11-<ntfs-variant>/`; owner media is not used.
+
+**Phase 2B remains partial.** Actual Windows-authored NTFS fixtures and Windows
+security-reference execution remain unavailable, not passed. Clean LFS 1.1 has
+synthetic structural coverage only; LFS 2.0/cached-metadata safety remains
+blocked. This is not a claim that normal Windows volumes are writable, nor an
+owner-approved NTFS read-only scope reduction for 1.0.
+Windows/ARM64 runtime remains unverified; macOS runtime/signing remains expressly
+deferred. Cross-publish evidence is build evidence only. Formatting, replay/reset,
+repair, source commit and recovery stay disabled.
+
+## Historical Phase 2B FAT prerelease delivery and physical evidence
 
 Verification host: Linux Mint 22 x86-64/X11, SDK 10.0.402 / runtime 10.0.13,
-2026-10-15. **Phase 2B remains partial/blocked:** FAT editing is qualified in
+2026-10-15, before the subsequent managed NTFS repair. At that release
+**Phase 2B was partial/blocked:** FAT editing was qualified in
 the [declared envelope](staged-editing.md#current-phase-2b-envelope-and-mandatory-blocker);
-ordinary NTFS Add/mkdir are blocked by portable ACL inheritance, independently
-of formatting. Existing-file mutation probes do not close that mandatory exit.
+ordinary NTFS Add/mkdir were blocked by portable ACL inheritance, independently
+of formatting. Existing-file mutation probes did not close that mandatory exit.
 
 Final `./scripts/verify.sh` passed: **561 tests, zero skips**, comprising 309
 storage/integration, 156 services/platform, 66 UI and 30 foundation/dependency.

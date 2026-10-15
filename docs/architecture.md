@@ -19,8 +19,11 @@ tree and its allocation/metadata. Selected-volume writing must also preserve
 unchanged virtual regions and supported container metadata. The Platform
 `IStorageSpace` boundary supplies host free-space checks for import spools and
 destination/scratch estimates, independently testable for each filesystem.
-NTFS remains gated by the documented existing-volume ACL blocker; no portable
-writer capability follows from successful individual dependency operations.
+The owner-authorized managed NTFS repair uses separately named implementation
+assemblies, not replacements for signed DiscUtils packages. Its portable
+security component and raw allocation/security preflight stay behind the same
+writer boundary. No portable writer capability follows from successful
+individual dependency operations; each NTFS volume must pass qualification.
 `IStagedImageWriter.ValidateOutput` is mandatory: Services calls it on the
 independently reopened output after its own tree/hash checks. Storage compares
 supported source metadata against ordered operation semantics; a writer cannot
@@ -29,7 +32,9 @@ silently change valid timestamps/attributes/aliases and still pass publication.
 | Project | Responsibility | Allowed current project references |
 | --- | --- | --- |
 | SectorWorks.Core | Storage/session contracts, immutable metadata, workspace/capability, explorer and editing contracts | None |
-| SectorWorks.Storage | Read-only containers, bounded block devices, partitions, filesystem adapters and qualified new-image writer | Core |
+| SectorWorks.Storage | Read-only containers, bounded block devices, partitions, filesystem adapters and qualified new-image writer | Core, ManagedNtfs |
+| SectorWorks.ManagedNtfs | Isolated, pinned DiscUtils NTFS source repair and minimal internal helpers; unchanged public signed Core/Streams packages | NtfsSecurity |
+| SectorWorks.NtfsSecurity | Bounded portable security-descriptor parsing, serialization and qualified inheritance; no host principal APIs | None |
 | SectorWorks.Platform | Dialog/layout/preferences contracts, JSON settings stores, safe host extraction and private staging-file primitives | Core |
 | SectorWorks.Services | Workspace lifetimes, staged overlay/history, Save As orchestration, search, bounded previews/hex, extraction, structured logs | Core, Storage, Platform |
 | SectorWorks.UI | Avalonia views, view models, themes, composition root and native dialog adapter | Core, Services, Platform |
@@ -82,7 +87,8 @@ in addition to the storage layer's format checks.
 and `EditingSnapshot` keep ordered history/review contracts UI-independent.
 `IStagedImageWriter` isolates qualification, capacity validation and applying
 operations to disposable output. It does not expose a source-commit API.
-DiscUtils writer types remain within Storage.
+DiscUtils writer types remain within Storage and its isolated implementation
+assemblies. Core, Services and UI never consume those types.
 The 63-row disk integration suite also references Services to verify actual
 staging/history and Save As against the same independently authored container
 fixtures; this is a test-only reference, not a reversed production dependency.

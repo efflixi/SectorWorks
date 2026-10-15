@@ -92,22 +92,25 @@ public sealed class StagedEditingTests
         }, CancellationToken.None);
     }
 
-    [Fact]
-    public async Task PhysicalSmokeGeneratesQualifiedDisposableFatAndRefusesDirectoryReuse()
+    [Theory]
+    [InlineData("raw", "FAT12")]
+    [InlineData("ntfs-raw", "NTFS")]
+    [InlineData("ntfs-raw-mbr", "NTFS")]
+    public async Task PhysicalSmokeGeneratesQualifiedDisposableFilesystemsAndRefusesDirectoryReuse(string variant, string fileSystem)
     {
         using var files = new EditingFiles();
         string directory = Path.Combine(files.Path, "physical-smoke");
-        string source = Phase2DesktopSmoke.CreateFixture(directory);
+        string source = Phase2DesktopSmoke.CreateFixture(directory, variant);
         string hash = files.Hash(source);
         using var service = new ExplorerService(stagingDirectory: files.Path);
         WorkspaceInfo info = await service.OpenAsync(source);
         Assert.True(info.Capabilities.AddFiles.Available, info.Capabilities.AddFiles.Reason);
         VolumeInfo volume = Assert.Single(info.Volumes);
-        Assert.Equal("FAT12", volume.FileSystem);
+        Assert.Equal(fileSystem, volume.FileSystem);
         Assert.Equal(3, (await service.ReadDirectoryAsync(info.Id, volume.Id, "/")).Count);
         Assert.Equal(Phase2DesktopSmoke.OriginalText, (await service.PreviewAsync(info.Id, volume.Id, "/README.TXT")).Text);
         Assert.Equal(Phase2DesktopSmoke.UnchangedText, (await service.PreviewAsync(info.Id, volume.Id, "/KEEP.TXT")).Text);
-        Assert.Throws<IOException>(() => Phase2DesktopSmoke.CreateFixture(directory));
+        Assert.Throws<IOException>(() => Phase2DesktopSmoke.CreateFixture(directory, variant));
         Assert.Equal(hash, files.Hash(source));
     }
 

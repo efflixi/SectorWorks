@@ -13,7 +13,8 @@ unknown layouts and legacy floppy variants remain read-only unless separately
 qualified. In particular, the existing 720K Compaq/early-DOS read compatibility
 does not establish safe write support.
 The initial envelope is historical; the qualified Phase 2B FAT expansion below
-supersedes only the corresponding restrictions. NTFS remains blocked.
+supersedes only the corresponding restrictions. The managed NTFS subset below
+is a further owner-authorized expansion, not blanket NTFS support.
 
 Bootability and exact-layout preservation are not advertised. Do not use
 valuable bootable originals as write-test media. Tests use generated fixtures
@@ -115,13 +116,63 @@ may update as required by its writer, with an empty output log. No bootability,
 bit-identical layout, repair, conversion, direct commit or crash recovery claim
 follows from this byte-preservation evidence.
 
-**Required ordinary NTFS editing is blocked on all rows.** Existing-volume
-Add/mkdir fail through the dependency's ACL inheritance on Linux, independently
-of formatting. A failure can leave an indexed empty file on the disposable probe
-copy even when `ntfsfix -n` passes. Successful replace/delete/rename experiments
-do not qualify all five operations. The [dependency evidence](dependency-evaluation.md#phase-2b-existing-volume-ntfs-blocker-2026-10-15)
-records the required owner decision: portable-security remediation or explicit
-NTFS scope revision. No mandatory NTFS requirement has been silently removed.
+### Managed NTFS subset and remaining mandatory qualification
+
+The owner authorized implementation after the bounded investigation. Ordinary
+NTFS add/replace/delete/rename/mkdir now uses the same overlay, history,
+per-volume isolation and validated disk Save As path. The original signed
+DiscUtils reader/container/FAT packages remain unchanged. The isolated
+`SectorWorks.ManagedNtfs` source repair uses `SectorWorks.NtfsSecurity`, not
+Windows principal APIs or a native driver.
+
+The positive disk matrix has 21 NTFS rows: raw/fixed-dynamic VHD/fixed-dynamic
+VHDX, each filesystem-only/primary MBR/GPT, plus VHDX physical 4096 variants.
+Logical sectors are 512; native-authored fixtures additionally exercise cluster
+sizes 512/1024/2048/4096/8192/16384/32768/65536. NTFS 3.1, matching primary/final
+backup boot bytes, original correct absolute hidden sectors, clean volume state,
+bounded MFT/index metadata and independently consistent allocation are required.
+Disk/volume size remains at most 64 GiB. Existing FAT restrictions are unchanged.
+
+The shared NFC BMP naming/path subset above also applies to NTFS; no name
+normalization is performed. New children derive owner/group from their image
+parent, not the host identity. Basic allow/deny/audit ACL inheritance preserves
+null/absent/empty ACL distinctions, inheritance generations, generic file rights,
+creator SID substitution and propagation semantics. Object/callback/conditional
+or otherwise unsupported ACE semantics are rejected before allocation.
+This is image permission preservation, not host-account access checking.
+
+Replacement and rename preserve file identity, supported attributes, security
+bytes, DOS aliases, SI timestamps, and independently distinct `$FILE_NAME` and
+directory-index timestamps, including aliases. Original descriptor bytes are
+compared independently; canonical serialization is only used for new security
+records. MFT/cluster bitmaps, reachable unique runs, directory indexes, complete
+MFT mirror extent and shared `$Secure` hashes/IDs/duplicate records/`$SII`/`$SDH`
+are validated independently of tree/content hashes.
+
+Editable metadata snapshots are bounded to 64 MiB/100000 entries/depth 128;
+the existing parser's 128 MiB/131072-operation budget also applies. Capacity
+reserves conservative MFT/index space and 512 KiB for each distinct planned
+security descriptor, including paired `$SDS` block boundaries. This is not a
+promise to fill every reported free byte. Full-volume add rejection/deletion,
+near-full replacement with exactly 16 free clusters, index/MFT growth, actual
+write/flush failures and cancellation are regressed. Optional new ObjectIDs are
+explicitly disabled; existing ObjectIDs are never stripped to qualify.
+
+Sparse/compressed/encrypted/reparse/link/ADS/attribute-list user features,
+unsupported extended metadata, active quotas, ObjectID indexes and unsafe
+security remain gated. Blank logs and strictly checked clean LFS 1.1 restart
+pages are accepted without replay/reset/normalization; the log stream is hashed
+before/after. Both restart pages must independently pass USA, geometry, bounds,
+client, LSN and clean-state checks. Ambiguity, dirty state and LFS 2.0 remain
+read-only. LFS 1.1 evidence is synthetic, not actual Windows media.
+
+**Phase 2B remains partial:** Windows-authored reference fixtures, actual Windows
+security-reference execution, and LFS 2.0/cached-metadata write safety are not
+qualified. Normal Windows volumes must not be claimed writable merely because
+native-created fixtures pass. These are retained required qualification gaps,
+not an owner-approved NTFS read-only scope reduction for 1.0. Formatting, source
+commit/journaling/recovery, log replay, repair and partition changes remain out
+of scope. See [repair evidence](dependency-evaluation.md#managed-ntfs-repair-implementation-and-qualification).
 
 ## Historical Phase 2 initial envelope
 
@@ -309,9 +360,29 @@ allocation metadata and independently verified output. The approved dependency
 version is retained behind the replaceable writer boundary; the release-quality
 review remains required.
 
-## Phase 2B final verification and reproduction
+## Managed NTFS final verification
 
-On Linux Mint 22 x64/X11, 2026-10-15:
+The owner-authorized repair's final `./scripts/verify.sh` passes **956 tests,
+one explicit Windows-only security-reference skip (957 total)**. Counts:
+691 storage passes/one skip, 156 Services, 68 UI, 14 foundation and 27 dependency.
+Locked restore, zero-warning/error Release build, formatting, UI resources,
+AppImage contracts and all authoritative reference comparisons pass.
+All six self-contained publishes and the Linux x64 AppImage prototype pass
+architecture/legal/payload checks; Linux published and both FUSE/extraction-and-run
+AppImage resource diagnostics pass. Corresponding source/provenance and original
+owner-sample hashes verify unchanged.
+
+Six actual Mint/X11 NTFS workflows and their separate native output checks pass;
+see [platform evidence](platform-status.md#managed-ntfs-repair-current-qualification-and-remaining-gaps).
+The 21 disk rows, eight native cluster sizes, full/near-full media, metadata,
+multi-volume and real I/O/flush/validation tests cover the declared subset only.
+Windows-authored media/reference and LFS 2.0/cached-metadata qualification remain
+mandatory gaps, not passed by these builds or synthetic LFS 1.1 tests.
+Phase 2B remains partial; NTFS writing is still required for 1.0.
+
+## Historical Phase 2B FAT prerelease verification and reproduction
+
+On Linux Mint 22 x64/X11, 2026-10-15, before the managed NTFS repair:
 
 - `./scripts/verify.sh`: **561 passing tests, zero skips**, locked restore,
   zero-warning Release build, formatting/resources and authoritative copies.
@@ -322,7 +393,7 @@ On Linux Mint 22 x64/X11, 2026-10-15:
 - All five real X11 container workflows pass after code freeze. Outputs pass
   independent qemu conversion (plus VHDX checks), bounded `fsck.fat -n`, mtools
   long-name listing and `mtype` content equality; source hashes are unchanged.
-- NTFS remains blocked, not passed or skipped into completion. Its disposable
+- NTFS remained blocked at that release, not passed or skipped into completion. Its disposable
   probes/native checks are evidence for the documented owner decision.
 
 Final logs are local-only `artifacts/phase2b-final-verification.log`,

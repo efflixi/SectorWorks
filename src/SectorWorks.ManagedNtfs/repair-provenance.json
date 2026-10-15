@@ -1,0 +1,542 @@
+{
+  "approvedCommit": "59d7cadab839c6d8dfcf52f8be5efe6d2ced190f",
+  "inputManifestSha256": "b1be81d092ffc063762fe17f508ad883ac368d5de5e8101beff2431aca3a75a5",
+  "repairPatch": "upstream-repairs.patch",
+  "repairPatchSha256": "d2cf3dae7971e6722392420bb9ccba7ea169c53e337a46117e46a064bf55f284",
+  "excludedFromCompilation": [
+    "Imported/NtfsFormatter.cs",
+    "Imported/Quotas.cs"
+  ],
+  "signedDependencies": {
+    "DiscUtils.Core": "0.16.13",
+    "DiscUtils.Streams": "0.16.13"
+  },
+  "supplementarySources": [
+    {
+      "path": "NtfsFileNameTimestamps.cs",
+      "sha256": "0bbe3945420b9bc077378e48f02088516b66b2d8bb91691186abec79d2aac231"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "Imported/AllocateFileFn.cs",
+      "sha256": "93d766d4bca6ea6f659fcc4bd1b6bd2162723469e3a158c072385793dfb257ec",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeCollationRule.cs",
+      "sha256": "67fcdcafeefd4b8d225ac55eef5ff0dd44b0bb45c74c8e6ad8a0ff28459da85b",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeDefinitionRecord.cs",
+      "sha256": "ca2c986d70eff80109438622ff1003d6b31c84be801104fbf9c0d9ad083eeab8",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeDefinitions.cs",
+      "sha256": "6d60552bf0d63d0ce2fbdfce31d31066e83d7b3901e2245ab439630c08fecaa5",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeFlags.cs",
+      "sha256": "c21cd3447d8ed09f623f9ca3f856741b1226e6bd814be987e5f78e53e15c318c",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeList.cs",
+      "sha256": "045a954e89f1effc6bded9862e713868ee7b317c4a8a0a46ed07a6825a97d6f8",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeListRecord.cs",
+      "sha256": "2570c47af9e4c3fdf5444269a16ae1274892287a4bb234b6df1ff0f9961b77d2",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeRecord.cs",
+      "sha256": "eeb19acf476c79870b897aa6c8b87cf94421b78c4c5a1c818964be24a08446d5",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeReference.cs",
+      "sha256": "f92a6fa010d4e93f5c798cb3d1f78a119de6b38a96d9fb6bbf7cc318f0423e09",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeType.cs",
+      "sha256": "ac009f98cacf69337d4f36d2a49e0d0215111660bb33999fe686d409a3bcd5c4",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/AttributeTypeFlags.cs",
+      "sha256": "72ce4867577b2e790e6aed609e5b7f02cd764cf68400f48593970f3bed8a2338",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/BiosParameterBlock.cs",
+      "sha256": "67264c875d758e013de64aee01772d71b031462aa66006b1412a79a3cc1c6a2b",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/Bitmap.cs",
+      "sha256": "0eebbfd5ab02d2383c3bc280066482d12366b2c8cc07c769010115238fb430bf",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/ClusterBitmap.cs",
+      "sha256": "03254aaf5737ef64d081edd1836265f07b776e5dcdd013ce06ba554692e8d3be",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/ClusterStream.cs",
+      "sha256": "9dd660d7685dcea2c7206d8141532a71578b8d4c5ee897505006f17f5ae733a1",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/CompressedClusterStream.cs",
+      "sha256": "61dd6a3b90dd9a2b012dab967e2003a27715a9ac906cdbfc749fd05b1e6d75fa",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/CookedDataRun.cs",
+      "sha256": "ae7e02ebde3a197ce06577440b0726be09fe38342b76b659512766222167fa80",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/CookedDataRuns.cs",
+      "sha256": "a85356a5ed5144ba0a4331c71c2f954b61721fc7cc26283295186d60c148ad95",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/DataRun.cs",
+      "sha256": "43209b8967acdab5ef6d56a8425c65cd171e219b06b6508cea7d08ff906ce87f",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/Directory.cs",
+      "sha256": "14bcf3f7f42e53e828dcd2f8114d12ccc8af084b2748458e654c7dfd6bec5e3e",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/DirectoryEntry.cs",
+      "sha256": "581608618ad22407dd44404f279d8273a60149187bcedbe79888bf2779391539",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/File.cs",
+      "sha256": "8a9a0bb34aaaef262f5816e6135f35ede076d4f9995465612bf19b84d4c50345",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/FileAttributeFlags.cs",
+      "sha256": "7e4a9a2a3f75be10c0b3da5aeb29dc7508e726358ba8a29db2ee2d24ec1a6d64",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/FileNameNamespace.cs",
+      "sha256": "7e1f5b79e5bed561de4e8713fe2e2f790b2d34e67f03c367a749f501de7d6a16",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/FileNameRecord.cs",
+      "sha256": "c9d2330b0c0a085cb48a583db6496aef3751065a77caeb108e78d1e28b4196a9",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/FileRecord.cs",
+      "sha256": "e13c8ef64b9e25889cc69eae35f768b64833aa67962aca51401756f2f34f1eb2",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/FileRecordFlags.cs",
+      "sha256": "749a2fe64de0d3e77b8d8ee66d7942a6e6cb50eb47cf773658de0870f89bf87a",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/FileRecordReference.cs",
+      "sha256": "1e8a2a010ae909cbaa47bf2a5328ebed308757ed6d1fc29de74c2f698ac6d205",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/FileSystemFactory.cs",
+      "sha256": "09a58d440c83fa83119101cfab755f8d7a6210fdbb092f13b23b390164d27926",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/FixupRecordBase.cs",
+      "sha256": "5fd763a3bf27a05aeec9e5a26681a27bfbebac50674a687ab6055fd566baa759",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/ForgetFileFn.cs",
+      "sha256": "f3416e4be2c26bb820b8fd03abca43b0de918e7621af657c5e8b90827d4faa77",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/GenericFixupRecord.cs",
+      "sha256": "1555692fdee9409fde4129687c154cff0a1bc03850b0d2dd717421863c599d12",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/GetDirectoryByIndexFn.cs",
+      "sha256": "f1d49566b59c6db36dfdbb40d98862bf90922d541e9019b85eaed76416391567",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/GetDirectoryByRefFn.cs",
+      "sha256": "0750c9b5c5e552eb67ad9b93a00de6a3ec2c8c58efe550c2b8d90c0c44d7adfd",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/GetFileByIndexFn.cs",
+      "sha256": "28ee567e1cc76d3e9ce523704ef26115cbef41456ae78510ecc5b13d8075e8d7",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/GetFileByRefFn.cs",
+      "sha256": "33cf268973dd44334c95220f9b847f4956d9ff6d23386cd28ea8ca6e6a542985",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/INtfsContext.cs",
+      "sha256": "8fb35dc61ebb36593b0090509ea874a28786e847fe6179700f65634a4c68161a",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/Index.cs",
+      "sha256": "b3c39eb6265e0e296cb1c2fbb67ac5aff83e48fb2e509b6ead5d5633e7aae6be",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/IndexBlock.cs",
+      "sha256": "eccf84389b54f9056085af5303fcf8ac481de81d66e42102bdb274fba2f7bb4d",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/IndexEntry.cs",
+      "sha256": "ec5de7db3694ecf1eae69c9fc0b2fe56cc639d9906fb900aa0706a86a7e74aaf",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/IndexEntryFlags.cs",
+      "sha256": "4652d21128595e6a86a4a1fa9406c1cb696482d6281a12aa1aa8165812880cb7",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/IndexHeader.cs",
+      "sha256": "9cd404bf5d81415a4d9092f7dd64ac5534838bb9f06cca5aa13ca7ddf858bf72",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/IndexNode.cs",
+      "sha256": "53e310e2aed39df2d19db510597a889d6c95d8119128cb073171e6352d60f51a",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/IndexNodeSaveFn.cs",
+      "sha256": "be6baec6bc7830d4492a656ac577c07131d5c5ada9600ee3a7e8b4663b1c5a04",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/IndexRoot.cs",
+      "sha256": "4b3d6936774b4cbfce9109beb23692ed487252e859504951ec1d09b3e140c6dc",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/IndexView.cs",
+      "sha256": "933ee93c7be1d4fc750639d0c1a9eea063e4a416a74e4b816352652d4e51feba",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/AttributeFlags.cs",
+      "sha256": "1a8bae2d18f09b53a0f5c392afdb5841efed87c2714c1a12e5fa4e1e4ed534f1",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/AttributeListAttribute.cs",
+      "sha256": "5eda839097fbbcbd75e543820adaada12b625a7ef09d833759d4e0b61bfbd2ca",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/AttributeListEntry.cs",
+      "sha256": "5969a46055fa441d66026eea133656d04f92caab76fab5d81b344ab1139c48eb",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/EntryState.cs",
+      "sha256": "298ce2e8f0028542c5a2b5d1adbda66aa3d8e2bc3284719f7b709873533ab60b",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/EntryStates.cs",
+      "sha256": "b7009c80a6e78934bb27c1b50516577149d89c0fb118be6766794d762d0df29f",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/FileNameAttribute.cs",
+      "sha256": "17cb21df4aeb0663e8d735c02b42e0761d23e7f8df4be6b91f143c8218a8d3b6",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/GenericAttribute.cs",
+      "sha256": "bf6f063424c86bdc9824457f107591608ff0e295d8e4e6ceb6e85fd7cc8a06c0",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/MasterFileTable.cs",
+      "sha256": "08cf30bb48410d3f441b25765d5c3a10209954fb2dd76fb16eb34edc9fc07b85",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/Internals/MasterFileTableAttribute.cs",
+      "sha256": "3d041d6cde72f04cdc91365dc488f3bdf7087620d51bce4369bfea9ca1bfa8d1",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/MasterFileTableEntry.cs",
+      "sha256": "31cabf2dbd6d93d4d982c1780028b73950826ac7a8b6f14c22da440a5edd7962",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/MasterFileTableEntryFlags.cs",
+      "sha256": "011f9b5203ea4ecfa82170ea650c3abef7ad6d1e7c7feebc8d54b54644c65f67",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/MasterFileTableRecord.cs",
+      "sha256": "3c19523893daa429f21bcde3fa68d497f64141188860038779b33c198d703c3b",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/MasterFileTableRecordFlags.cs",
+      "sha256": "5624a193bbbbbe9f4f14892757306f00a7903abc188847f6f0a62b1735b756e1",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/MasterFileTableReference.cs",
+      "sha256": "efd6a084570b0e08df61d9df88956d5d391336aaf862efc101c323c2b3d21133",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/NtfsFileAttributes.cs",
+      "sha256": "57a170c5e90cf2c509beba6483f640303e2d25b5a425f49afc4b4e78e712efb5",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/NtfsNamespace.cs",
+      "sha256": "374bfa92834742e8d948f4d94b12a4d152d753c968e9ff639bc9a17463dd16be",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/StandardInformationAttribute.cs",
+      "sha256": "81eade3a103fdb9a7d8cb89049415ec874d812162bc692bf05d437cbcdb9c595",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Internals/UnknownAttribute.cs",
+      "sha256": "fb6d983972d3ed08990ac82ed5dcb28c94dfe32426b3b0963849977515a0f1a3",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/LZNT1.cs",
+      "sha256": "ce763c2528aeac59fd521e228d30c913f8b83f6545ad6f5673fad09463bf8b0c",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/LzWindowDictionary.cs",
+      "sha256": "71aed746ca771859b7ba9d17f72ae088e3342e09ec8d7e4df1927ca730e4790f",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/MasterFileTable.cs",
+      "sha256": "f13aa037f8df1a4c88cc6e14b2631adf1d88cbacd9e2e02dff2e3847bdcf2623",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/NewFileOptions.cs",
+      "sha256": "d1403d45e0edfeb9d38ff2346059d66a8fc30bc0058bd31f12afdc6611645f00",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/NonResidentAttributeBuffer.cs",
+      "sha256": "3c8aeba46c2765e58d062bc4e5ab6c44d4172d3f771d58bb9a58af160f9f64c0",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NonResidentAttributeRecord.cs",
+      "sha256": "7b1e216866dcda42850ae65fd3c3ab46e5a5bb74ec4d6305504af0a30a852292",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NonResidentDataBuffer.cs",
+      "sha256": "9503a1966107686e98747fbee897844722c805780d40c791206cdae77ad09be0",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsAttribute.cs",
+      "sha256": "981a524a84dd844fe79f8da12946bf2b194dab913a1d59258332544e75946b44",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsAttributeBuffer.cs",
+      "sha256": "28084d56236cecc2998a801332c85c5e22c9e2466532189e7e7d9ab2605011a4",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsContext.cs",
+      "sha256": "3bafa73ee3856e86e6bbd2d93dbad8619d996ba50862e4df8bd20420c5aa9ff6",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/NtfsFileStream.cs",
+      "sha256": "4ceda70b87140367410c8af45b0ff008fadb982edc4c8f05ff94f5764c818982",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsFileSystem.cs",
+      "sha256": "8f71d64a24bdbef419374027d552b66448d54712a5e167330cdefb09e39eb60b",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/NtfsFileSystemChecker.cs",
+      "sha256": "e31a8d5dae8146cfb5720d1d6e57209e84bbbfb5344adc4ce2dfa422bf68e4a7",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsFormatOptions.cs",
+      "sha256": "5790d3b1b014d735a35154b83086d8d8c990476774d936978fab434330879c36",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsFormatter.cs",
+      "sha256": "8449096ac5edcc496e599ec35368b8689cf0f200305fd4bffd344865b3719bf7",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsOptions.cs",
+      "sha256": "83d41a90608096e2f7509e0a15b274769e256f0d36783e5f12633c9b1f3ece7a",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/NtfsStream.cs",
+      "sha256": "bf41b0c6fe8f731490271ed45f952c670b0d12dd2f93c25218381e2e154c1e64",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/NtfsTransaction.cs",
+      "sha256": "7d7bbd9cb2263890f53c4463981abe2f7316de53e96d1fa0e761c553bb209f7e",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/ObjectId.cs",
+      "sha256": "4de467cfa4cbdce8282ece757fea1e75f6de9d0dd9c14e9c373a5e3688336506",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/ObjectIdRecord.cs",
+      "sha256": "44834c5fa34ab27c91ef166db8b4c30bea7e21578fa7b52a7788385a1bd56eb2",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/ObjectIds.cs",
+      "sha256": "c99891a439adeb9015b633a1a4fa7a501913a2db4cafaddfbe8e1fcbcbb61362",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/Properties/AssemblyInfo.cs",
+      "sha256": "0daf02d63f4e8ace471f6ef277a1df8fe8ba7e8626f84e5990cd7164cd73e259",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/Quotas.cs",
+      "sha256": "fd0910c403e3c958b396015930058db21e3dcc0b6fa900e957855555eb8b1486",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/RawClusterStream.cs",
+      "sha256": "d7747d0fc8f37792df2c2b9916b14d00b2498938ab4d8d06a68eb7dfa09e8c94",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/ReparsePointRecord.cs",
+      "sha256": "ecb7a6124656b65d6608e08d90707bff9ba25e9d0c05d51d4e55d2da718ffa23",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/ReparsePoints.cs",
+      "sha256": "28b2e5871425ee4841bf5f85f5506e3538273d6b47c5f4184f6aab58f08b92a2",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/ResidentAttributeRecord.cs",
+      "sha256": "f2a055e3d8ba03a3153c9bc5c99145558f00919fcd2370ecfc67f494dc3766eb",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/SecurityDescriptor.cs",
+      "sha256": "3fc8f2e709f0973c4400586c04e0620b51dff6c22ff241403d5f306c02257154",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/SecurityDescriptorRecord.cs",
+      "sha256": "34c6322164261f151e067440b2e13eb779a068ed21a2d2007f7e552025a7f664",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/SecurityDescriptors.cs",
+      "sha256": "378b6cf0711b9cb430203da2c801fea5d9d69bd86ac52d7dfc6c109222af0c12",
+      "locallyRepaired": true
+    },
+    {
+      "path": "Imported/ShortFileNameOption.cs",
+      "sha256": "986ad0f9d3ea3cee837bc8b542f8b3fc7ee07c7e18105a45d9dbf8fc8e4bba9d",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/SparseClusterStream.cs",
+      "sha256": "264fa11e2cc66af647f97f3928766f66383a0ebbc6759b614e554e7209fcb5ca",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/StandardInformation.cs",
+      "sha256": "dce76c064d5411030aedd75b464f72e08a3cc40f07282e43e9ff531ba049527c",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/StructuredNtfsAttribute.cs",
+      "sha256": "1197bc00f337c43410550abc8fdf9d725de6d5691cede7292d3e6c32abece765",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/UpperCase.cs",
+      "sha256": "5c0fdea170d3c0b589f6d47028f902737d5eb89e63f79aa2b825b4466bf9e74e",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/VolumeInformation.cs",
+      "sha256": "69aa7624e15bae33b7e3d59f41e0cb9bde25f037dfc3a68dfc2e4007206ae307",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/VolumeInformationFlags.cs",
+      "sha256": "3ddf14d04d65dd26c73c83c1330a7b061f7c80bfc80f1c6efc217584f6ac4b25",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Imported/VolumeName.cs",
+      "sha256": "3a720ede1902cd615dfe47162f986c4c250faf761dcf501162d39dd969503a44",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Internal/ObjectCache.cs",
+      "sha256": "41e047653dff5b0d286ceae8b50ea2e4bc8da62a8052e0a195349048a2acb306",
+      "locallyRepaired": false
+    },
+    {
+      "path": "Internal/Utilities.cs",
+      "sha256": "ae298e6b4dc4588f70d6c15f93ae5192345b4132505dc4554bdbf4b92ccdb49f",
+      "locallyRepaired": false
+    }
+  ]
+}

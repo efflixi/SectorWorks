@@ -9,6 +9,7 @@ namespace SectorWorks.Storage;
 public sealed class DiskImageWriter : IStagedImageWriter
 {
     private readonly RawFatImageWriter _fat = new();
+    private readonly NtfsImageWriter _ntfs = new();
 
     public Capability Qualify(IImageSession image)
     {
@@ -23,16 +24,16 @@ public sealed class DiskImageWriter : IStagedImageWriter
         {
             RequireDisk(image);
             ImageVolume volume = FindVolume(image, volumeId);
-            if (volume.FileSystem.Name is not ("FAT12" or "FAT16" or "FAT32"))
+            if (volume.FileSystem.Name is not ("FAT12" or "FAT16" or "FAT32" or "NTFS"))
             {
-                return new(false, volume.FileSystem.Name == "NTFS"
-                    ? "Existing-volume NTFS Add/mkdir portability is blocked by the approved dependency's ACL inheritance (RawSecurityDescriptor on Linux), independently of formatting. No NTFS writer is qualified, even where individual modification operations run."
-                    : "This filesystem has no qualified disk-stack writer.");
+                return new(false, "This filesystem has no qualified disk-stack writer.");
             }
-            using var bounded = new FatVolumeSession(image, volume);
-            Capability result = _fat.Qualify(bounded, bounded.HiddenSectors);
+            using var bounded = new DiskVolumeSession(image, volume);
+            Capability result = volume.FileSystem.Name == "NTFS"
+                ? _ntfs.Qualify(bounded, bounded.HiddenSectors)
+                : _fat.Qualify(bounded, bounded.HiddenSectors);
             return result.Available
-                ? new(true, "Qualified bounded FAT staged editing and validated disk-image Save As; no source commit or bootability guarantee.")
+                ? new(true, "Qualified bounded " + volume.FileSystem.Name + " staged editing and validated disk-image Save As; no source commit or bootability guarantee.")
                 : result;
         }
         catch (Exception error) when (error is IOException or ArgumentException or NotSupportedException or InvalidOperationException or OverflowException or UnauthorizedAccessException)
@@ -47,8 +48,12 @@ public sealed class DiskImageWriter : IStagedImageWriter
         {
             cancellationToken.ThrowIfCancellationRequested();
             RequireVolume(image, group.Key);
-            using var volume = new FatVolumeSession(image, FindVolume(image, group.Key));
-            _fat.ValidateCapacity(volume, group.ToArray(), volume.HiddenSectors, cancellationToken);
+            using var volume = new DiskVolumeSession(image, FindVolume(image, group.Key));
+            if (volume.Volumes[0].FileSystem.Name == "NTFS")
+            {
+                _ntfs.ValidateCapacity(volume, group.ToArray(), volume.HiddenSectors, cancellationToken);
+            }
+            else { _fat.ValidateCapacity(volume, group.ToArray(), volume.HiddenSectors, cancellationToken); }
         }
     }
 
@@ -87,12 +92,14 @@ public sealed class DiskImageWriter : IStagedImageWriter
                 int backup;
                 byte[] boot;
                 byte[]? backupBoot;
+                bool ntfs;
                 using (IImageSession copy = new ImageOpener().OpenReadOnly(copyPath, cancellationToken))
                 {
                     ImageVolume volume = FindVolume(copy, group.Key);
                     offset = volume.Partition?.Offset ?? 0;
                     length = volume.Partition?.Length ?? copy.Device.Length;
-                    using var adapted = new FatVolumeSession(copy, volume);
+                    ntfs = volume.FileSystem.Name == "NTFS";
+                    using var adapted = new DiskVolumeSession(copy, volume);
                     hidden = adapted.HiddenSectors;
                     backup = adapted.BackupSector;
                     boot = Bounds.Read(adapted.Device, 0, 512);
@@ -104,17 +111,18 @@ public sealed class DiskImageWriter : IStagedImageWriter
                 }
                 using (var extracted = new FileStream(scratch, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
                 {
-                    _fat.ApplyToStream(extracted, group.ToArray(), cancellationToken);
+                    if (ntfs) { _ntfs.ApplyToStream(extracted, group.ToArray(), cancellationToken); }
+                    else { _fat.ApplyToStream(extracted, group.ToArray(), cancellationToken); }
                     extracted.Flush(true);
                 }
                 using (IImageSession extracted = new ImageOpener().OpenReadOnly(scratch, cancellationToken))
                 {
-                    Capability qualified = _fat.Qualify(extracted, hidden);
+                    Capability qualified = ntfs ? _ntfs.Qualify(extracted, hidden) : _fat.Qualify(extracted, hidden);
                     if (!qualified.Available) { throw new ImageFormatException(qualified.Reason); }
                     if (!Bounds.Read(extracted.Device, 0, 512).AsSpan().SequenceEqual(boot)
                         || (backupBoot is not null && !Bounds.Read(extracted.Device, backup * 512L, 512).AsSpan().SequenceEqual(backupBoot)))
                     {
-                        throw new ImageFormatException("FAT writer changed primary or backup boot-sector bytes.");
+                        throw new ImageFormatException("Filesystem writer changed primary or backup boot-sector bytes.");
                     }
                 }
                 using (var extracted = new FileBlockDevice(scratch))
@@ -187,14 +195,18 @@ public sealed class DiskImageWriter : IStagedImageWriter
             RequireVolume(output, group.Key);
             ImageVolume original = FindVolume(source, group.Key);
             ImageVolume saved = FindVolume(output, group.Key);
-            _fat.ValidatePreservedMetadata(original.FileSystem, saved.FileSystem, group.ToArray(), cancellationToken);
-            using var originalVolume = new FatVolumeSession(source, original);
-            using var savedVolume = new FatVolumeSession(output, saved);
+            using var originalVolume = new DiskVolumeSession(source, original);
+            using var savedVolume = new DiskVolumeSession(output, saved);
+            if (original.FileSystem.Name == "NTFS")
+            {
+                _ntfs.ValidatePreservedMetadata(originalVolume, savedVolume, group.ToArray(), cancellationToken);
+            }
+            else { _fat.ValidatePreservedMetadata(original.FileSystem, saved.FileSystem, group.ToArray(), cancellationToken); }
             if (!Bounds.Read(originalVolume.Device, 0, 512).AsSpan().SequenceEqual(Bounds.Read(savedVolume.Device, 0, 512))
                 || (originalVolume.BackupSector > 0 && !Bounds.Read(originalVolume.Device, originalVolume.BackupSector * 512L, 512)
                     .AsSpan().SequenceEqual(Bounds.Read(savedVolume.Device, originalVolume.BackupSector * 512L, 512))))
             {
-                throw new ImageFormatException("Output changed primary or backup FAT boot-sector bytes.");
+                throw new ImageFormatException("Output changed primary or backup filesystem boot-sector bytes.");
             }
         }
     }
@@ -353,9 +365,9 @@ public sealed class DiskImageWriter : IStagedImageWriter
         }
     }
 
-    private sealed class FatVolumeSession : IImageSession
+    private sealed class DiskVolumeSession : IImageSession
     {
-        public FatVolumeSession(IImageSession image, ImageVolume volume)
+        public DiskVolumeSession(IImageSession image, ImageVolume volume)
         {
             var bounded = new PartitionBlockDevice(image.Device, volume.Partition?.Offset ?? 0,
                 volume.Partition?.Length ?? image.Device.Length);
@@ -365,11 +377,11 @@ public sealed class DiskImageWriter : IStagedImageWriter
             if (HiddenSectors != expected)
             {
                 bounded.Dispose();
-                throw new NotSupportedException("FAT BPB hidden sectors do not match the selected partition's absolute 512-byte-sector offset; no source repair is performed.");
+                throw new NotSupportedException("Filesystem BPB hidden sectors do not match the selected partition's absolute 512-byte-sector offset; no source repair is performed.");
             }
-            BackupSector = volume.FileSystem.Name == "FAT32"
-                ? BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(50)) : 0;
-            if (BackupSector > 0 && BinaryPrimitives.ReadUInt32LittleEndian(Bounds.Read(bounded,
+            BackupSector = volume.FileSystem.Name == "NTFS" ? checked((int)(bounded.Length / 512 - 1))
+                : volume.FileSystem.Name == "FAT32" ? BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(50)) : 0;
+            if (volume.FileSystem.Name == "FAT32" && BackupSector > 0 && BinaryPrimitives.ReadUInt32LittleEndian(Bounds.Read(bounded,
                 checked(BackupSector * 512L + 28), 4)) != HiddenSectors)
             {
                 bounded.Dispose();

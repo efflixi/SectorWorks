@@ -7,6 +7,7 @@ using DiscUtils.Streams;
 using SectorWorks.Core;
 using SectorWorks.DependencyProbe;
 using SectorWorks.Storage;
+using FatFileSystem = DiscUtils.Fat.FatFileSystem;
 
 namespace SectorWorks.StorageTests;
 

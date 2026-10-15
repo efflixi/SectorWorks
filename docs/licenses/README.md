@@ -34,6 +34,15 @@ Storage-probe licensing and provenance are documented separately by its
 dependency evaluation. License material must be refreshed and reviewed with
 package updates.
 
+The isolated `SectorWorks.ManagedNtfs` source repair also retains the DiscUtils
+MIT license and original per-file copyright headers. Its source and pinned
+transformation provenance are part of Corresponding Source, not a substituted
+NuGet assembly identity. `SectorWorks.NtfsSecurity` and original repair changes
+follow the repository's GPL-3.0-only terms. The unchanged full upstream license
+is already included here as `DiscUtils.txt` and copied into every publish.
+See [dependency evaluation](../dependency-evaluation.md) for the repair boundary,
+package identities and qualification evidence.
+
 After a solution restore, regenerate the resolved legal-metadata inventory with
 `python3 tools/update-package-inventory.py` from the repository root. Review the
 result and retain any newly required full notices separately; generating metadata

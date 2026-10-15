@@ -6,8 +6,8 @@ namespace SectorWorks.Storage;
 
 internal static class NtfsValidation
 {
-    private sealed record Run(long Offset, long Length);
-    private sealed record Attribute(uint Type, byte[] Bytes);
+    internal sealed record Run(long Offset, long Length);
+    internal sealed record Attribute(uint Type, byte[] Bytes);
 
     internal static void Validate(IReadOnlyBlockDevice device, byte[] boot, int sector, int cluster,
         CancellationToken token)
@@ -110,7 +110,7 @@ internal static class NtfsValidation
         }
     }
 
-    private static List<Attribute> ValidateRecord(byte[] raw, int sector, int cluster, long volumeLength)
+    internal static List<Attribute> ValidateRecord(byte[] raw, int sector, int cluster, long volumeLength)
     {
         var bytes = (byte[])raw.Clone();
         if (!bytes.AsSpan(0, 4).SequenceEqual("FILE"u8))
@@ -178,7 +178,7 @@ internal static class NtfsValidation
         throw new ImageFormatException("NTFS attribute list has no bounded end marker.");
     }
 
-    private static void ApplyFixups(byte[] bytes, int sector)
+    internal static void ApplyFixups(byte[] bytes, int sector)
     {
         int offset = U16(bytes, 4);
         int count = U16(bytes, 6);
@@ -199,7 +199,7 @@ internal static class NtfsValidation
         }
     }
 
-    private static List<Run> Runs(byte[] attribute, int cluster, long volumeLength, bool allowSparse)
+    internal static List<Run> Runs(byte[] attribute, int cluster, long volumeLength, bool allowSparse)
     {
         int position = U16(attribute, 32);
         if (position < 64 || position >= attribute.Length)
@@ -265,7 +265,7 @@ internal static class NtfsValidation
         throw new ImageFormatException("NTFS mapping pairs have no bounded terminator.");
     }
 
-    private static void ReadRuns(IReadOnlyBlockDevice device, List<Run> runs, long offset, Span<byte> output)
+    internal static void ReadRuns(IReadOnlyBlockDevice device, List<Run> runs, long offset, Span<byte> output)
     {
         int written = 0;
         foreach (Run run in runs)
@@ -334,7 +334,7 @@ internal static class NtfsValidation
         throw new ImageFormatException("NTFS index has no bounded terminal entry.");
     }
 
-    private static string AttributeName(byte[] attribute) => attribute[9] == 0 ? ""
+    internal static string AttributeName(byte[] attribute) => attribute[9] == 0 ? ""
         : System.Text.Encoding.Unicode.GetString(attribute, U16(attribute, 10), attribute[9] * 2);
 
     private static void ValidateGraph(Dictionary<long, List<long>> graph, List<long> roots)

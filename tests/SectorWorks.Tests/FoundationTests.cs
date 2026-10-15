@@ -10,6 +10,8 @@ public sealed class FoundationTests
     [InlineData("Storage")]
     [InlineData("Services")]
     [InlineData("Platform")]
+    [InlineData("ManagedNtfs")]
+    [InlineData("NtfsSecurity")]
     public void NonUiProjectsHaveNoUiDependencies(string layer)
     {
         XDocument project = LoadProject(layer);
@@ -25,7 +27,9 @@ public sealed class FoundationTests
 
     [Theory]
     [InlineData("Core", "")]
-    [InlineData("Storage", "SectorWorks.Core")]
+    [InlineData("Storage", "SectorWorks.Core,SectorWorks.ManagedNtfs")]
+    [InlineData("ManagedNtfs", "SectorWorks.NtfsSecurity")]
+    [InlineData("NtfsSecurity", "")]
     [InlineData("Platform", "SectorWorks.Core")]
     [InlineData("Services", "SectorWorks.Core,SectorWorks.Platform,SectorWorks.Storage")]
     [InlineData("UI", "SectorWorks.Core,SectorWorks.Platform,SectorWorks.Services")]

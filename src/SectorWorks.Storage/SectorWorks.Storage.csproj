@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../SectorWorks.Core/SectorWorks.Core.csproj" />
+    <ProjectReference Include="../SectorWorks.ManagedNtfs/SectorWorks.ManagedNtfs.csproj" />
+    <InternalsVisibleTo Include="SectorWorks.StorageTests" />
     <PackageReference Include="DiscUtils.Fat" Version="0.16.13" />
     <PackageReference Include="DiscUtils.Ntfs" Version="0.16.13" />
     <PackageReference Include="DiscUtils.Iso9660" Version="0.16.13" />

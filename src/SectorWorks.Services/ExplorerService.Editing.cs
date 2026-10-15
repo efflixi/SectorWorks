@@ -21,7 +21,7 @@ public sealed partial class ExplorerService
             {
                 throw new NotSupportedException("Metadata changes are reserved; only add, replace, delete, rename and create directory are implemented.");
             }
-            ValidateFatPath(request.Path);
+            ValidateEditPath(request.Path);
             EditingState state = EnsureEditing(lease, cancellationToken);
             state.VerifySpool();
             if (state.Position >= 1024 || state.States.Take(state.Position + 1).Sum(s => (long)s.Count) > 1_000_000)
@@ -34,7 +34,7 @@ public sealed partial class ExplorerService
             bool adding = request.Kind is ImageChangeKind.AddFile or ImageChangeKind.CreateDirectory;
             if (adding && existing is not null)
             {
-                throw new IOException("An entry already exists at this case-insensitive FAT path.");
+                throw new IOException("An entry already exists at this case-insensitive image path.");
             }
             if (!adding && existing is null)
             {
@@ -53,14 +53,14 @@ public sealed partial class ExplorerService
             if (adding)
             {
                 path = (parent == "/" ? "" : parent) + "/" + request.Path[(request.Path.LastIndexOf('/') + 1)..];
-                ValidateFatPath(path);
+                ValidateEditPath(path);
             }
             request = request with { Path = path };
             for (string ancestor = parent; ancestor != "/"; ancestor = StagedFileSystem.Parent(ancestor))
             {
                 if (next[ancestor].Entry.Attributes.Split(", ").Contains("ReadOnly", StringComparer.Ordinal))
                 {
-                    throw new NotSupportedException("Changes inside read-only FAT directories are not supported.");
+                    throw new NotSupportedException("Changes inside read-only image directories are not supported.");
                 }
             }
             if (!adding)
@@ -68,7 +68,7 @@ public sealed partial class ExplorerService
                 if (next.Values.Any(node => IsWithin(node.Entry.Path, path)
                     && node.Entry.Attributes.Split(", ").Contains("ReadOnly", StringComparer.Ordinal)))
                 {
-                    throw new NotSupportedException("Read-only FAT entries cannot be modified; metadata editing is not implemented.");
+                    throw new NotSupportedException("Read-only image entries cannot be modified; metadata editing is not implemented.");
                 }
             }
             StagedContent? content = null;
@@ -89,9 +89,11 @@ public sealed partial class ExplorerService
                         long importLength = new FileInfo(request.SourcePath).Length;
                         ImageVolume targetVolume = lease.Image.Volumes.Single(volume => volume.Id == request.VolumeId);
                         long volumeLength = targetVolume.Partition?.Length ?? lease.Image.Device.Length;
-                        if (importLength > uint.MaxValue || importLength > volumeLength)
+                        long maximumFileLength = targetVolume.FileSystem.Name == "NTFS"
+                            ? volumeLength : Math.Min(uint.MaxValue, volumeLength);
+                        if (importLength > maximumFileLength)
                         {
-                            throw new IOException("Imported file exceeds FAT file-size or image-capacity limits.");
+                            throw new IOException("Imported file exceeds filesystem file-size or image-capacity limits.");
                         }
                         ValidateStagingBudget(state.RetainedBytes, importLength);
                         WorkspaceDataFiles.CreatePrivateDirectory(state.DirectoryPath);
@@ -101,11 +103,11 @@ public sealed partial class ExplorerService
                         }
                         using (var input = new FileStream(request.SourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            content = new StagedContent(input, state.DirectoryPath, importLength, Math.Min(uint.MaxValue, volumeLength), cancellationToken);
+                            content = new StagedContent(input, state.DirectoryPath, importLength, maximumFileLength, cancellationToken);
                         }
-                        if (content.Length > uint.MaxValue || content.Length > volumeLength)
+                        if (content.Length > maximumFileLength)
                         {
-                            throw new IOException("Imported file exceeds FAT file-size or image-capacity limits.");
+                            throw new IOException("Imported file exceeds filesystem file-size or image-capacity limits.");
                         }
                         next[path] = new StagedNode(new FileEntry(path, path[(path.LastIndexOf('/') + 1)..], false,
                             content.Length, existing?.Entry.ModifiedUtc, existing?.Entry.Attributes ?? "Archive")
@@ -125,7 +127,7 @@ public sealed partial class ExplorerService
                             throw new ArgumentException("Rename requires a single filename.");
                         }
                         string renamed = (parent == "/" ? "" : parent) + "/" + request.NewName;
-                        ValidateFatPath(renamed);
+                        ValidateEditPath(renamed);
                         if (renamed.Equals(path, StringComparison.Ordinal))
                         {
                             throw new IOException("The rename does not change the filename.");
@@ -424,7 +426,7 @@ public sealed partial class ExplorerService
         {
             if (requireModifiedDates?.Contains(entry.Path) == true && entry.ModifiedUtc is null)
             {
-                throw new InvalidDataException("Changed output entry has an invalid FAT modification date: " + entry.Path);
+                throw new InvalidDataException("Changed output entry has an invalid filesystem modification date: " + entry.Path);
             }
             if (entry.IsLink) { throw new InvalidDataException("Linked entries cannot be output-validated."); }
             if (entry.IsDirectory) { result.Add(entry.Path, "Directory"); continue; }
@@ -450,15 +452,15 @@ public sealed partial class ExplorerService
     private static bool IsWithin(string candidate, string root) =>
         candidate.Equals(root, StringComparison.OrdinalIgnoreCase) || candidate.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
 
-    private static void ValidateFatPath(string path)
+    private static void ValidateEditPath(string path)
     {
         ValidateImagePath(path);
-        if (path == "/" || path.Length > 240) { throw new InvalidDataException("FAT edit paths must be non-root and at most 240 characters."); }
+        if (path == "/" || path.Length > 240) { throw new InvalidDataException("Image edit paths must be non-root and at most 240 characters."); }
         foreach (string name in path.Split('/').Skip(1))
         {
-            if (!FatEditNames.IsSupportedName(name))
+            if (!ImageEditNames.IsSupportedName(name))
             {
-                throw new InvalidDataException("FAT writing requires valid NFC BMP names without control/surrogate characters, reserved names, forbidden punctuation or leading/trailing spaces and trailing dots.");
+                throw new InvalidDataException("Image editing requires valid NFC BMP names without control/surrogate characters, reserved names, forbidden punctuation or leading/trailing spaces and trailing dots.");
             }
         }
     }

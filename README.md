@@ -5,7 +5,8 @@ in C# with Avalonia and MVVM. It will inspect, browse, extract and, when safely
 supported, stage modifications and commit or rebuild images without host-OS
 mounting. Source data integrity and capability-based support are central.
 
-**Status: Phase 2B partially delivered; mandatory portable NTFS writing blocked.** The supported
+**Status: Phase 2B partially delivered; managed NTFS writing implemented for a
+qualified subset, with Windows-media interoperability still incomplete.** The supported
 reader subset was implemented and verified on Linux Mint 22 x64/X11. Owner-reported
 physical testing on 2026-10-14 also found Phase 1 working on Linux x64, Windows
 x64 and Linux ARM64 (Raspberry Pi 500). Windows 7 x64 reportedly runs the current
@@ -18,7 +19,7 @@ tab now loads it without a paging workaround, including for small binary files;
 see [platform status](docs/platform-status.md) for verification.
 Advanced NTFS reads and manual desktop integration review remain incomplete,
 as recorded in the checklist. Phase 2B adds shared staged modifications and Save As a
-new image for individually qualified FAT volumes in raw, fixed/dynamic VHD and
+new image for individually qualified FAT and ordinary NTFS volumes in raw, fixed/dynamic VHD and
 fixed/dynamic VHDX; source images remain read-only.
 See [staged editing and safety](docs/staged-editing.md). Direct commit
 (Phase 3), ISO rebuild (Phase 4) and audio workflows (Phase 6) are not enabled.
@@ -31,19 +32,34 @@ limited to conventional 1,474,560-byte volumes; 360K/720K and early-DOS writing
 remain deferred. Logical sectors must be 512 bytes; VHDX 512/512 and 512/4096
 layouts are separately qualified, not 4Kn.
 
-Portable existing-volume NTFS Add/mkdir fail through the approved dependency's
-ACL inheritance on Linux, independently of formatting. All NTFS staging and
-Save As remain disabled pending owner direction; successful individual-operation
-experiments do not complete Phase 2B. See the
+The owner subsequently authorized implementing and qualifying the managed NTFS
+repair. Separately named managed security/backend assemblies remove the portable
+ACL blocker without replacing signed DiscUtils packages. All five staged
+operations and validated Save As pass 21 disk/container/layout/physical-sector
+rows; fresh native fixtures also exercise all eight 512-byte-sector cluster sizes
+from 512 through 65536 bytes, resident/nonresident transitions and exact metadata
+preservation. There is no host mount or native runtime dependency.
+
+**This is not complete ordinary-Windows-media qualification.** LFS 2.0 logs and
+their cached-metadata safety remain blocked; actual Windows-authored NTFS
+fixtures and the Windows-only security-reference test remain unverified.
+Blank logs and rigorously checked clean LFS 1.1 restart structures are the current
+log subset; the latter has synthetic structural evidence, not Windows runtime
+evidence. NTFS writing remains required for 1.0, not demoted to read-only.
+Formatting, direct source commit, recovery and unsupported NTFS metadata stay
+disabled. See the
 [qualification ledger](docs/support-matrix.md#phase-2b-qualification-ledger-implementation-authorized-2026-10-15),
 [dependency blocker](docs/dependency-evaluation.md#phase-2b-existing-volume-ntfs-blocker-2026-10-15)
 and [current verification/platform evidence](docs/platform-status.md).
 Physical Mint/X11 workflows and independent FAT/container checks are distinct
 from six-target cross-publishing; Windows/ARM64 Phase 2B runtime is unverified.
-Final verification: **561 tests passed, zero skipped**, zero-warning Release
-build, locked restore, formatting/resources/reference-copy checks, all six
-self-contained publishes and the Linux x64 AppImage prototype. Five real X11
-container workflows pass with unchanged sources and independent output checks.
+Current final verification: **956 tests passed, one Windows-only reference
+test skipped (957 total)**, zero-warning Release build, locked restore,
+formatting/resources/reference-copy checks, all six self-contained publishes
+and the Linux x64 AppImage prototype. Six actual Mint/X11 NTFS workflows and
+independent native output checks pass with unchanged sources. The preceding
+FAT prerelease's 561 passing/zero-skipped tests and five X11 workflows remain
+historical evidence, not Windows-media qualification.
 
 ### 1.0 scope boundary
 
@@ -73,8 +89,8 @@ combination. Phase 4 covers shared ISO/UDF/bridge staging and rebuilding;
 Phase 6 covers BIN/CUE staging and safe output-set rebuilding; Phase 7 item 7.10
 covers conventional 360K/720K editing/Save As/direct-commit qualification.
 
-Only the qualified Phase 2B FAT subset above is implemented; NTFS is blocked
-and later milestones remain unimplemented. The owner
+The qualified FAT and managed NTFS subsets above are implemented; remaining
+Windows-media qualification is blocked and later milestones remain unimplemented. The owner
 separately authorized Phase 2B implementation on 2026-10-15; no Phase 3 work
 is authorized. Existing Phase 2 completion remains historical and does not
 complete the expanded Phase 2B requirements. See the

@@ -155,7 +155,8 @@ internal static class Phase2DesktopSmoke
                 Check(Hash(source) == sourceHash, "Source changed after discard.");
                 await main.CloseCommand.ExecuteAsync(workspace);
                 Check(main.Workspaces.Count == 0 && main.Error.Length == 0, "Source workspace did not close cleanly.");
-                Console.WriteLine($"PASS physical staged editing: generated {variant} FAT12; add/replace/rename/delete/new-directory; changed markers, ordered volume-scoped pending list, undo/redo, staged preview/extraction, Save As validation/output reopen, cancelled close, discard; scaling={window.RenderScaling}");
+                string filesystem = variant.StartsWith("ntfs-", StringComparison.Ordinal) ? "NTFS" : "FAT12";
+                Console.WriteLine($"PASS physical staged editing: generated {variant} {filesystem}; add/replace/rename/delete/new-directory; changed markers, ordered volume-scoped pending list, undo/redo, staged preview/extraction, Save As validation/output reopen, cancelled close, discard; scaling={window.RenderScaling}");
                 Console.WriteLine($"PASS source unchanged: {source}; SHA-256 {sourceHash}");
                 Console.WriteLine($"PASS staged extraction/output: {extracted}; SHA-256 {Hash(extracted)}; output={dialogs.OutputPath}");
                 Console.WriteLine($"PASS app-window-only screenshot: {DesktopSmoke.Arguments[2]}; generated disposable artifacts={directory}");
@@ -169,6 +170,8 @@ internal static class Phase2DesktopSmoke
 
     internal static string CreateFixture(string directory, string variant = "raw")
     {
+        bool ntfs = variant.StartsWith("ntfs-", StringComparison.Ordinal);
+        if (ntfs) { variant = variant[5..]; }
         if (variant is not ("raw" or "raw-mbr" or "vhd-fixed" or "vhd-dynamic" or "vhdx-fixed" or "vhdx-dynamic"))
         {
             throw new ArgumentException("Unsupported disposable desktop fixture variant.", nameof(variant));
@@ -176,27 +179,45 @@ internal static class Phase2DesktopSmoke
         if (Directory.Exists(directory) || File.Exists(directory)) { throw new IOException("Phase 2 smoke requires a NEW disposable fixture directory."); }
         Directory.CreateDirectory(directory);
         string image = Path.Combine(directory, "source.img");
-        using (var stream = new FileStream(image, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+        if (ntfs)
         {
-            using (FatFileSystem fileSystem = FatFileSystem.FormatFloppy(stream, FloppyDiskType.HighDensity, "SW_PHASE2"))
+            using (FileStream stream = File.Create(image)) { stream.SetLength(32 * 1024 * 1024); }
+            RunFixtureTool("mkntfs", "-F", "-Q", "-T", "-L", "SW_NTFS", "-s", "512", "-p", "0", "-H", "4", "-S", "32", image);
+            string payload = Path.Combine(directory, "fixture-payload.txt");
+            foreach ((string name, string text) in new[]
             {
-                WriteFile(fileSystem, "README.TXT", OriginalText);
-                WriteFile(fileSystem, "KEEP.TXT", UnchangedText);
-                WriteFile(fileSystem, "DELETE.TXT", "Generated file for staged deletion.\n");
+                ("README.TXT", OriginalText), ("KEEP.TXT", UnchangedText), ("DELETE.TXT", "Generated file for staged deletion.\n")
+            })
+            {
+                File.WriteAllText(payload, text, new UTF8Encoding(false));
+                RunFixtureTool("ntfscp", "-f", image, payload, "/" + name);
             }
-            stream.Flush(true);
+            File.Delete(payload);
         }
-        GeneratedFatFixtureMetadata.Complete(image);
+        else
+        {
+            using (var stream = new FileStream(image, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+            {
+                using (FatFileSystem fileSystem = FatFileSystem.FormatFloppy(stream, FloppyDiskType.HighDensity, "SW_PHASE2"))
+                {
+                    WriteFile(fileSystem, "README.TXT", OriginalText);
+                    WriteFile(fileSystem, "KEEP.TXT", UnchangedText);
+                    WriteFile(fileSystem, "DELETE.TXT", "Generated file for staged deletion.\n");
+                }
+                stream.Flush(true);
+            }
+            GeneratedFatFixtureMetadata.Complete(image);
+        }
         if (variant == "raw") { return image; }
         string disk = Path.Combine(directory, "partitioned.img");
         using (var output = new FileStream(disk, FileMode.CreateNew, FileAccess.ReadWrite))
         {
-            output.SetLength(16 * 1024 * 1024);
+            output.SetLength(ntfs ? 36 * 1024 * 1024 : 16 * 1024 * 1024);
             byte[] mbr = new byte[512];
             "PHASE2B-OPAQUE-BOOT"u8.CopyTo(mbr);
-            mbr[450] = 1;
+            mbr[450] = ntfs ? (byte)7 : (byte)1;
             BinaryPrimitives.WriteUInt32LittleEndian(mbr.AsSpan(454), 2048);
-            BinaryPrimitives.WriteUInt32LittleEndian(mbr.AsSpan(458), 2880);
+            BinaryPrimitives.WriteUInt32LittleEndian(mbr.AsSpan(458), checked((uint)(new FileInfo(image).Length / 512)));
             mbr[510] = 0x55;
             mbr[511] = 0xaa;
             output.Write(mbr);
@@ -207,32 +228,42 @@ internal static class Phase2DesktopSmoke
             byte[] hidden = new byte[4];
             BinaryPrimitives.WriteUInt32LittleEndian(hidden, 2048);
             output.Write(hidden);
+            if (ntfs)
+            {
+                output.Position = 2048 * 512L + input.Length - 512 + 28;
+                output.Write(hidden);
+            }
             output.Flush(true);
         }
         if (variant == "raw-mbr") { return disk; }
         bool vhdx = variant.StartsWith("vhdx", StringComparison.Ordinal);
         string container = Path.Combine(directory, vhdx ? "source.vhdx" : "source.vhd");
-        var start = new ProcessStartInfo("qemu-img") { RedirectStandardOutput = true, RedirectStandardError = true };
         string options = "subformat=" + (variant.EndsWith("fixed", StringComparison.Ordinal) ? "fixed" : "dynamic")
             + (vhdx ? "" : ",force_size=on");
-        foreach (string argument in new[] { "convert", "-f", "raw", "-O", vhdx ? "vhdx" : "vpc", "-o", options, disk, container })
+        RunFixtureTool("qemu-img", "convert", "-f", "raw", "-O", vhdx ? "vhdx" : "vpc", "-o", options, disk, container);
+        return container;
+    }
+
+    private static void RunFixtureTool(string command, params string[] arguments)
+    {
+        var start = new ProcessStartInfo(command) { RedirectStandardOutput = true, RedirectStandardError = true };
+        foreach (string argument in arguments)
         {
             start.ArgumentList.Add(argument);
         }
-        using Process process = Process.Start(start) ?? throw new IOException("Could not start independent qemu-img fixture author.");
+        using Process process = Process.Start(start) ?? throw new IOException("Could not start independent fixture author: " + command);
         Task<string> stdout = process.StandardOutput.ReadToEndAsync();
         Task<string> stderr = process.StandardError.ReadToEndAsync();
         if (!process.WaitForExit(60000))
         {
             process.Kill(true);
             process.WaitForExit();
-            throw new IOException("Independent qemu-img fixture author exceeded its 60-second deadline.");
+            throw new IOException("Independent fixture author exceeded its 60-second deadline: " + command);
         }
         if (process.ExitCode != 0)
         {
-            throw new IOException("Independent qemu-img fixture author failed: " + stdout.GetAwaiter().GetResult() + stderr.GetAwaiter().GetResult());
+            throw new IOException("Independent fixture author failed: " + command + ": " + stdout.GetAwaiter().GetResult() + stderr.GetAwaiter().GetResult());
         }
-        return container;
     }
 
     private static void WriteFile(FatFileSystem fileSystem, string name, string content)

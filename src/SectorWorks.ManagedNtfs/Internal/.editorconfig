@@ -1,0 +1,3 @@
+[*.cs]
+# Pinned third-party helper import; retain upstream layout.
+generated_code = true

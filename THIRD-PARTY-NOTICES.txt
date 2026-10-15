@@ -47,6 +47,19 @@ Storage dependencies used by readers and qualified staged/Save As writers:
   tracked in checklist.txt. Product writes require per-stack qualification;
   no write support follows from the library APIs alone.
 
+Isolated managed NTFS source repair:
+  SectorWorks.ManagedNtfs imports the approved DiscUtils NTFS source and the
+  minimum required internal helpers from repository commit
+  59d7cadab839c6d8dfcf52f8be5efe6d2ced190f, under their retained MIT notices.
+  Upstream files are not relicensed. SectorWorks additions and modifications
+  follow this repository's GPL-3.0-only terms.
+  SectorWorks.NtfsSecurity supplies original managed security-descriptor code.
+  The separately named assemblies do not impersonate or replace signed
+  DiscUtils packages; original read/container/FAT packages remain unchanged.
+  See docs/dependency-evaluation.md and the retained source provenance in
+  src/SectorWorks.ManagedNtfs/. Ordinary write support requires qualification;
+  this repair does not qualify NTFS formatting or Windows-only bridge APIs.
+
 Development/test-only:
   Avalonia.Headless 12.1.4 - MIT - Avalonia contributors
   Microsoft.NET.Test.Sdk 18.11.0 and Microsoft.TestPlatform.* 18.11.0 - MIT
