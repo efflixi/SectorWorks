@@ -2,8 +2,10 @@
 
 The foundation's layered solution is retained. Phase 1 supplies the read-only
 pipeline and Avalonia explorer. Phase 2 adds staged modifications and Save As
-through separate editing contracts. Direct commit, rebuild and audio remain
-later-phase work. See [staged editing](staged-editing.md).
+through separate editing contracts. Phase 3 (2026-10-16) adds a container/
+filesystem-agnostic safe direct-commit pipeline for every row that was already
+Phase 2B Save-As-qualified; rebuild and audio remain later-phase work. See
+[staged editing](staged-editing.md#phase-3-direct-commit-implemented-2026-10-16).
 
 ## Phase 2C implemented reader boundary and open qualification
 
@@ -55,7 +57,8 @@ Per-volume writer qualification remains independent: newly readable legacy/
 attribute-list variants stay noneditable, while existing qualified Phase 2B
 FAT/NTFS workflows and mixed-volume isolation must regress unchanged.
 Phase 3 **3.0.1-3.0.5** must qualify their staged/Save As/new-output NTFS writer
-rows before **3.7** direct commit. No Phase 3 work is authorized.
+rows before **3.7** direct commit. The 2026-10-16 Phase 3 session did not
+attempt 3.0.1-3.0.5; these rows remain blocked/non-editable.
 Phase 2B's actual Windows-media/security-reference and LFS 2.0/cache-safety
 write gates remain incomplete in **2B.6**, not scope-demoted by reader expansion.
 
@@ -67,6 +70,32 @@ enumeration succeeds, and the warning is a native whole-attribute size limit,
 not proof of corruption or health.
 See [planned reader gates](support-matrix.md#phase-2c-ntfs-reader-qualification-plan)
 and checklist **2C.1-2C.7**, **2C.V1-2C.V8**, **2C.E1-2C.E6**.
+
+## Phase 3 direct-commit architecture (implemented 2026-10-16)
+
+`SectorWorks.Storage/DirectCommitTransaction.cs` adds container/filesystem-
+agnostic primitives (`SourceWriteLock`, `CommitJournal`, `CommitBackup`,
+`CommitRecovery`, the `CommitStage` enum and `TransactionRecord`). These do
+not reimplement per-stack writers; `ExplorerService.CommitAsync`
+(`SectorWorks.Services/ExplorerService.Commit.cs`) wraps the already-qualified
+Phase 2B `IStagedImageWriter.Apply`/`ValidateOutput` pipeline, retargeting its
+output at a disposable staged temporary file beside the source instead of a
+new destination, then atomically swaps it over the source only after
+independent reopen validation succeeds.
+
+`WorkspaceCapabilities.CommitInPlace` is computed by the same qualification
+`Capability` as `Modify`/`SaveAs` (`ExplorerService.Editing.cs`'s
+`CommitCapability` helper), so direct-commit eligibility automatically tracks
+Save-As eligibility per row without separate per-stack wiring; the still-
+blocked Phase 2C legacy/attribute-list NTFS rows correctly remain
+`CommitInPlace = false`.
+
+Two integration points are explicitly NOT yet wired and are flagged as open
+follow-ups rather than silently assumed: `CommitRecovery.Discover` (startup
+crash-recovery detection) is a tested library call with no invocation site in
+the UI application host yet, and there is no UI command bound to
+`CommitAsync`. See [staged editing](staged-editing.md#phase-3-direct-commit-implemented-2026-10-16)
+for the full pipeline description and test evidence.
 
 ## Retained Phase 2B editing architecture
 

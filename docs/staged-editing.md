@@ -377,9 +377,10 @@ these commands.
   source or prior destination.
 - Normal failure cleanup removes the incomplete output. If cleanup fails, the
   error/log identifies the residual temporary image explicitly. Abrupt process
-  termination can leave a hidden `.sectorworks-save-*.img` file; Phase 3 recovery
-  discovery/journaling is not implemented. Do not treat residual files as
-  validated images.
+  termination can leave a hidden `.sectorworks-save-*.img` file; Save As itself
+  still does not journal or auto-recover this (direct commit's separate
+  journal/recovery below does not retroactively cover Save As). Do not treat
+  residual files as validated images.
   Bounded-volume scratch files use `.sectorworks-volume-*.img`; cleanup failures
   identify their residual paths too. They are never advertised as saved images.
 
@@ -390,6 +391,66 @@ The general `Validate` capability still does not advertise a standalone,
 exhaustive filesystem validator. The mandatory bounded Save As checks described
 here are not filesystem repair, boot certification or proof against every
 hostile-media defect.
+
+## Phase 3 direct commit (implemented 2026-10-16)
+
+Owner authorized Phase 3 ("Safe Direct Commit") on 2026-10-16 as a scoped
+child-chat session, explicitly not Phase 4/publication authority and not a
+commit/push/tag/release authorization. The delivered increment adds
+`ExplorerService.CommitAsync` and the container/filesystem-agnostic primitives
+in `SectorWorks.Storage/DirectCommitTransaction.cs` (`SourceWriteLock`,
+`CommitJournal`, `CommitBackup`, `CommitRecovery`). It reuses the already
+Phase 2B-qualified Save As `Apply`/`ValidateOutput` pipeline against a
+disposable staged temporary copy, wrapped with a generic locking/backup/
+journal/atomic-finalize layer, rather than reimplementing per-stack writers.
+
+- `WorkspaceCapabilities.CommitInPlace` is gated on the exact same
+  qualification `Capability` as `Modify`/`SaveAs`. Every row above that is
+  already Save-As-qualified is therefore direct-commit-qualified; the
+  still-blocked Phase 2C legacy/attribute-list NTFS rows correctly stay
+  `CommitInPlace = false` until a future session completes 3.0.1-3.0.5.
+- Pipeline order: verify source baseline -> acquire exclusive source lock ->
+  recheck source identity -> validate capacity/free space -> create a flushed
+  backup -> journal `BackupTaken` -> apply to a disposable staged temp copy ->
+  flush -> journal `Staged` -> independently reopen and validate (tree/SHA-256
+  fingerprint plus the writer's `ValidateOutput`) -> journal `Validated` ->
+  recheck source identity again -> atomic `File.Move` finalize over the source
+  -> journal `Finalized` -> delete backup/journal -> release lock.
+- Locking: Windows/Linux use `FileStream.Lock` (a real OS-level byte-range
+  advisory lock on the source file). macOS (where .NET does not support
+  `FileStream.Lock`) uses an exclusive sidecar marker file instead -- a
+  narrower guarantee limited to concurrent SectorWorks writers, untested on
+  physical macOS hardware, consistent with the existing macOS runtime
+  deferral. Verified cross-process on Linux with an independent Python writer
+  holding a genuine fcntl byte-range lock (same-process relocking is not a
+  meaningful test under POSIX fcntl semantics, which are owned per-process).
+- Recovery safety: `CommitRecovery` distinguishes the `Finalized` stage (the
+  source was already safely replaced) from earlier stages. `RestoreFromBackup`
+  refuses to run once a transaction reached `Finalized`, so recovery can never
+  silently undo an already-successful commit; only `Discard` (cleanup without
+  touching the source) is valid at that point. `CommitRecovery.Discover` is a
+  tested library-level primitive; it is **not yet wired into the application's
+  actual startup sequence** -- flagged as an open follow-up, not a safety gap
+  in the primitive itself.
+- Verified across the full qualified matrix (not one combination): raw,
+  fixed/dynamic VHD, fixed/dynamic VHDX x filesystem-only/primary MBR/GPT x
+  FAT12/16/32 with qualified LFN (VHDX additionally at 512 and 4096 physical
+  sector sizes) and ordinary NTFS across the same container/layout matrix.
+  Each committed source is independently re-checked with `fsck.fat -n`/mtools
+  (FAT) or `ntfsfix -n`/`ntfscat` (NTFS) after finalize, not just the staged
+  temp copy, and residual `.sectorworks-commit-*`/`.sectorworks-backup-*`/
+  `.sectorworks-journal-*` files are asserted absent on success.
+- Failure injection: a dedicated test double throws immediately after `Apply`
+  (before reopen/finalize) and proves the source stays byte-identical and the
+  interrupted transaction is discoverable and recoverable. A separate test
+  manually constructs a `Finalized`-stage journal to prove recovery never
+  restores a backup over it.
+- No UI command is yet wired to `CommitAsync`; this is a backend-only delivery
+  for this session. Direct commit for the Phase 2C legacy/attribute-list NTFS
+  rows remains fully blocked pending 3.0.1-3.0.5, which were not attempted this
+  session. See the [checklist](../checklist.txt) Phase 3 section and the
+  [support matrix](support-matrix.md#phase-3-direct-commit-qualification-implemented-2026-10-16)
+  for the full per-row ledger and remaining open items.
 
 ## Dependency findings retained as regressions
 

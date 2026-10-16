@@ -20,7 +20,7 @@ public sealed record WorkspaceCapabilities(Capability Browse, Capability Extract
     public Capability CreateDirectories { get; init; } = new(false, "This image stack is not qualified for creating directories.");
     public Capability EditMetadata { get; } = new(false, "Metadata changes are reserved but not implemented.");
     public Capability SaveAs { get; init; } = new(false, "This image stack is not qualified for Save As.");
-    public Capability CommitInPlace { get; } = new(false, "Safe direct commit belongs to Phase 3.");
+    public Capability CommitInPlace { get; init; } = new(false, "Safe direct commit belongs to Phase 3.");
     public Capability Rebuild { get; } = new(false, "ISO rebuilding belongs to Phase 4; other rebuild workflows are not implemented.");
     public Capability PreserveBootability { get; } = new(false, "No bootability preservation guarantee is established.");
     public Capability PreserveExactLayout { get; } = new(false, "No image-writing or exact-layout preservation workflow is enabled.");

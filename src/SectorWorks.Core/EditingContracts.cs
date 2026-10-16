@@ -16,6 +16,10 @@ public sealed record EditingSnapshot(IReadOnlyList<PendingImageChange> Changes, 
 
 public sealed record SaveImageResult(string Path, long Length, int FilesValidated, string ValidationSummary);
 
+/// <summary>Result of a Phase 3 safe direct commit. TransactionId can be used to locate
+/// any residual backup/journal artifacts if cleanup itself failed after a successful commit.</summary>
+public sealed record CommitResult(string Path, long Length, int FilesValidated, string ValidationSummary, string TransactionId);
+
 public interface IImageEditingService
 {
     Task<EditingSnapshot> GetEditingSnapshotAsync(Guid workspaceId, CancellationToken cancellationToken = default);

@@ -27,7 +27,9 @@ public sealed class EditingTests
         Assert.Equal(name, info.Volumes[0].FileSystem);
         Assert.True(info.Capabilities.Modify.Available, info.Capabilities.Modify.Reason);
         Assert.True(info.Volumes[0].Capabilities!.SaveAs.Available);
-        Assert.False(info.Capabilities.CommitInPlace.Available);
+        // Phase 3: direct commit reuses this same qualified Apply/ValidateOutput pipeline
+        // wrapped with locking/backup/journal, so it is qualified wherever Save As is.
+        Assert.True(info.Capabilities.CommitInPlace.Available, info.Capabilities.CommitInPlace.Reason);
         Assert.False(info.Capabilities.EditMetadata.Available);
         await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, volume, "/NEW"));
         string import = work.File("input.txt", "overlay original\n");
@@ -655,22 +657,24 @@ public sealed class EditingTests
     }
 
     [Fact]
-    public async Task QualifiedNtfsUsesThePortableWriterWithoutEnablingSourceCommit()
+    public async Task QualifiedNtfsUsesThePortableWriterAndCommitsDirectlyToTheSource()
     {
         using var work = new EditDirectory();
         string source = work.Golden("ntfs.img");
-        string baseline = Hash(source);
         using var service = new ExplorerService(stagingDirectory: work.Path);
         WorkspaceInfo info = await service.OpenAsync(source);
         Assert.True(info.Capabilities.Modify.Available, info.Capabilities.Modify.Reason);
         Assert.True(info.Capabilities.SaveAs.Available);
-        Assert.False(info.Capabilities.CommitInPlace.Available);
+        // Phase 3: direct commit reuses the same qualified Apply/ValidateOutput pipeline
+        // wrapped with locking/backup/journal, so it is qualified wherever Save As is.
+        Assert.True(info.Capabilities.CommitInPlace.Available, info.Capabilities.CommitInPlace.Reason);
         await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/QUALIFIED"));
-        string output = Path.Combine(work.Path, "saved.img");
-        await service.SaveAsAsync(info.Id, output);
-        using IImageSession reopened = new ImageOpener().OpenReadOnly(output);
+        CommitResult committed = await service.CommitAsync(info.Id);
+        Assert.True(committed.FilesValidated >= 0);
+        Assert.Empty(Directory.GetFiles(work.Path, "*.sectorworks-journal-*"));
+        Assert.Empty(Directory.GetFiles(work.Path, "*.sectorworks-backup-*"));
+        using IImageSession reopened = new ImageOpener().OpenReadOnly(source);
         Assert.Contains(reopened.Volumes[0].FileSystem.ReadDirectory("/"), entry => entry.Name == "QUALIFIED");
-        Assert.Equal(baseline, Hash(source));
     }
 
     [Fact]

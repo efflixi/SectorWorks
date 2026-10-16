@@ -2,7 +2,11 @@
 
 This matrix describes the implemented reader subset, not blanket support for
 every variant, feature or corrupt image. Partial Phase 2B staged editing/Save As is
-qualified separately below; direct commit and rebuild remain disabled.
+qualified separately below. Phase 3 direct commit is now implemented and
+verified for every row that was already Phase 2B Save-As-qualified (see the
+ledger below); newly readable Phase 2C NTFS legacy/attribute-list rows remain
+non-editable (direct commit disabled) pending separate 3.0.1-3.0.5 writer
+qualification. Rebuild (Phase 4/6/7) remains disabled.
 Phase 2C implements a separately bounded NTFS reader subset with targeted
 evidence below; authentic historical-media qualification is deferred to post-1.0
 **P1.NTFS.1-P1.NTFS.6** in the [checklist](../checklist.txt), while remaining
@@ -266,7 +270,8 @@ Sparse/compressed/encrypted/reparse/ADS/attribute-list
 NTFS features, differencing parents, active-log replay and repair stay gated.
 Every newly enabled cell requires all five operations, history/discard,
 multi-volume isolation, metadata/allocation and unchanged-region checks, failure
-injection, and source hash evidence. Direct commit remains disabled throughout.
+injection, and source hash evidence. Direct commit is now implemented for every
+qualified row below (Phase 3, 2026-10-16); see the Phase 3 ledger further down.
 
 The owner approved this documentation correction on 2026-10-15, including a
 separate **Phase 2B before Phase 3**, then authorized its implementation.
@@ -280,13 +285,13 @@ section 6.6 records the same delivery policy.
 
 | Required stack/subset | Staged editing and validated new output | Source commit | Reconstruction |
 | --- | --- | --- | --- |
-| Qualified unpartitioned raw FAT12/16/32 | Phase 2 verified; Phase 2B broadens naming | Phase 3 item 3.7 | Normally not needed; copy-and-apply Save As |
-| Conventional FAT12/16/32 with qualified LFN/mixed-case/Unicode | Phase 2B FAT delivered, bounded subset | Phase 3 item 3.7 on qualified disk stacks | Normally not needed |
-| Raw primary MBR/GPT with qualified FAT or ordinary NTFS | FAT and managed NTFS subsets delivered; Windows-media gaps, items 2B.3/2B.6 | Phase 3 item 3.7 | Normally not needed; preserve partition layout |
-| Fixed VHD and dynamic VHD, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS subsets per variant; Windows-media gaps, items 2B.4/2B.6 | Phase 3 item 3.7 | Normally not needed; retain variant/virtual size |
-| Fixed VHDX and dynamic VHDX, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS per variant/sector subset; Windows-media gaps, items 2B.5/2B.6 | Phase 3 item 3.7 | Normally not needed; validate container metadata/log state |
-| Ordinary NTFS in filesystem-only raw | Managed subset delivered; Windows reference/LFS 2.0 gaps, item 2B.6 | Phase 3 item 3.7 | Normally not needed; formatting is separate |
-| Newly readable NTFS 1.2/3.0/3.1 legacy/attribute-list subsets across required disk stacks | Phase 2C bounded reads implemented; authentic historical-media qualification deferred to post-1.0 P1.NTFS; Phase 3 3.0.1-3.0.5 must still qualify staged editing/validated Save As/new-output NTFS writes before commit | Phase 3 item 3.7 only after 3.0 writer gates | Normally not needed for qualified disk edits; preservation must be proved |
+| Qualified unpartitioned raw FAT12/16/32 | Phase 2 verified; Phase 2B broadens naming | **Qualified (Phase 3, 2026-10-16)** | Normally not needed; copy-and-apply Save As |
+| Conventional FAT12/16/32 with qualified LFN/mixed-case/Unicode | Phase 2B FAT delivered, bounded subset | **Qualified (Phase 3)** on qualified disk stacks | Normally not needed |
+| Raw primary MBR/GPT with qualified FAT or ordinary NTFS | FAT and managed NTFS subsets delivered; Windows-media gaps, items 2B.3/2B.6 | **Qualified (Phase 3)** | Normally not needed; preserve partition layout |
+| Fixed VHD and dynamic VHD, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS subsets per variant; Windows-media gaps, items 2B.4/2B.6 | **Qualified (Phase 3)** | Normally not needed; retain variant/virtual size |
+| Fixed VHDX and dynamic VHDX, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS per variant/sector subset; Windows-media gaps, items 2B.5/2B.6 | **Qualified (Phase 3)** | Normally not needed; validate container metadata/log state |
+| Ordinary NTFS in filesystem-only raw | Managed subset delivered; Windows reference/LFS 2.0 gaps, item 2B.6 | **Qualified (Phase 3)** | Normally not needed; formatting is separate |
+| Newly readable NTFS 1.2/3.0/3.1 legacy/attribute-list subsets across required disk stacks | Phase 2C bounded reads implemented; authentic historical-media qualification deferred to post-1.0 P1.NTFS; Phase 3 3.0.1-3.0.5 must still qualify staged editing/validated Save As/new-output NTFS writes before commit | **Blocked** -- 3.0.1-3.0.5 not started this session; direct commit stays unavailable | Normally not needed for qualified disk edits; preservation must be proved |
 | ISO 9660/Joliet/supported Rock Ridge | Phase 4 items 4.2/4.5 | Not an in-place filesystem-write target | Phase 4 validated rebuild; source replacement requires Phase 3 safeguards |
 | Declared UDF and ISO/UDF bridge subsets | Phase 4 item 4.6, including UDF reads beyond detection | Not an in-place filesystem-write target | Phase 4; preserve consistent bridge namespaces |
 | Qualified BIN/CUE data and mixed-mode layouts | Phase 6 items 6.8-6.9 | Not an in-place track-write target | Phase 6 validated new output sets; source-set replacement requires recovery safeguards |
@@ -294,6 +299,46 @@ section 6.6 records the same delivery policy.
 
 Disk coverage applies to structurally valid combinations with declared resource,
 sector-size and feature bounds, not every variation an upstream library recognizes.
+
+### Phase 3 direct-commit qualification (implemented 2026-10-16)
+
+Owner authorized Phase 3 on 2026-10-16 as a scoped child-chat session. The
+delivered increment is a container/filesystem-agnostic direct-commit pipeline
+(source identity recheck, cross-platform advisory locking, durable backup,
+transaction journal, atomic finalize, startup-style crash recovery) that wraps
+the already-qualified Phase 2B `Apply`/`ValidateOutput` writer pipeline rather
+than reimplementing per-stack writers. `CommitInPlace` is gated on the exact
+same qualification as `Modify`/`SaveAs`, so every row above that was already
+Save-As-qualified is now also direct-commit-qualified, and the still-blocked
+Phase 2C legacy/attribute-list NTFS rows correctly remain non-editable.
+
+Verified via full-matrix tests (not a single combination): 5 containers
+(raw, fixed/dynamic VHD, fixed/dynamic VHDX) x 3 layouts (filesystem-only,
+primary MBR, GPT) x FAT12/16/32 with qualified LFN, at both 512 and 4096
+physical sector sizes for VHDX, plus ordinary NTFS across all 3 layouts and
+containers. Each commit is independently re-verified after finalize with
+`fsck.fat -n`/mtools (FAT) or `ntfsfix -n`/`ntfscat` (NTFS) against the
+now-mutated source, not just the staged temp copy. Failure-injection tests
+prove a commit interrupted before finalize leaves the source byte-identical
+and recoverable via backup restore, and that recovery never restores a backup
+over an already-finalized (successfully committed) source. Locking is verified
+cross-process with an independent Python writer holding a real fcntl
+byte-range lock.
+
+Known gaps, flagged for owner follow-up rather than silently resolved:
+- 3.0.1-3.0.5 (Phase 2C new-target NTFS legacy/attribute-list writer
+  qualification) were not attempted this session; those rows stay blocked.
+- `CommitRecovery.Discover` (startup crash-recovery detection) is implemented
+  and tested as a library primitive but is not yet invoked automatically by
+  the UI application host at launch.
+- No UI command/button is wired to `CommitAsync` yet; this is a backend-only
+  delivery for now.
+- macOS locking uses an exclusive sidecar marker file (not `FileStream.Lock`,
+  which .NET does not support on macOS); this only prevents concurrent
+  SectorWorks writers, not arbitrary external writers, and is untested on
+  physical macOS hardware, consistent with the existing macOS physical-runtime
+  deferral. Both Mac cross-publishes continue to build; no physical-compatibility
+  claim is made.
 Each container/layout/filesystem row needs separate operation, allocation,
 metadata, source-integrity and failure evidence. FAT LFN support must preserve
 short aliases and display spelling; NTFS modification does not require or imply

@@ -64,8 +64,9 @@ internal static class Phase2DesktopSmoke
                 Check(main.Error.Length == 0, main.Error);
                 WorkspaceViewModel workspace = main.ActiveWorkspace ?? throw new InvalidOperationException("No source workspace.");
                 Check(workspace.CanAdd && workspace.CanCreateDirectory, workspace.AddReason);
-                Check(!workspace.Info.Capabilities.CommitInPlace.Available && !workspace.Info.Capabilities.Rebuild.Available,
-                    "Phase 3/4 operations must remain unavailable.");
+                Check(workspace.Info.Capabilities.CommitInPlace.Available == variant.StartsWith("raw", StringComparison.Ordinal)
+                    && !workspace.Info.Capabilities.Rebuild.Available,
+                    "Phase 3 direct commit is qualified for this row; Phase 4 rebuild must remain unavailable.");
                 await Task.Delay(300);
                 window.UpdateLayout();
 

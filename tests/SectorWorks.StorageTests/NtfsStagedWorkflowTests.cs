@@ -33,7 +33,9 @@ public sealed class NtfsStagedWorkflowTests(ITestOutputHelper outputLog)
         WorkspaceInfo workspace = await service.OpenAsync(source);
         VolumeInfo volume = Assert.Single(workspace.Volumes);
         Assert.True(volume.Capabilities!.Modify.Available, volume.Capabilities.Modify.Reason);
-        Assert.False(volume.Capabilities.CommitInPlace.Available);
+        // Phase 3: direct commit reuses this same qualified Apply/ValidateOutput pipeline
+        // wrapped with locking/backup/journal, so it is qualified wherever Save As is.
+        Assert.True(volume.Capabilities.CommitInPlace.Available, volume.Capabilities.CommitInPlace.Reason);
         string small = work.PathFor("small.txt");
         File.WriteAllText(small, "managed NTFS overlay\n");
         string large = work.PathFor("large.bin");
@@ -95,6 +97,60 @@ public sealed class NtfsStagedWorkflowTests(ITestOutputHelper outputLog)
         Assert.Equal(sourceHash, Hash(source));
         Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(source)!, ".sectorworks-save-*"));
         Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(source)!, ".sectorworks-volume-*"));
+    }
+
+    [Theory]
+    [MemberData(nameof(Rows))]
+    public async Task EveryQualifiedNtfsDiskDirectlyCommitsInPlaceAndLeavesNoResidue(string container, string layout, int physical)
+    {
+        using var work = new WorkDirectory();
+        string source = DiskWriterFixtures.Create(work, container, layout, "ntfs", physical: physical);
+        string directory = Path.GetDirectoryName(source)!;
+        using var service = new ExplorerService(stagingDirectory: directory);
+        WorkspaceInfo workspace = await service.OpenAsync(source);
+        VolumeInfo volume = Assert.Single(workspace.Volumes);
+        Assert.True(volume.Capabilities!.CommitInPlace.Available, volume.Capabilities.CommitInPlace.Reason);
+        string payload = work.PathFor("payload.txt");
+        File.WriteAllText(payload, "committed NTFS overlay\n");
+        await service.StageAsync(workspace.Id, new(ImageChangeKind.ReplaceFile, volume.Id, "/SENTINEL.TXT", payload));
+
+        CommitResult result = await service.CommitAsync(workspace.Id);
+        Assert.True(result.FilesValidated > 0);
+
+        Assert.Empty(Directory.GetFiles(directory, "*.sectorworks-journal-*"));
+        Assert.Empty(Directory.GetFiles(directory, "*.sectorworks-backup-*"));
+        Assert.Empty(Directory.GetFiles(directory, ".sectorworks-commit-*"));
+        Assert.Empty(CommitRecovery.Discover(directory));
+
+        string raw = work.PathFor("commit-independent.raw");
+        if (container == "raw") { File.Copy(source, raw); }
+        else
+        {
+            DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
+                container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", source, raw);
+        }
+        string volumePath = work.PathFor("native-check.img");
+        using (IImageSession image = new ImageOpener().OpenReadOnly(raw))
+        using (var file = File.Create(volumePath))
+        {
+            ImageVolume vol = Assert.Single(image.Volumes);
+            long start = vol.Partition?.Offset ?? 0;
+            long length = vol.Partition?.Length ?? image.Device.Length;
+            byte[] buffer = new byte[65536];
+            for (long offset = 0; offset < length;)
+            {
+                int count = image.Device.Read(start + offset, buffer.AsSpan(0, (int)Math.Min(buffer.Length, length - offset)));
+                Assert.True(count > 0);
+                file.Write(buffer, 0, count);
+                offset += count;
+            }
+        }
+        outputLog.WriteLine(System.Text.Encoding.UTF8.GetString(RunNative("ntfsfix", "-n", volumePath)));
+        Assert.Equal("committed NTFS overlay\n"u8.ToArray(), RunNative("ntfscat", volumePath, "/SENTINEL.TXT"));
+
+        using IImageSession reopened = new ImageOpener().OpenReadOnly(source);
+        using var text = new StreamReader(reopened.Volumes[0].FileSystem.OpenRead("/SENTINEL.TXT"));
+        Assert.Equal("committed NTFS overlay\n", text.ReadToEnd());
     }
 
     [Fact]

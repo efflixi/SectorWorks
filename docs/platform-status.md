@@ -1,5 +1,69 @@
 # Build and physical-platform status
 
+## Phase 3 direct-commit implementation and verification, 2026-10-16
+
+Owner explicitly authorized Phase 3 on 2026-10-16 as a scoped child chat
+sharing this session's workspace: "Start a child chat under this one and
+start Phase 3." Not Phase 4/publication authority; no commit/push/tag/release
+authorized or performed.
+
+Delivered: a container/filesystem-agnostic direct-commit pipeline
+(`ExplorerService.CommitAsync`, `SectorWorks.Storage/DirectCommitTransaction.cs`)
+wrapping the already Phase 2B-qualified `Apply`/`ValidateOutput` writer
+pipeline with source-identity rechecking, cross-platform advisory locking,
+durable backup, a flushed transaction journal, atomic finalize (`File.Move`),
+and startup-style crash recovery. `CommitInPlace` is gated on the same
+qualification as `Modify`/`SaveAs`, so the Phase 2C legacy/attribute-list NTFS
+rows correctly remain non-editable (3.0.1-3.0.5 were not attempted this
+session).
+
+Test evidence (local Linux Mint 22 x64/X11, `~/.local/share/SectorWorks/dotnet`
+.NET 10 SDK, `./scripts/build.sh`/`./scripts/test.sh`):
+
+- Build: `./scripts/build.sh` succeeds, 0 warnings/0 errors, after fixing one
+  macOS-only CA1416 analyzer error (`FileStream.Lock`/`Unlock` are not
+  supported by .NET on macOS; fixed with an early-return platform guard using
+  a sidecar marker-file lock instead).
+- Full suite (`./scripts/test.sh`, run completed 2026-10-16): SectorWorks.Tests
+  14/14, SectorWorks.DependencyTests 27/27, SectorWorks.UITests 68/68,
+  SectorWorks.ServicesTests 156/156, SectorWorks.StorageTests 846 passed/1
+  Windows-only skip/847 total -- all green. A follow-up targeted
+  SectorWorks.StorageTests run then added two new cross-process
+  `SourceWriteLockTests` (concurrent-writer rejection verified against an
+  independent Python process holding a real fcntl byte-range lock, and
+  reliable release/reacquire), both passing.
+- New/extended direct-commit test coverage: `DiskStagedWorkflowTests` gained
+  `EveryQualifiedRowDirectlyCommitsInPlaceAndLeavesNoResidue` (full FAT matrix:
+  5 containers x 3 layouts x 3 FAT variants x sector sizes, independently
+  re-checked post-commit with `fsck.fat -n`/mtools),
+  `InterruptedCommitBeforeFinalizePreservesSourceAndIsRecoverable`
+  (failure-injection: source stays byte-identical and recoverable after a
+  simulated post-Apply failure), and
+  `RecoveryNeverRestoresBackupOverAnAlreadyFinalizedCommit` (safety property:
+  recovery never undoes an already-successful commit).
+  `NtfsStagedWorkflowTests` gained the equivalent full-matrix ordinary-NTFS
+  commit test, independently re-checked with `ntfsfix -n`/`ntfscat`.
+  `NtfsCompatibilityVersionTests` was corrected to expect `CommitInPlace =
+  true` for NTFS 3.1 (already Phase 2B-qualified) while keeping it `false`
+  for legacy 1.2/3.0 (Phase 2C read-only) rows.
+- Known gaps flagged for owner follow-up, not silently resolved: (1)
+  `CommitRecovery.Discover` (startup crash-recovery detection) is a tested
+  library primitive with no call site yet in the UI application host's
+  startup sequence; (2) no UI command/button is wired to `CommitAsync` yet --
+  this is a backend-only delivery; (3) macOS locking uses a narrower sidecar
+  marker file (not `FileStream.Lock`), untested on physical macOS hardware,
+  consistent with the existing macOS physical-runtime deferral; both Mac
+  cross-publishes continue to build, no physical-compatibility claim is made.
+- 3.0.1-3.0.5 (Phase 2C new-target NTFS legacy/attribute-list staged
+  editing/Save As/new-output writer qualification) were not attempted this
+  session. Those rows stay blocked/non-editable; no owner scope decision was
+  requested or made to waive them.
+
+No versioned release, commit, push or tag was made. See the
+[checklist](../checklist.txt) Phase 3 section and
+[support matrix](support-matrix.md#phase-3-direct-commit-qualification-implemented-2026-10-16)
+for the full per-row ledger.
+
 ## ISO reader compatibility refinement, 2026-10-15
 
 The owner separately authorized both bounded read-only fixes found while

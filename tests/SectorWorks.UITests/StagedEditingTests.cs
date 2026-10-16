@@ -142,7 +142,9 @@ public sealed class StagedEditingTests
                 Assert.True(workspace.Info.Capabilities.Modify.Available, workspace.Info.Capabilities.Modify.Reason);
                 Assert.True(workspace.CanAdd, workspace.AddReason);
                 Assert.False(workspace.CanSaveAs);
-                Assert.False(workspace.Info.Capabilities.CommitInPlace.Available);
+                // Phase 3: direct commit reuses this same qualified Apply/ValidateOutput pipeline
+                // wrapped with locking/backup/journal, so it is qualified wherever Save As is.
+                Assert.True(workspace.Info.Capabilities.CommitInPlace.Available, workspace.Info.Capabilities.CommitInPlace.Reason);
                 Button newFolder = Toolbar(window, "New Folder");
                 Click(newFolder);
                 await workspace.NewDirectoryCommand.ExecutionTask!;

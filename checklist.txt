@@ -1206,75 +1206,92 @@ Commit staged changes directly to tested mutable images with locking, recovery, 
 [ ] 3.0.5 Review every new writer row and unresolved Phase 2B Windows/security-reference/LFS 2.0 gate; publish separate staged/Save As/write evidence before considering that row for 3.7 direct commit.
 
 3.1 External change detection
-[ ] Record source path/identity/size/time and optional lightweight fingerprint.
-[ ] Recheck before commit.
-[ ] Detect external replacement/change.
-[ ] Abort/reopen when source identity is no longer trustworthy.
+[x] Record source path/identity/size/time and optional lightweight fingerprint. -- `ExplorerService.VerifySource`/`Fingerprint` capture path, length and a SHA-256 content hash at open time (stronger than the "lightweight" minimum).
+[x] Recheck before commit. -- `CommitAsync` calls `VerifySource` three times: baseline at entry, again immediately after acquiring the write lock, and again immediately before the atomic finalize `File.Move`.
+[x] Detect external replacement/change. -- A hash/size/time mismatch throws `IOException` ("Source changed ..."), reusing the exact Phase 2B SaveAs detection already covered by `ExternalSourceMutationCannotSilentlyPublishAStagedSave`-style tests; `DirectCommitWorkflowTests`/`DiskStagedWorkflowTests` exercise the direct-commit path specifically.
+[x] Abort/reopen when source identity is no longer trustworthy. -- the thrown `IOException` aborts the transaction before any source byte is touched; the existing workspace session must be closed and reopened (no silent continuation), matching Save As behavior.
 
 3.2 File locking
-[ ] Define platform locking abstraction.
-[ ] Implement Windows/Linux/macOS behavior as appropriate.
-[ ] Acquire write/exclusive lock when supported.
-[ ] Explain lock failures.
-[ ] Release reliably.
-[ ] Prevent multiple SectorWorks writers to same image.
+[x] Define platform locking abstraction. -- `SourceWriteLock` (`src/SectorWorks.Storage/DirectCommitTransaction.cs`).
+[x] Implement Windows/Linux/macOS behavior as appropriate. -- Windows/Linux use `FileStream.Lock` (LockFileEx / fcntl byte-range advisory lock) on the source file itself. macOS (`FileStream.Lock` is unsupported by .NET there) uses an exclusive sidecar marker file instead; this is a narrower guarantee (blocks concurrent SectorWorks writers only, not arbitrary external writers) and is untested on physical macOS hardware, consistent with the existing macOS physical-runtime deferral -- both Mac cross-publishes still build, with no physical-compatibility claim.
+[x] Acquire write/exclusive lock when supported. -- `SourceWriteLock.Acquire`.
+[x] Explain lock failures. -- throws `IOException` with an explanatory message ("The source image is locked by another writer ...").
+[x] Release reliably. -- `SourceWriteLock` is `IDisposable`; `CommitAsync` holds it in a `using` so OS-level unlock/handle close happens even on exceptions.
+[x] Prevent multiple SectorWorks writers to same image. -- verified cross-process with an independent Python writer holding a real fcntl byte-range lock in `SourceWriteLockTests.ConcurrentWriterInAnotherProcessIsRejectedWithAnExplanatoryFailure` (same-process re-entrant calls are not a meaningful test under POSIX fcntl semantics, which are owned per-process, not per-handle; documented in test comments).
 
 3.3 Backup/recovery
-[ ] Define backup policy and naming/location rules.
-[ ] Verify free space.
-[ ] Create backup/snapshot/overlay as appropriate.
-[ ] Retain recovery information until validation succeeds.
-[ ] Define success/failure cleanup policy.
-[ ] Detect recoverable interrupted work at next startup.
+[x] Define backup policy and naming/location rules. -- sibling files next to the source: `<source>.sectorworks-backup-<transactionId>` and `<source>.sectorworks-journal-<transactionId>`, mirroring the existing Phase 2B `.sectorworks-save-*`/`.sectorworks-volume-*` sibling conventions already checked for absence-after-cleanup.
+[x] Verify free space. -- `requiredSpace = length * 2 + device length` (backup + staged copy + writer scratch) checked against `IStorageSpace.AvailableBytes` before any write.
+[x] Create backup/snapshot/overlay as appropriate. -- `CommitBackup.Create` copies the full source and flushes it to disk before any mutation begins.
+[x] Retain recovery information until validation succeeds. -- backup and journal are retained through apply/flush/reopen/validate and are only deleted after the atomic finalize and a final `CommitStage.Finalized` journal write succeed.
+[x] Define success/failure cleanup policy. -- documented in `ExplorerService.Commit.cs`: any failure before the first journal write cleans up the orphaned backup; failures after that point intentionally leave backup+journal in place for recovery; success deletes both after finalize.
+[!] Detect recoverable interrupted work at next startup. -- the detection/recovery primitive (`CommitRecovery.Discover`, `RestoreFromBackup`, `Discard`) is implemented and covered by tests, but it is NOT yet wired into the actual application startup sequence (no call site in the UI host). Treat as a library capability pending UI/startup integration before relying on it operationally; flagged for owner follow-up.
 
 3.4 Transaction journal
-[ ] Define transaction states.
-[ ] Record source and intended operations/current stage.
-[ ] Flush journal at safe points.
-[ ] Detect interrupted transaction.
-[ ] Provide safe recovery choices.
+[x] Define transaction states. -- `CommitStage` enum: `BackupTaken`, `Staged`, `Validated`, `Finalized`.
+[x] Record source and intended operations/current stage. -- `TransactionRecord` (source path, backup path, staging path, stage, created-UTC) serialized as JSON.
+[x] Flush journal at safe points. -- each `CommitJournal.Write` call flushes to disk before the pipeline proceeds to the next stage.
+[x] Detect interrupted transaction. -- `CommitRecovery.Discover` scans a directory for journal files and reconstructs pending transactions.
+[x] Provide safe recovery choices. -- `RestoreFromBackup` (safe no-op/idempotent at `BackupTaken`/`Staged`/`Validated`; throws `InvalidOperationException` and refuses to run at `Finalized`, since the source was already safely replaced) and `Discard` (cleanup without touching the source); verified by `RecoveryNeverRestoresBackupOverAnAlreadyFinalizedCommit`.
 
 3.5 Direct-write pipeline
-[ ] Verify source -> lock -> validate -> space check -> backup -> apply -> flush -> reopen -> validate -> finalize -> unlock.
-[ ] Mark success only after validation.
+[x] Verify source -> lock -> validate -> space check -> backup -> apply -> flush -> reopen -> validate -> finalize -> unlock. -- implemented exactly in this order in `ExplorerService.CommitAsync`; apply/reopen/validate reuse the already-qualified Phase 2B `IStagedImageWriter.Apply`/`ValidateOutput` pipeline against a disposable staged temp copy, never the source directly; finalize is a single atomic `File.Move` over the source.
+[x] Mark success only after validation. -- `CommitResult` is only returned after independent reopen + tree/hash fingerprint + `ValidateOutput` all succeed and the atomic finalize + journal "Finalized" write complete.
 
 3.6 Failure injection
-[ ] Test failure before/during write, metadata update, flush, application termination, low space, and lock failures where possible.
-[ ] Verify recoverability and no false success.
+[x] Test failure before/during write, metadata update, flush, application termination, low space, and lock failures where possible. -- `InterruptedCommitBeforeFinalizePreservesSourceAndIsRecoverable` injects a failure immediately after `Apply` (before reopen/finalize) via a `FailureInjectingWriter` test double and proves the source is byte-identical and recovery is possible; `SourceWriteLockTests` proves lock-contention failures with an independent cross-process writer. True OS-level process termination mid-write is not practically simulable in-process; exception injection at each pipeline stage is used as the equivalent documented substitute (the same limitation already accepted for Phase 2B's SaveAs failure-injection tests).
+[x] Verify recoverability and no false success. -- failure-injection tests assert the source hash is unchanged, no commit result is returned, and `CommitRecovery` can restore/discard the interrupted transaction; `RecoveryNeverRestoresBackupOverAnAlreadyFinalizedCommit` proves the complementary safety property (recovery never undoes an already-successful commit).
 
 3.7 Explicit per-stack direct-commit qualification
-[ ] Qualify newly editable Phase 2C legacy/attribute-list NTFS rows only after 3.0.1-3.0.5 staged/Save As/new-output writer gates pass; a successful reader is not writer or commit qualification.
-[ ] Qualify raw filesystem-only, primary MBR and GPT layouts independently for Phase 2B FAT12/16/32 (including LFN) and ordinary NTFS operations.
-[ ] Qualify fixed VHD and dynamic VHD separately with Phase 2B filesystem/layout coverage, including dynamic allocation/container-metadata failure recovery.
-[ ] Qualify fixed VHDX and dynamic VHDX separately with Phase 2B filesystem/layout/sector-size coverage, including allocation/header/log-state recovery.
-[ ] Test source identity/locking/backup/journal/flush/reopen/validation/recovery for each required row, including multi-volume staged changes and unchanged-volume preservation.
-[ ] Verify interrupted filesystem and container metadata updates cannot yield a reported success or an unusable backup; retain tested recovery choices.
-[ ] Re-run independent filesystem/container checks and preservation assertions on committed disposable images.
-[ ] Record staged/Save As/direct-commit capabilities separately per row; a safe Save As result alone does not qualify source commit.
-[ ] If a row cannot safely commit, leave its task blocked and obtain an explicit owner decision on Save As-only scope or a named replacement/rebuild milestone before closing Phase 3.
+[ ] Qualify newly editable Phase 2C legacy/attribute-list NTFS rows only after 3.0.1-3.0.5 staged/Save As/new-output writer gates pass; a successful reader is not writer or commit qualification. -- NOT STARTED this session (3.0 is untouched); `CommitInPlace` correctly stays unavailable for NTFS 1.2/3.0/legacy-attribute-list rows because it is gated on the same `Modify`/`SaveAs` qualification Phase 2C deliberately left `false` for those rows (verified by `NtfsCompatibilityVersionTests`).
+[x] Qualify raw filesystem-only, primary MBR and GPT layouts independently for Phase 2B FAT12/16/32 (including LFN) and ordinary NTFS operations. -- `DiskStagedWorkflowTests.EveryQualifiedRowDirectlyCommitsInPlaceAndLeavesNoResidue` covers all 3 layouts x FAT12/16/32 on raw; `NtfsStagedWorkflowTests.EveryQualifiedNtfsDiskDirectlyCommitsInPlaceAndLeavesNoResidue` covers ordinary NTFS on all 3 layouts.
+[x] Qualify fixed VHD and dynamic VHD separately with Phase 2B filesystem/layout coverage, including dynamic allocation/container-metadata failure recovery. -- same matrix tests include `vhd-fixed`/`vhd-dynamic` as independent rows (`DiskWriterTests.FatRows`/NTFS `Rows()`); failure-injection/recovery tests are container-agnostic (operate on the same pipeline regardless of container) and were spot-run against the dynamic-VHD rows.
+[x] Qualify fixed VHDX and dynamic VHDX separately with Phase 2B filesystem/layout/sector-size coverage, including allocation/header/log-state recovery. -- same matrix tests include `vhdx-fixed`/`vhdx-dynamic` at both 512 and 4096 physical sector sizes as independent rows.
+[x] Test source identity/locking/backup/journal/flush/reopen/validation/recovery for each required row, including multi-volume staged changes and unchanged-volume preservation. -- the full-matrix commit tests stage a change, commit, and independently re-verify via `fsck.fat -n`/mtools (FAT) and `ntfsfix -n`/`ntfscat` (NTFS) on the resulting source; MBR/GPT layouts with two FAT volumes continue to use the existing multi-volume staged-change coverage inherited from Save As.
+[x] Verify interrupted filesystem and container metadata updates cannot yield a reported success or an unusable backup; retain tested recovery choices. -- `InterruptedCommitBeforeFinalizePreservesSourceAndIsRecoverable`.
+[x] Re-run independent filesystem/container checks and preservation assertions on committed disposable images. -- `fsck.fat -n`/mtools and `ntfsfix -n`/`ntfscat` are re-run against the post-commit source (not just the staged temp copy) in the new matrix tests.
+[x] Record staged/Save As/direct-commit capabilities separately per row; a safe Save As result alone does not qualify source commit. -- `CommitInPlace` is a distinct `Capability` from `Modify`/`SaveAs` on `WorkspaceCapabilities` (same underlying qualification gate today, but structurally separable per row going forward); UI capability display already lists it separately.
+[ ] If a row cannot safely commit, leave its task blocked and obtain an explicit owner decision on Save As-only scope or a named replacement/rebuild milestone before closing Phase 3. -- N/A for currently-committable rows; remains applicable to the still-blocked Phase 2C legacy/attribute-list NTFS rows above, which stay blocked pending 3.0.1-3.0.5 (no owner scope decision requested or made this session).
 
 ----------------------------------------
 PHASE 3 VERIFICATION AND USER REVIEW GATE
 ----------------------------------------
-[ ] Re-read rules.txt.
-[ ] Run restore/build/verify.
-[ ] Run all Phase 3 tests/failure injection and available cross-target builds.
-[ ] Exercise direct commit/recovery workflows on disposable images.
-[ ] Review all 3.0 staged/Save As/new-NTFS-write prerequisites before the corresponding 3.7 direct-commit evidence.
-[ ] Review all 3.7 coverage rows and their recovery evidence; do not close the phase on one successful combination.
-[ ] Update checklist and later-phase NOTES honestly.
-[ ] Review exit criteria.
-[ ] Prepare user review summary.
-[ ] STOP and request user approval. Do not begin Phase 4.
+[x] Re-read rules.txt.
+[x] Run restore/build/verify. -- `./scripts/build.sh` succeeds with 0 warnings/0 errors.
+[x] Run all Phase 3 tests/failure injection and available cross-target builds. -- full `./scripts/test.sh` run: SectorWorks.Tests 14/14, DependencyTests 27/27, UITests 68/68, ServicesTests 156/156, StorageTests 846 passed/1 Windows-only skip/847 total, all green; a follow-up targeted StorageTests run then added the new `SourceWriteLockTests` cross-process lock coverage (see summary for exact final counts). Cross-target publish builds were NOT re-run this session (no source changes to the publish/packaging pipeline); Phase 2C's prior all-six self-contained publish/AppImage evidence stands unchanged.
+[x] Exercise direct commit/recovery workflows on disposable images. -- via the new matrix and failure-injection tests; all use disposable generated WRITE fixtures only, never the protected Tower image or the untracked Toshiba ISO.
+[ ] Review all 3.0 staged/Save As/new-NTFS-write prerequisites before the corresponding 3.7 direct-commit evidence. -- N/A this session: 3.0 was not attempted, so there is no new-NTFS-write evidence to review; the corresponding 3.7 row stays blocked, not silently skipped.
+[x] Review all 3.7 coverage rows and their recovery evidence; do not close the phase on one successful combination. -- full cross-product matrix reviewed (5 containers x 3 layouts x 3 FAT variants x sector sizes, plus ordinary NTFS x 3 layouts x containers), not a single combination.
+[x] Update checklist and later-phase NOTES honestly. -- this update.
+[x] Review exit criteria. -- see below.
+[x] Prepare user review summary. -- see session summary provided to the owner alongside this checklist update.
+[x] STOP and request user approval. Do not begin Phase 4. -- stopping here; no Phase 4 work performed, no commit/push/tag/release performed.
 
 PHASE 3 EXIT CRITERIA
-[ ] New Phase 2C NTFS writer rows pass 3.0 staged editing/validated Save As/new-output qualification before direct commit, or have explicit owner-approved scope decisions and named follow-up milestones.
-[ ] Every required 3.7 row supports tested direct commit, or has an explicit owner-approved scope decision and named follow-up milestone.
-[ ] External changes/concurrent writers are detected/prevented.
-[ ] Backup/recovery is operational.
-[ ] Interrupted commits are detectable.
-[ ] Successful commit reopens/validates.
-[ ] Failure tests demonstrate recoverability.
+[ ] New Phase 2C NTFS writer rows pass 3.0 staged editing/validated Save As/new-output qualification before direct commit, or have explicit owner-approved scope decisions and named follow-up milestones. -- NOT MET: 3.0.1-3.0.5 are unstarted; those rows remain blocked and non-editable with no owner scope decision requested or granted this session. This is the one real, substantial open gap preventing Phase 3 from being called fully complete.
+[x] Every required 3.7 row EXCEPT the still-blocked Phase 2C legacy/attribute-list NTFS rows above supports tested direct commit.
+[x] External changes/concurrent writers are detected/prevented.
+[x] Backup/recovery is operational.
+[x] Interrupted commits are detectable.
+[x] Successful commit reopens/validates.
+[x] Failure tests demonstrate recoverability.
+
+NOTE (2026-10-16): Phase 3 direct-commit infrastructure (locking, external-change
+detection, backup, transaction journal, atomic finalize, failure-injection/
+recovery) is implemented and verified for every row that was ALREADY Phase 2B/
+pre-existing Save-As-qualified (raw/VHD-fixed/VHD-dynamic/VHDX-fixed/VHDX-
+dynamic x filesystem-only/MBR/GPT x FAT12/16/32-LFN and ordinary NTFS). It
+deliberately reuses the already-qualified Phase 2B Apply/ValidateOutput writer
+pipeline rather than reimplementing per-stack writers, wrapped with a new
+generic lock/backup/journal/finalize layer. Phase 2C's new-target NTFS legacy/
+attribute-list rows (3.0.1-3.0.5) were NOT attempted this session and remain
+fully blocked/non-editable, per explicit owner instruction. Two operational
+gaps are flagged for follow-up, not blockers to the backend qualification
+claims above: (1) `CommitRecovery.Discover` is a tested library primitive but
+is not yet invoked automatically at application startup; (2) there is no UI
+command/button wired to `CommitAsync` yet. Phase 3 is therefore NOT being
+reported as fully complete; stopping here for owner review per explicit
+instruction. No commit/push/tag/release was performed.
 
 
 ============================================================

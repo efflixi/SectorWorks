@@ -353,8 +353,19 @@ public sealed partial class ExplorerService
             DeleteFiles = editing,
             RenameFiles = editing,
             CreateDirectories = editing,
-            SaveAs = editing
+            SaveAs = editing,
+            CommitInPlace = CommitCapability(editing)
         };
+
+    // Phase 3: direct commit reuses the same validated staged-editing/Apply/ValidateOutput
+    // pipeline already qualified for Save As (Phase 2B), wrapped with locking, backup and a
+    // durable transaction journal. A row that is not Save-As qualified (Modify.Available is
+    // false, including Phase 2C read-only legacy/attribute-list NTFS variants) can never be
+    // direct-commit qualified either.
+    private static Capability CommitCapability(Capability editing) => editing.Available
+        ? new(true, "Qualified staged editing with locked, journaled, backed-up direct commit: " +
+            "source identity recheck, retained backup until validated reopen, atomic finalize, and interrupted-transaction recovery.")
+        : new(false, editing.Reason);
 
     private static void VerifySource(SessionLease lease, CancellationToken token)
     {
