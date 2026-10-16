@@ -1,5 +1,28 @@
 # Build and physical-platform status
 
+## macOS support policy change: unsupported, build-only target, 2026-10-16
+
+Owner decision: the owner has no reliable way to test macOS and will not
+pursue macOS verification. macOS is reclassified from "intended supported
+target, runtime/signing deferred" to a **standing unsupported, build-only
+target**. This is a policy change, not a technical regression: macOS is not
+dropped. Cross-compiled `osx-x64` and `osx-arm64` builds/publishes continue to
+be produced for every release exactly as before. What changes is that no
+macOS physical runtime testing, workflow verification, or compatibility
+support is performed, claimed, or scheduled going forward, and documentation
+must stop describing macOS physical validation as "pending" or "deferred"
+(implying it will eventually happen) and instead state plainly that macOS
+builds are untested and unsupported.
+
+This supersedes all prior macOS-related entries below that describe macOS as
+an "intended supported target" with testing "deferred" pending owner access;
+those entries remain as accurate historical record of what was true on their
+dated session, not of the current policy. See the technical specification
+section 4.2 amendment and [checklist.txt](../checklist.txt) global rules for
+the full policy text. Users should be informed (README, release notes) that
+macOS builds are provided without testing or support guarantees and may not
+work.
+
 ## Phase 3 direct-commit implementation and verification, 2026-10-16
 
 Owner explicitly authorized Phase 3 on 2026-10-16 as a scoped child chat
@@ -52,7 +75,8 @@ Test evidence (local Linux Mint 22 x64/X11, `~/.local/share/SectorWorks/dotnet`
   startup sequence; (2) no UI command/button is wired to `CommitAsync` yet --
   this is a backend-only delivery; (3) macOS locking uses a narrower sidecar
   marker file (not `FileStream.Lock`), untested on physical macOS hardware,
-  consistent with the existing macOS physical-runtime deferral; both Mac
+  since macOS is a standing unsupported, build-only target (see the policy
+  change entry above); both Mac
   cross-publishes continue to build, no physical-compatibility claim is made.
 - 3.0.1-3.0.5 (Phase 2C new-target NTFS legacy/attribute-list staged
   editing/Save As/new-output writer qualification) were not attempted this
@@ -133,8 +157,9 @@ and dependent reader/writer interoperability checks to post-1.0
 This is a scope decision, not new testing or a passed authentic qualification.
 VM-authored fixtures suffice; vintage hardware is not required. Automated
 tests, resource bounds, Tower source-hash/extraction tasks, general platform
-verification and Phase 3 writer/commit safety remain required for 1.0, with the
-existing separate macOS runtime deferral unchanged. Required **2B.6** current
+verification and Phase 3 writer/commit safety remain required for 1.0; macOS
+is excluded from general platform verification as a standing unsupported,
+build-only target (see the 2026-10-16 policy change above). Required **2B.6** current
 Windows-media/security-reference/LFS 2.0 checks are not moved.
 Stop for owner review; no Phase 3 authorization follows.
 Separate targets are **NTFS 1.2 (NT4), 3.0 (Windows
@@ -255,8 +280,9 @@ Newly readable legacy/attribute-list variants remain noneditable until Phase 3
 direct commit. Existing qualified Phase 2B editing remains intact; actual
 Windows-authored-media/security-reference and LFS 2.0/cached-metadata write
 gates remain incomplete in **2B.6**, not moved or scope-demoted.
-SSH access below is infrastructure only. Windows/ARM64 runtime gaps and
-deferred macOS runtime/signing are unchanged. No Phase 3 or release is authorized.
+SSH access below is infrastructure only. Windows/ARM64 runtime gaps remain
+open; macOS is a standing unsupported, build-only target (2026-10-16 policy
+change, see top of this document). No Phase 3 or release is authorized.
 See [planned reader ledger](support-matrix.md#phase-2c-ntfs-reader-qualification-plan).
 
 ## Local artifact cleanup, 2026-10-15

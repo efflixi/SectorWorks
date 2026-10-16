@@ -117,9 +117,10 @@ single-page files. Binary/text encoding does not gate hex display. Regression
 tests cover empty/short/exact-page/multipage files and late text-preview results;
 the supplied LEVEL01.OPL also passed local physical testing. See
 [platform status](platform-status.md) for evidence and the earlier owner-reported
-Linux x64, Windows x64 and Raspberry Pi 500 Linux ARM64 results. macOS runtime
-testing is explicitly deferred per owner; macOS remains an intended target.
-The earlier launch report remains unresolved.
+Linux x64, Windows x64 and Raspberry Pi 500 Linux ARM64 results. macOS is a
+standing unsupported, build-only target (2026-10-16 policy change); no macOS
+runtime testing is performed or planned. The earlier launch report predates
+this decision and has not been investigated further.
 
 ## Evidence and future work
 
@@ -132,8 +133,9 @@ The owner subsequently moved authentic NT4/Windows 2000/XP-created-media
 qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6**.
 These are incomplete follow-ups, not passed tests or 1.0 blockers. VM-authored
 media suffices; vintage hardware is unnecessary. Automated tests, safety bounds,
-source integrity and general platform checks remain required, with the existing
-separate macOS runtime deferral unchanged. This ledger separates qualification from reader
+source integrity and general platform checks remain required; macOS is
+excluded from general platform checks as a standing unsupported, build-only
+target (2026-10-16). This ledger separates qualification from reader
 evidence below. Preserve the existing reader and qualified Phase 2B
 writer rows above.
 
@@ -336,9 +338,9 @@ Known gaps, flagged for owner follow-up rather than silently resolved:
 - macOS locking uses an exclusive sidecar marker file (not `FileStream.Lock`,
   which .NET does not support on macOS); this only prevents concurrent
   SectorWorks writers, not arbitrary external writers, and is untested on
-  physical macOS hardware, consistent with the existing macOS physical-runtime
-  deferral. Both Mac cross-publishes continue to build; no physical-compatibility
-  claim is made.
+  physical macOS hardware, since macOS is a standing unsupported, build-only
+  target (2026-10-16 policy change). Both Mac cross-publishes continue to build; no physical-compatibility
+  claim is made or planned.
 Each container/layout/filesystem row needs separate operation, allocation,
 metadata, source-integrity and failure evidence. FAT LFN support must preserve
 short aliases and display spelling; NTFS modification does not require or imply

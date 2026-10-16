@@ -20,8 +20,12 @@ Bootability and exact-layout preservation are not advertised. Do not use
 valuable bootable originals as write-test media. Tests use generated fixtures
 or disposable copies, never the owner's diagnostic image or binary sample.
 
-macOS remains an intended supported target. The owner explicitly deferred Mac
-runtime/signing validation while authorizing Phase 2 on 2026-10-14. Six-target
+macOS is an unsupported, build-only target (owner decision, 2026-10-16): the
+owner has no reliable macOS test environment and macOS verification is not
+pursued. Cross-compiled osx-x64/osx-arm64 builds continue to be produced and
+distributed, but no physical runtime testing, verification, or compatibility
+support is performed or claimed; macOS is not dropped as a build target. This
+supersedes the prior "intended supported target, deferred" framing. Six-target
 cross-publishing is build evidence only, not physical compatibility evidence.
 See [platform status](platform-status.md).
 
@@ -59,8 +63,9 @@ NT4/Windows 2000/XP-created-media qualification and dependent checks are
 owner-deferred to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
 [checklist](../checklist.txt), not passed or 1.0-blocking. VM-authored disks suffice,
 without vintage hardware. Automated tests, bounds, Tower source integrity and
-general platform checks remain required, with the existing separate macOS
-runtime deferral unchanged. Stop for owner review.
+general platform checks remain required; macOS is excluded from general
+platform checks as a standing unsupported, build-only target (2026-10-16).
+Stop for owner review.
 These selections are not additive. Signed reader packages and
 strict `NtfsValidation.Validate` writer defaults remain unchanged; the writer
 diagnostic now names the Phase 2B subset/Phase 3. MFT bootstrap lists are explicitly
@@ -420,8 +425,8 @@ journal/atomic-finalize layer, rather than reimplementing per-stack writers.
   advisory lock on the source file). macOS (where .NET does not support
   `FileStream.Lock`) uses an exclusive sidecar marker file instead -- a
   narrower guarantee limited to concurrent SectorWorks writers, untested on
-  physical macOS hardware, consistent with the existing macOS runtime
-  deferral. Verified cross-process on Linux with an independent Python writer
+  physical macOS hardware, since macOS is a standing unsupported, build-only
+  target (2026-10-16). Verified cross-process on Linux with an independent Python writer
   holding a genuine fcntl byte-range lock (same-process relocking is not a
   meaningful test under POSIX fcntl semantics, which are owned per-process).
 - Recovery safety: `CommitRecovery` distinguishes the `Finalized` stage (the
@@ -544,7 +549,8 @@ and supplies dialog paths; native-picker/manual accessibility review remains
 incomplete. For native checks, convert VHD with explicit qemu `-f vpc` or VHDX
 with `-f vhdx`, then extract the bounded partition before running FAT tools.
 No source mounting or owner sample is used. Windows/ARM64 Phase 2B runtime is
-unverified; macOS physical runtime/signing remains expressly deferred.
+unverified; macOS is a standing unsupported, build-only target and is not
+physically tested.
 
 ## Historical Phase 2 verification and reproduction
 
@@ -591,5 +597,5 @@ mdir -i artifacts/my-phase2-smoke/modified.img ::/STAGED
 The smoke requires a real graphical session and injects picker paths rather
 than automating native file dialogs. It generates synthetic, nonbootable data,
 never the ignored owner samples. Other-platform Phase 2 runtime and native
-desktop integration remain review work. macOS runtime/signing is expressly
-deferred, not silently treated as physically tested.
+desktop integration remain review work. macOS is a standing unsupported,
+build-only target (2026-10-16), not silently treated as physically tested.

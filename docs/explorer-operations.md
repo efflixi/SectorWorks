@@ -58,8 +58,9 @@ directory, not a later symlink substituted at its old name.
 Windows opens directories without following reparse points, checks their tags,
 and keeps ancestor handles without write/delete sharing for the operation.
 Creation uses `CREATE_NEW`; reparse targets and sharing conflicts fail explicitly.
-Runtime validation on real Windows/macOS machines is tracked separately from
-cross-compilation. Ordinary local directories are the intended destination;
+Runtime validation on real Windows machines is tracked separately from
+cross-compilation; macOS is a standing unsupported, build-only target
+(2026-10-16) and no macOS runtime validation is planned. Ordinary local directories are the intended destination;
 network/filesystem providers with different handle semantics require validation.
 
 ## Preview, hex and search

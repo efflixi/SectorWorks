@@ -37,6 +37,16 @@ Owner retained macOS as an intended supported target on 2026-10-14 and explicitl
 deferred physical runtime/signing validation while authorizing Phase 2.
 Keep both cross-publishes working without claiming physical compatibility.
 
+Owner changed macOS support policy on 2026-10-16: the owner has no reliable
+macOS test environment and macOS verification will not be pursued, superseding
+the 2026-10-14 "intended supported target" framing above. macOS is now a
+standing unsupported, build-only target, not dropped: keep producing and
+distributing osx-x64/osx-arm64 cross-publishes, but stop tracking macOS
+physical verification/checks as pending or deferred work anywhere in the
+documentation or checklist. Clearly inform users in README.md and release
+notes that macOS builds are untested and unsupported. See the technical
+specification section 4.2 amendment for the full policy text.
+
 Owner approved the editing-roadmap correction on 2026-10-15: Phase 2B is a
 separate staged-editing/Save As expansion milestone before Phase 3. It covers
 the required raw/VHD/VHDX, filesystem-only/MBR/GPT, FAT/ordinary-NTFS stacks and
@@ -61,8 +71,9 @@ qualification and dependent reader/writer interoperability checks on 2026-10-15
 to the checklist's post-1.0 P1.NTFS.1-P1.NTFS.6 milestone. These are not 1.0
 blockers or passed tests; VM-authored media suffices, without vintage hardware.
 Keep automated tests, safety bounds, Tower source-integrity tasks, general
-platform testing and Phase 3 writer/commit safety in 1.0, with the existing
-separate macOS runtime deferral unchanged. Do not waive 2B.6 current Windows-
+platform testing and Phase 3 writer/commit safety in 1.0; macOS is excluded
+from general platform testing as a standing unsupported, build-only target
+(2026-10-16 policy change above). Do not waive 2B.6 current Windows-
 authored-media/security-reference/LFS 2.0 gates or infer Phase 3 authorization.
 Stop for owner review. Checklist 2C.1-2C.7, 2C.V1-2C.V8 and 2C.E1-2C.E6 began
 pending. Implemented bounded attribute-list/version reading has 49/49 current

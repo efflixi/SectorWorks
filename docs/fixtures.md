@@ -40,7 +40,8 @@ dependent **2C.3/2C.5/2C.V2/2C.V3/2C.V6/2C.E1/2C.E5/2C.E6** checks to the
 These are incomplete follow-ups, not 1.0 blockers. A disposable disk formatted
 and populated by the historical OS in a VM is sufficient; vintage hardware is
 not required. Current automated/safety/source-integrity/general-platform and
-writer checks remain in 1.0, with the existing separate macOS deferral unchanged.
+writer checks remain in 1.0; macOS is excluded from general-platform checks
+as a standing unsupported, build-only target (2026-10-16).
 Completed structural version and attribute-list fixture work
 below qualifies the bounded synthetic subset, not authentic historical media.
 No authentic NT4-authored fixture exists yet. Synthetic version-field

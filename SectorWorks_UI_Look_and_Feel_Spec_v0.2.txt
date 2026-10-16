@@ -423,6 +423,8 @@ The following should remain conceptually consistent:
 
 The priority is consistent functionality and recognizable product identity, not forced platform uniformity.
 
+Owner-approved macOS support policy change, October 16, 2026: macOS is reclassified as an unsupported, build-only target per the technical specification section 4.2 amendment. The UI continues to build and run on macOS using the same shared Avalonia codebase, but no physical macOS rendering/workflow verification is performed or claimed. Documentation must not describe macOS UI behavior as tested or verified.
+
 
 17. INTERACTION PHILOSOPHY
 

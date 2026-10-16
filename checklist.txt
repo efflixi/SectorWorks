@@ -13,6 +13,7 @@ WORKFLOW AUTHORITY
 - At the end of every phase, the agent must perform verification, update this checklist truthfully, request user review, and STOP.
 - Phase 2B is a separate owner-approved roadmap milestone between Phase 2 and Phase 3. It requires explicit implementation authorization; documentation approval is not authorization to start it.
 - Phase 2C is the owner-authorized NTFS reader-compatibility milestone before Phase 3 (2026-10-15). Newly readable attribute-list/legacy variants remain noneditable until separate Phase 3 staged-editing, Save As and NTFS-write qualification precedes their direct-commit qualification.
+- macOS support policy (owner-approved, 2026-10-16): macOS has no reliable owner test environment and macOS verification will not be pursued. macOS is a standing unsupported, build-only target, not dropped: cross-compiled osx-x64/osx-arm64 builds and publishes continue, but no physical runtime testing, workflow verification, or compatibility support is performed or claimed anywhere in this checklist or related documentation. See the technical specification section 4.2 amendment. Release notes and README must inform users plainly that macOS builds are unsupported and untested.
 
 STATUS KEY
 [ ] Not started / incomplete
@@ -559,6 +560,14 @@ Establish the permanent UI foundation and a safe read-only storage pipeline capa
     NOTE: Owner explicitly deferred Mac runtime/signing follow-up on 2026-10-14
     while authorizing Phase 2. macOS remains an intended supported target;
     successful cross-publishes do not establish physical compatibility.
+    NOTE: Owner-approved macOS support policy change, 2026-10-16: the owner has
+    no reliable macOS test environment and will not pursue macOS verification.
+    macOS is reclassified from a temporarily deferred target to a standing
+    unsupported, build-only target (see technical specification section 4.2
+    amendment). This item is closed as intentionally not pursued, not merely
+    deferred; do not reopen it pending future testing unless the owner reverses
+    this decision. Cross-compiled osx-x64/osx-arm64 builds continue to be
+    produced and are not dropped.
 [x] Isolate platform file-dialog/path differences behind platform services.
 [x] Document physical platforms not yet tested.
 
@@ -1155,7 +1164,7 @@ PHASE 2C VERIFICATION AND USER REVIEW GATE
 [x] 2C.V5 Investigate Tower's native index warning independently; report remaining warnings and local-only results without copying/distributing its image.
     NOTE: 65536-byte native readall limit explains the 344064-byte index
     warning; this is a tool limitation, not whole-volume health certification.
-[ ] 2C.V6 Run available cross-target builds and representative physical read workflows; keep Windows/ARM64/macOS gaps explicit, including the existing owner-approved macOS runtime deferral.
+[ ] 2C.V6 Run available cross-target builds and representative physical read workflows; keep Windows/ARM64/macOS gaps explicit, noting macOS's standing unsupported, build-only classification (2026-10-16).
 [x] 2C.V6a Available cross-build subwork: verify all six self-contained RID publishes and new local Linux AppImage on final code; retain licenses/notices.
     NOTE: Final all-six/AppImage rerun passes on latest source, recorded in
     artifacts/phase2c-publish.log.
@@ -1213,7 +1222,7 @@ Commit staged changes directly to tested mutable images with locking, recovery, 
 
 3.2 File locking
 [x] Define platform locking abstraction. -- `SourceWriteLock` (`src/SectorWorks.Storage/DirectCommitTransaction.cs`).
-[x] Implement Windows/Linux/macOS behavior as appropriate. -- Windows/Linux use `FileStream.Lock` (LockFileEx / fcntl byte-range advisory lock) on the source file itself. macOS (`FileStream.Lock` is unsupported by .NET there) uses an exclusive sidecar marker file instead; this is a narrower guarantee (blocks concurrent SectorWorks writers only, not arbitrary external writers) and is untested on physical macOS hardware, consistent with the existing macOS physical-runtime deferral -- both Mac cross-publishes still build, with no physical-compatibility claim.
+[x] Implement Windows/Linux/macOS behavior as appropriate. -- Windows/Linux use `FileStream.Lock` (LockFileEx / fcntl byte-range advisory lock) on the source file itself. macOS (`FileStream.Lock` is unsupported by .NET there) uses an exclusive sidecar marker file instead; this is a narrower guarantee (blocks concurrent SectorWorks writers only, not arbitrary external writers) and is untested on physical macOS hardware. macOS is a standing unsupported, build-only target as of 2026-10-16 (technical specification section 4.2 amendment) -- both Mac cross-publishes still build, with no physical-compatibility claim and no planned verification.
 [x] Acquire write/exclusive lock when supported. -- `SourceWriteLock.Acquire`.
 [x] Explain lock failures. -- throws `IOException` with an explanatory message ("The source image is locked by another writer ...").
 [x] Release reliably. -- `SourceWriteLock` is `IDisposable`; `CommitAsync` holds it in a `using` so OS-level unlock/handle close happens even on exceptions.
@@ -1507,7 +1516,7 @@ PHASE 6 VERIFICATION AND USER REVIEW GATE
 [ ] Run restore/build/verify.
 [ ] Run parser/data/audio/rebuild tests and available cross-target checks.
 [ ] Physically test playback on available Linux/Windows/ARM64 environments as applicable.
-[ ] Keep untested macOS playback marked physically unverified until tested.
+[ ] Keep macOS playback documented as unverified; macOS is a standing unsupported, build-only target (2026-10-16) and is not expected to be physically tested.
 [ ] Update checklist/dependency NOTES honestly.
 [ ] Review exit criteria.
 [ ] Prepare user review summary.
@@ -1669,7 +1678,12 @@ CROSS-PHASE FEASIBILITY MILESTONES
 [x] Same codebase physically runs on Windows x64.
     NOTE: Owner-reported Phase 1 testing, 2026-10-14.
 [x] Same codebase cross-builds/publishes for macOS x64/ARM64.
-[ ] Same codebase has been physically run on macOS when access becomes available.
+[-] Same codebase has been physically run on macOS when access becomes available.
+    NOTE: Owner-approved macOS support policy change, 2026-10-16: no reliable
+    macOS test environment exists and the owner will not pursue macOS
+    verification. macOS is a standing unsupported, build-only target (see
+    technical specification section 4.2 amendment); cross-publishes continue
+    but this item is closed as intentionally not pursued, not pending access.
 [x] linux-arm64 builds/publishes.
 [x] Representative Linux ARM64 build physically runs on ARM64 hardware.
     NOTE: Owner-reported Raspberry Pi 500 testing, 2026-10-14.
@@ -1764,6 +1778,11 @@ Distribution / later release preparation
     NOTE: Owner's 2026-10-14 macOS launch attempt blocked for unsigned build,
     including after attempted security disablement. Obtain exact diagnostics
     and resolve distribution/runtime launch before physical workflow validation.
+    NOTE: Owner-approved macOS support policy change, 2026-10-16: macOS is a
+    standing unsupported, build-only target with no verification pursued (see
+    technical specification section 4.2 amendment). This signing/notarization
+    decision remains open but is not a release blocker while macOS stays
+    unsupported; current archives are distributed unsigned/unnotarized.
 [ ] Decide Linux package formats.
 [ ] Define update/code-signing strategy.
 [ ] Produce external SectorWorks app icon/logo/wordmark and platform exports.
@@ -1817,8 +1836,9 @@ bounded structural/synthetic evidence delivered for 1.0.
     vintage physical hardware is not required. Never use valuable originals
     for write testing or redistribute proprietary OS/owner content.
     Automated reader/malformed-input tests, resource bounds, source integrity,
-    general platform testing (subject to the existing separate macOS deferral),
-    Phase 3 writer/commit safety and required 2B.6 current Windows-media/
+    general platform testing (macOS excluded as a standing unsupported,
+    build-only target per the 2026-10-16 policy change), Phase 3 writer/commit
+    safety and required 2B.6 current Windows-media/
     security-reference/LFS 2.0 checks remain 1.0 requirements.
 
 [ ] P1.NTFS.1 Obtain legally usable disposable NTFS 1.2/NT4, 3.0/Windows 2000 and 3.1/XP-authored reference fixtures; record actual authoring OS separately from observed filesystem version.

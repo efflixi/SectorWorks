@@ -28,6 +28,8 @@ Primary product goal:
 - Platform implementations do not need to be identical.
 - Platform-specific methods may be used where necessary, provided the user-facing capabilities and results remain reasonably consistent.
 
+Owner-approved macOS support policy change, October 16, 2026: the owner has no reliable means to test macOS and will not pursue macOS verification. macOS is reclassified as an unsupported, build-only target: cross-platform builds/publishes for macOS continue to be produced and distributed, but macOS is not dropped from this goal. No macOS physical runtime testing, verification, or compatibility support is performed or claimed. See section 4.2 for the full amendment and required user-facing disclosure.
+
 
 3. PRIMARY TECHNOLOGY STACK
 
@@ -100,6 +102,8 @@ Minimum macOS Version:
 
 Both macOS architectures should use the same shared source code and storage engine. Separate platform packages may be produced as required.
 
+Owner-approved macOS support policy change, October 16, 2026: the owner has no reliable macOS test environment and will not pursue macOS verification for the foreseeable future. macOS is reclassified from an intended-supported target to an unsupported, build-only target, mirroring the existing "functional but unsupported" treatment of legacy Windows in section 4.1. Cross-compiled osx-x64 and osx-arm64 builds/publishes continue to be produced; macOS is not dropped as a build target. However, no physical macOS runtime testing, workflow verification, or compatibility support is performed, claimed, or scheduled. Documentation, checklists, and release notes must stop tracking macOS physical-verification items as open/pending work and must instead state plainly, for users, that macOS builds are provided without testing or support guarantees and may not work. This supersedes all prior "macOS remains an intended supported target" and "Mac runtime/signing deferred" language in checklist.txt and docs/; those were framed as temporary deferrals, this is a standing unsupported classification until the owner obtains a reliable macOS test environment and explicitly reverses this decision.
+
 
 4.3 LINUX TARGETS
 
@@ -153,6 +157,8 @@ Underlying platform operations may differ for:
 - Notifications and application integration.
 
 Platform-specific behavior must be isolated behind well-defined interfaces and must not be scattered throughout the storage engine or UI logic.
+
+Per the section 4.2 amendment (October 16, 2026), macOS builds are produced to this same codebase but are not verified against this feature-parity goal; macOS capability claims above are unverified on physical hardware and must be documented as such.
 
 
 6. FUNCTIONAL SCOPE
@@ -861,8 +867,6 @@ Representative release testing should include:
 - Windows 11 x86-64
 - Windows 11 ARM64
 - Windows 10 x86-64
-- Intel macOS
-- Apple Silicon macOS
 - Ubuntu x86-64
 - Linux Mint x86-64
 - Debian x86-64
@@ -874,6 +878,8 @@ Representative release testing should include:
 - Wayland session
 
 Windows 7 and 8 testing may be conducted periodically for information but must not block a release.
+
+Per the section 4.2 amendment (October 16, 2026), Intel macOS and Apple Silicon macOS are removed from representative release testing: no macOS physical testing is performed and macOS verification must not block a release. Cross-compiled macOS builds continue to be produced without physical testing.
 
 
 19.2 STORAGE TESTING
@@ -1103,7 +1109,7 @@ CPU Architectures:
 
 Primary Operating Systems:
 - Windows 10/11
-- macOS
+- macOS (unsupported, build-only; see section 4.2 amendment, October 16, 2026)
 - Linux
 
 Linux Distribution Targets:

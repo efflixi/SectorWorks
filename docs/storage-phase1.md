@@ -13,8 +13,9 @@ The owner subsequently deferred authentic NT4/Windows 2000/XP-created-media
 qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
 [checklist](../checklist.txt). These are not passed tests or 1.0 blockers;
 VM-authored fixtures suffice, without vintage hardware. Automated tests, safety
-bounds, source integrity and general platform verification remain required,
-with the existing separate macOS runtime deferral unchanged.
+bounds, source integrity and general platform verification remain required;
+macOS is excluded from general platform verification as a standing
+unsupported, build-only target (2026-10-16).
 Implemented-subset evidence is recorded below,
 not full version/media qualification. The retained reader
 baseline below still describes prior evidence. Targets are separate bounded

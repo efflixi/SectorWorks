@@ -13,10 +13,14 @@ for a qualified Phase 2B subset; Windows-media interoperability remains incomple
 reader subset was implemented and verified on Linux Mint 22 x64/X11. Owner-reported
 physical testing on 2026-10-14 also found Phase 1 working on Linux x64, Windows
 x64 and Linux ARM64 (Raspberry Pi 500). Windows 7 x64 reportedly runs the current
-build but remains unsupported. macOS remains an intended supported target;
-runtime/signing validation is explicitly deferred per owner while Phase 2
-proceeds. The earlier launch blocker is unresolved, not confirmed to be solely
-signing-related. Cross-publishing does not establish physical compatibility.
+build but remains unsupported. **macOS is an unsupported, build-only target
+(owner decision, 2026-10-16): macOS builds continue to be produced for every
+release, but no macOS physical testing, verification, or compatibility support
+is performed or planned, because the owner has no reliable macOS test
+environment.** Users running macOS builds should expect untested behavior and
+should not rely on them for production use; a prior unresolved launch blocker
+was reported before this decision and has not been investigated further.
+Cross-publishing does not establish physical compatibility.
 The reported missing first hex page is fixed: selecting the Hex View
 tab now loads it without a paging workaround, including for small binary files;
 see [platform status](docs/platform-status.md) for verification.
@@ -163,8 +167,8 @@ qualification and dependent checks to **post-1.0 P1.NTFS.1-P1.NTFS.6** in the
 hardware is not required. Synthetic/observed-version evidence is not authentic
 historical-OS interoperability. Automated reader tests, safety bounds, Tower
 source-hash/extraction tasks, general platform checks and Phase 3 writer/commit
-safety remain required for 1.0, with the existing separate macOS runtime deferral
-unchanged. Phase 2B current Windows-media/security-reference/LFS 2.0 gates are
+safety remain required for 1.0; macOS is excluded from general platform checks
+as a standing unsupported, build-only target (2026-10-16). Phase 2B current Windows-media/security-reference/LFS 2.0 gates are
 not moved. Phase 2C is not automatically complete; remaining verification and
 owner review stay open. No Phase 3 implementation, direct commit or repair is authorized.
 The signed reader and strict writer-validation defaults are unchanged; only the
@@ -246,6 +250,15 @@ Publish produces self-contained, untrimmed, non-AOT outputs in
 `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`, `osx-x64`, `osx-arm64`.
 Native desktop libraries are still required; self-contained does not mean a
 statically linked GUI. Cross-publish is **not** physical platform validation.
+
+**macOS is an unsupported, build-only target (2026-10-16).** `osx-x64` and
+`osx-arm64` builds/publishes continue to be produced for every release, but
+the owner has no reliable macOS test environment and macOS verification is
+not performed or planned. macOS users should expect the macOS builds to be
+untested and should not rely on them for production use; macOS is not dropped
+as a build target, only unsupported in practice. See the
+[technical specification](Cross_Platform_Disk_Image_Workspace_Tech_Spec_v0.3.txt)
+section 4.2 and [platform status](docs/platform-status.md) for the full policy.
 
 The browser defaults to alphabetical folders first, then alphabetical files.
 Use **File > Preferences** to choose the default sort field/direction and
