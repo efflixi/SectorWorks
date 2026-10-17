@@ -134,6 +134,84 @@ Do not bypass a host-key mismatch or elevate the standard testing account.
 GUI smoke needs a separately prepared interactive desktop. This setup does not
 authorize Phase 3, real-disk operations or recurring automation.
 
+## Phase 2D authority and retained closeout (2026-10-17)
+
+Owner authorized Phase 2D documentation/implementation after a read-only preflight.
+The prerequisite gate was resolved in this child chat before actual work.
+Use checklist 2D.1-2D.9/2D.E1-2D.E4 to close retained 2B/2C requirements;
+reassignment never marks the historical tasks passed. This supersedes stale
+"Phase 3 unauthorized/unimplemented" current-state wording above: retain the
+owner-authorized 2026-10-16 backend increment and its evidence, but do not
+continue remaining Phase 3 work. No Phase 4/5/6/7, PMFX or publication authority.
+
+Windows strict-key access is restored; keep the account standard and connection
+inventory local-only outside synchronized storage. User-local pinned tools,
+project transfer and disposable generated test media are authorized. Owner will
+launch narrowly bounded finite privileged Windows-native virtual-disk steps;
+never elevate the account/agent, accept arbitrary privileged commands, use real
+disks or install a service/schedule. BCL codec comparison does not prove complete
+inheritance or Windows filesystem interoperability. Qualify current Windows
+ordinary NTFS media and clean LFS 2.0/cache safety without replay/reset/repair,
+gate removal or weakened allocation/security/metadata checks.
+
+Tower permission: in-place Linux full before/after SHA-256 and bounded workflows,
+representative selected temporary extraction <=64 MiB in private local storage
+outside repository/Dropbox, followed by cleanup. No image copy/mount/transfer/
+modification/distribution. Other owner-media restrictions remain unchanged.
+Authentic historical authoring remains P1.NTFS; MFT-bootstrap lists unsupported;
+newly readable legacy/attribute-list volumes NONEDITABLE until Phase 3 3.0/3.7.
+Preserve every existing qualified FAT/NTFS write. ARM64 is currently unavailable:
+owner approved proceeding, not waiving 2D.8c; keep it explicitly blocked.
+macOS remains unsupported/build-only, both publishes retained, no physical checks.
+Stop at 2D verification/owner review with exact evidence and concrete blockers.
+
+Current 2D evidence: Windows codec 271/271; reader 66/66 each on Linux/Windows x64;
+bounded Tower full before/after hashes and 1235021-byte selected extraction/native
+comparisons pass, private outputs removed. Full Linux verify 1136 passes/one
+Windows-only skip; all-six publishes/local AppImage pass. These close named
+reader/Tower subitems, not full 2D or its remaining platform/review gates.
+Windows native author/source-readonly reopen pass, but edited output is untested.
+Native writable-attached fsutil reports LFS 2.0; detached raw/read-only report 1.1,
+with exact transition not raw-captured. TxF/CLFS metadata independently blocks
+ordinary writer qualification; do not strip or blindly preserve it as proof.
+Modern-log/cache-safety investigation continues by owner direction with all
+writer gates intact. See checklist/current platform evidence for exact chronology.
+Owner subsequently selected bounded verified closeout/STOP for review after
+the focused investigation found no sufficient TxF/CLFS offline quiescence/
+update predicate. These requirements stay in 1.0, incomplete and unwaived.
+Broader Windows execution: storage 400 pass/57 fail; Services 153 pass/3 fail.
+Missing native tools, application log contention, direct-commit sharing and
+preference error/cleanup-test mismatch remain explicit blockers, not platform
+passes. No source-integrity assertions completed in failed Windows commit cases.
+Do not continue implementation/remote probes or remaining Phase 3 automatically.
+
+Owner then explicitly resumed the recommended corrective pass: repair retained
+Windows commit-handle lifecycle and shared logging, verify preference failure/
+cleanup semantics, and separate managed Windows writer execution from independent
+Linux checks of the exact generated outputs. The fresh read-only preflight found
+existing standard-user/tooling/generated-media permissions sufficient; no new
+owner-media access or privileged Windows steps are needed. This supersedes the
+immediate implementation stop only for those repairs/qualification. TxF/CLFS,
+LFS 2.0 and unavailable ARM64 gates remain required and incomplete. Remaining
+Phase 3 features and later phases stay on hold; no publication is authorized.
+
+The final Global-session-corrected source passes Windows32focused,177Services,
+392reader/security/safety,12guards,168writer and9growth selections, zero skips;
+186exact outputs pass876independent Linux commands and84inputs stay unchanged.
+This closes retained runtime/tooling defects, not Windows-authored TxF/CLFS,
+LFS2/cache safety, GUI or ARM64 gates. Exact current source/media manifests and
+compact verified archives: docs/platform-status.md and docs/windows-writer-handoff.md.
+Final complete Linux verification passes1178/oneWindows-only skip (1179total),
+zero buildwarnings/errors, format/resources/AppRun/fivecopies; allsixpublishes/
+localAppImage pass. Correctivebatch is complete and STOPPED for ownerreview.
+Do not infer permission
+to continue remaining Phase3 or claim full Phase2D completion.
+
+Owner subsequently authorized committing and pushing the verified changes on
+2026-10-17, explicitly without a release. This permits source commit/push only,
+not tags/releases, further phase implementation or waiver of retained blockers.
+Keep owner media, generated payloads and private access records out of Git.
+
 ## Learnings
 
 Zero-length ISO files can have unused out-of-range extent addresses: tolerate
@@ -209,3 +287,31 @@ synchronous payload/BAT writes, disposes the container, flushes the underlying
 file to disk, then independently reopens and checks metadata and virtual bytes.
 Preserve that ordering; a successful tree read is not equivalent to a durable
 container flush.
+
+Direct commit must suspend the original reader before source-write acquisition
+and validate against a reopened, hash-checked backup, not disposed reader state.
+Linux uses `F_OFD_SETLK`: ordinary process-owned `FileStream.Lock` loses
+protection when any reader of that inode closes, so retain the unrelated-reader/
+independent-writer regression. Windows uses deny-write sharing plus one
+`FileRenameInfoEx` replace/POSIX operation; never unlock early, widen ordinary
+reader sharing or substitute `File.Replace` with its partial-failure/merge
+semantics. The native filename buffer must preserve exact UTF-16 code units and
+include a trailing NUL excluded from its byte-length field.
+
+Dynamic containers can grow physically after an ordinary qualified edit:
+source/backup hashes use input length, committed-output hashes use actual output
+length, and successful commit must refresh the session baseline/reset staging.
+An earlier journal stage does not prove finalize never happened; recovery must
+refuse a source that differs from its backup instead of rolling back a possibly
+completed atomic replacement. Keep exact-input Windows execution and independent
+Linux validation of the same output hashes; Linux authoring/check tools are not
+a product Windows runtime dependency or permission to skip coverage.
+See [commit architecture](docs/architecture.md) and
+[portable verification](docs/windows-writer-handoff.md).
+
+Named mutexes need the `Global\` namespace on Linux as well as Windows:
+unprefixed .NET mutexes do not exclude writers in a different Linux session.
+Establish the test child's session before CLR startup (`setsid --wait`), not
+from managed `Main`, because the runtime can retain its original mutex session
+namespace. Keep the actual log-gate before/after regression and independent-
+session append/rotation coverage, not just same-session worker processes.

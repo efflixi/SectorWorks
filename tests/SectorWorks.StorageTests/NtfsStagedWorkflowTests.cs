@@ -84,14 +84,18 @@ public sealed class NtfsStagedWorkflowTests(ITestOutputHelper outputLog)
             Assert.Equal(payload, bytes.ToArray());
             Assert.DoesNotContain(fs.ReadDirectory("/"), entry => entry.Name == "Temporary.txt");
         }
-        string raw = work.PathFor("independent.raw");
-        if (container == "raw") { File.Copy(output, raw); }
-        else
+        if (!PortableWriterHandoff.Queue(source, output,
+            PortableWriterHandoff.Row(container, layout, "ntfs", physical, false), "saveas"))
         {
-            DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
-                container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", output, raw);
+            string raw = work.PathFor("independent.raw");
+            if (container == "raw") { File.Copy(output, raw); }
+            else
+            {
+                DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
+                    container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", output, raw);
+            }
+            CheckNative(work, raw, payload);
         }
-        CheckNative(work, raw, payload);
         await service.DiscardAsync(workspace.Id);
         Assert.Empty((await service.GetEditingSnapshotAsync(workspace.Id)).Changes);
         Assert.Equal(sourceHash, Hash(source));
@@ -122,31 +126,35 @@ public sealed class NtfsStagedWorkflowTests(ITestOutputHelper outputLog)
         Assert.Empty(Directory.GetFiles(directory, ".sectorworks-commit-*"));
         Assert.Empty(CommitRecovery.Discover(directory));
 
-        string raw = work.PathFor("commit-independent.raw");
-        if (container == "raw") { File.Copy(source, raw); }
-        else
+        if (!PortableWriterHandoff.Queue(source, source,
+            PortableWriterHandoff.Row(container, layout, "ntfs", physical, false), "commit"))
         {
-            DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
-                container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", source, raw);
-        }
-        string volumePath = work.PathFor("native-check.img");
-        using (IImageSession image = new ImageOpener().OpenReadOnly(raw))
-        using (var file = File.Create(volumePath))
-        {
-            ImageVolume vol = Assert.Single(image.Volumes);
-            long start = vol.Partition?.Offset ?? 0;
-            long length = vol.Partition?.Length ?? image.Device.Length;
-            byte[] buffer = new byte[65536];
-            for (long offset = 0; offset < length;)
+            string raw = work.PathFor("commit-independent.raw");
+            if (container == "raw") { File.Copy(source, raw); }
+            else
             {
-                int count = image.Device.Read(start + offset, buffer.AsSpan(0, (int)Math.Min(buffer.Length, length - offset)));
-                Assert.True(count > 0);
-                file.Write(buffer, 0, count);
-                offset += count;
+                DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
+                    container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", source, raw);
             }
+            string volumePath = work.PathFor("native-check.img");
+            using (IImageSession image = new ImageOpener().OpenReadOnly(raw))
+            using (var file = File.Create(volumePath))
+            {
+                ImageVolume vol = Assert.Single(image.Volumes);
+                long start = vol.Partition?.Offset ?? 0;
+                long length = vol.Partition?.Length ?? image.Device.Length;
+                byte[] buffer = new byte[65536];
+                for (long offset = 0; offset < length;)
+                {
+                    int count = image.Device.Read(start + offset, buffer.AsSpan(0, (int)Math.Min(buffer.Length, length - offset)));
+                    Assert.True(count > 0);
+                    file.Write(buffer, 0, count);
+                    offset += count;
+                }
+            }
+            outputLog.WriteLine(System.Text.Encoding.UTF8.GetString(RunNative("ntfsfix", "-n", volumePath)));
+            Assert.Equal("committed NTFS overlay\n"u8.ToArray(), RunNative("ntfscat", volumePath, "/SENTINEL.TXT"));
         }
-        outputLog.WriteLine(System.Text.Encoding.UTF8.GetString(RunNative("ntfsfix", "-n", volumePath)));
-        Assert.Equal("committed NTFS overlay\n"u8.ToArray(), RunNative("ntfscat", volumePath, "/SENTINEL.TXT"));
 
         using IImageSession reopened = new ImageOpener().OpenReadOnly(source);
         using var text = new StreamReader(reopened.Volumes[0].FileSystem.OpenRead("/SENTINEL.TXT"));

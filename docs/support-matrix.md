@@ -1,5 +1,79 @@
 # Support matrix
 
+## Phase 2D retained closure ledger, 2026-10-17
+
+Owner authorized bounded closeout, not a new capability claim. Historical
+2B/2C statuses remain incomplete until the following evidence genuinely passes:
+
+| Retained requirement | Named closure items |
+| --- | --- |
+| 2B.3-2B.5 outstanding ordinary-NTFS rows; 2B.6 operations/replaceability/current Windows reference/media/log safety | 2D.2 codec; 2D.3 native media; 2D.4 clean-log safety; 2D.5 row regression |
+| 2B.7 outstanding fixture/workflow and shared-workflow verification; blocked 2B exits | 2D.3/2D.5/2D.9; 2D.E1/2D.E4 |
+| 2C.3 bounded metadata/content; 2C.5 synthetic hashes/features; V3/E1 | 2D.6 per-row reproducible reader evidence |
+| 2C.6 source integrity/selected extraction; V3/E4 | 2D.7 local-only Tower |
+| 2C.V1/V2/V7/V8; E6 | 2D.1 ledger/authority; 2D.9 full verification/docs/review |
+| 2C.V6 physical/build parent; E5 | 2D.8 consolidated actual platforms/builds; 2D.5-2D.9 |
+
+The separately authorized October 16 Phase 3 backend delivery remains intact;
+2D precedes its remaining work, not its historical implementation. Earlier
+current-state statements denying all direct commit are superseded by that
+recorded backend increment. New legacy/attribute-list writer/Save As/commit
+expansion stays under 3.0/3.7, never inferred from reader success. Current
+Windows codec execution is not inheritance/NTFS interoperability proof; current
+Windows-authored disposable-media native reopen is separately required.
+Clean LFS 2.0/cache safety must be demonstrated, never enabled by removing
+gates or replay/reset/normalization. If unsafe/infeasible, report a blocker.
+Tower needs complete source hashes and representative selected content/extraction,
+not exhaustive health certification; original stays external/uncopied/unchanged.
+P1.NTFS historical authoring remains deferred; bootstrap lists unsupported.
+ARM64 2D.8c is unavailable/blocked, not waived by an unspecified latest-build
+owner report. macOS remains unsupported/build-only with no physical checks.
+See [current 2D evidence](platform-status.md#phase-2d-preflight-and-closeout-2026-10-17).
+
+The owner subsequently resumed the recommended Windows runtime corrective
+pass and portable generated-media verification under checklist 2D.10.
+This does not resume remaining Phase 3 features or broaden the writer matrix.
+TxF/CLFS, LFS 2.0/cache-safety and unavailable ARM64 requirements remain open.
+Historical results below are not passes for the repaired source.
+
+Verified 2D closures so far: Windows codec **271/271**; bounded reader
+**66/66 each on Linux/Windows x64**, including nine exact workflow rows;
+local-only Tower full source hashes/selected extraction/content comparisons.
+These close the corresponding bounded 2C reader/Tower subitems, not the parent
+platform/review gates. Full Linux verification is **1136 passes/one Windows-only
+skip**, with all six publishes/local Linux AppImage passing. Historical test
+counts remain dated evidence, not sums added to these totals.
+
+Windows-native author/source-readonly reopen pass on a disposable fixture,
+but edited-output interoperability and the Windows-derived writer matrix do
+not. Writable-attached `fsutil` reports LFS 2.0; detached raw pages/read-only
+reopen report 1.1. Modern-log/cache-safety qualification remains unresolved;
+native TxF/CLFS metadata is an independent writer blocker. No metadata stripping,
+normalization, new write permission or new legacy/attribute-list editing follows.
+
+The initial broader actual Windows execution was **not passing**: selected storage
+400 pass/57 fail; Services 153 pass/3 fail. Failures expose missing independent
+tools, shared application-log contention, source-sharing errors in direct
+commit, and a preference exception/cleanup-test mismatch. Isolated reader
+passes do not erase those outcomes. Historical Linux matrix/backend
+qualification was not Windows runtime qualification. Exact classifications and
+source-integrity limitations are in [platform status](platform-status.md#broader-windows-runtime-execution-failures-retained-not-a-platform-pass).
+
+The frozen corrective source now passes actual Windows **177/177 Services**,
+**392/392 reader/security/safety**, **12/12 handoff guards**, **168/168 existing
+writer workflows** and **9/9 genuine two-commit dynamic-growth cases**.
+All **186 exact outputs** pass **876 mandatory independent Linux commands**,
+with unchanged hashes for all 84 input rows. This resolves retained runtime/
+tooling defects without dropping Linux-native authoring coverage. These are
+qualified legal Linux-authored/generated stacks, not Windows-authored TxF/CLFS,
+LFS 2.0/cache-safety, GUI or ARM64 qualification. Source/media manifests and
+compact byte-exact archives are in the
+[final corrective record](platform-status.md#final-global-session-corrective-snapshot).
+The final Linux complete suite passes **1178/one Windows-only skip**, with
+zero build warnings/errors and all-six publishes/local AppImage passing.
+The corrective batch is stopped for owner review; TxF/LFS/current-Windows-
+authored interoperability and unavailable ARM64 stay incomplete.
+
 This matrix describes the implemented reader subset, not blanket support for
 every variant, feature or corrupt image. Partial Phase 2B staged editing/Save As is
 qualified separately below. Phase 3 direct commit is now implemented and
@@ -38,8 +112,10 @@ filesystem repair and source-image write paths are unavailable.
 See [staged editing](staged-editing.md) for the independently qualified
 Phase 2B FAT and managed NTFS subsets, Save As validation, resource limits and
 failure behavior. Reader support alone never implies editing support.
-Sources always remain read-only; no direct-commit, ISO rebuild, bootability or
-exact-layout preservation capability is advertised.
+Staging and Save As keep sources read-only. The separately authorized Phase 3
+backend supports direct commit for qualified rows with recorded Linux evidence;
+actual Windows source-locking failures remain unresolved. ISO rebuild,
+bootability and exact-layout preservation are not advertised.
 
 | Stack | Stage add/replace/delete/rename/create directory | Save As new image |
 | --- | --- | --- |

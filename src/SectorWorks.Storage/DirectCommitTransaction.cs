@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace SectorWorks.Storage;
@@ -16,22 +18,28 @@ public sealed record TransactionRecord(string TransactionId, string SourcePath, 
     string StagingPath, CommitStage Stage, DateTime CreatedUtc);
 
 /// <summary>Cross-platform advisory exclusive lock on a source image, held for the
-/// duration of a direct-commit transaction. On Windows and Linux this uses
-/// <see cref="FileStream.Lock"/> (LockFileEx / fcntl byte-range lock on the source
-/// file itself), which other processes honoring advisory locking (including other
-/// SectorWorks instances) cannot bypass. <see cref="FileStream.Lock"/> is not
+/// duration of a direct-commit transaction. Windows sharing denies other write
+/// handles while allowing the final atomic replacement; Linux uses an advisory
+/// open-file-description fcntl byte-range lock. Readers of the original must be
+/// closed before acquisition.
+/// <see cref="FileStream.Lock"/> is not
 /// supported by .NET on macOS, so macOS instead uses an exclusive sidecar marker
 /// file; this only prevents concurrent SectorWorks writers, not arbitrary external
 /// writers to the source, and is documented as a narrower, best-effort guarantee.</summary>
 public sealed class SourceWriteLock : IDisposable
 {
+    private static readonly ConcurrentDictionary<string, byte> ActivePaths = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+    private readonly string path;
     private readonly FileStream handle;
     private readonly FileStream? sidecar;
     private readonly string? sidecarPath;
     private bool locked;
+    private bool disposed;
 
-    private SourceWriteLock(FileStream handle, FileStream? sidecar, string? sidecarPath)
+    private SourceWriteLock(string path, FileStream handle, FileStream? sidecar, string? sidecarPath)
     {
+        this.path = path;
         this.handle = handle;
         this.sidecar = sidecar;
         this.sidecarPath = sidecarPath;
@@ -39,13 +47,21 @@ public sealed class SourceWriteLock : IDisposable
 
     public static SourceWriteLock Acquire(string path)
     {
+        path = Path.GetFullPath(path);
+        if (!ActivePaths.TryAdd(path, 0))
+        {
+            throw new IOException("The source image is locked by another writer in this process.");
+        }
         FileStream handle;
         try
         {
-            handle = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 1, FileOptions.None);
+            handle = new FileStream(path, FileMode.Open, FileAccess.ReadWrite,
+                OperatingSystem.IsWindows() ? FileShare.Read | FileShare.Delete : FileShare.ReadWrite | FileShare.Delete,
+                1, FileOptions.None);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
+            ActivePaths.TryRemove(path, out _);
             throw new IOException("Cannot open the source image for direct-commit locking: " + error.Message, error);
         }
         if (OperatingSystem.IsMacOS())
@@ -56,37 +72,122 @@ public sealed class SourceWriteLock : IDisposable
             {
                 sidecar = new FileStream(sidecarPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             }
-            catch (IOException error)
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
                 handle.Dispose();
+                ActivePaths.TryRemove(path, out _);
                 throw new IOException(
                     "The source image is locked by another writer (for example another in-progress SectorWorks direct commit).",
                     error);
             }
-            return new SourceWriteLock(handle, sidecar, sidecarPath) { locked = true };
+            return new SourceWriteLock(path, handle, sidecar, sidecarPath) { locked = true };
         }
-        var result = new SourceWriteLock(handle, null, null);
+        var result = new SourceWriteLock(path, handle, null, null);
+        if (OperatingSystem.IsWindows()) { return result; }
         try
         {
             long length = Math.Max(handle.Length, 1);
-            handle.Lock(0, length);
+            if (OperatingSystem.IsLinux()) { LinuxSourceLock.Set(handle.SafeFileHandle, length, acquire: true); }
+            else { handle.Lock(0, length); }
             result.locked = true;
         }
         catch (Exception error) when (error is IOException or NotSupportedException)
         {
             handle.Dispose();
+            ActivePaths.TryRemove(path, out _);
             throw new IOException(
-                "The source image is locked by another writer (for example another in-progress SectorWorks direct commit).",
+                "The source image is locked by another writer, or exclusive locking is unsupported: " + error.Message,
                 error);
         }
         return result;
     }
 
+    public void VerifySource(string expectedHash, long expectedLength, CancellationToken token = default)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 65536);
+        if (Hash(source, expectedLength, token) != expectedHash)
+        {
+            throw new IOException("Source changed since opening; direct commit was aborted. Reopen the source image.");
+        }
+        handle.Position = 0;
+        if (Hash(handle, expectedLength, token) != expectedHash)
+        {
+            throw new IOException("Locked source changed since opening; direct commit was aborted.");
+        }
+    }
+
+    public void CreateBackup(string backupPath, string expectedHash, long expectedLength, CancellationToken token = default)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        using var backup = new FileStream(backupPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536);
+        try
+        {
+            handle.Position = 0;
+            if (Hash(handle, expectedLength, token, backup) != expectedHash)
+            {
+                throw new IOException("Source changed while creating the direct-commit backup.");
+            }
+            backup.Flush(true);
+        }
+        catch (Exception error)
+        {
+            backup.Dispose();
+            try { File.Delete(backupPath); }
+            catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
+            {
+                throw new IOException("Failed backup could not be removed; retained at " + backupPath,
+                    new AggregateException(error, cleanup));
+            }
+            throw;
+        }
+    }
+
+    public void ReplaceSource(string staging)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        string fullPath = Path.GetFullPath(staging);
+        StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (fullPath.Equals(path, comparison)
+            || !string.Equals(Path.GetDirectoryName(fullPath), Path.GetDirectoryName(path), comparison))
+        {
+            throw new IOException("Validated direct-commit staging must be a distinct sibling of the source image.");
+        }
+        if (OperatingSystem.IsWindows()) { WindowsAtomicReplacement.Replace(fullPath, path); }
+        else { File.Move(fullPath, path, overwrite: true); }
+    }
+
+    private static string Hash(Stream source, long expectedLength, CancellationToken token, Stream? copy = null)
+    {
+        if (source.Length != expectedLength) { throw new IOException("Source length changed since opening."); }
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        byte[] buffer = new byte[65536];
+        long count = 0;
+        int read;
+        while ((read = source.Read(buffer)) != 0)
+        {
+            token.ThrowIfCancellationRequested();
+            count = checked(count + read);
+            if (count > expectedLength) { throw new IOException("Source grew during direct-commit verification."); }
+            hash.AppendData(buffer, 0, read);
+            copy?.Write(buffer, 0, read);
+        }
+        token.ThrowIfCancellationRequested();
+        if (count != expectedLength || source.Length != expectedLength) { throw new IOException("Source length changed during direct-commit verification."); }
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
+
     public void Dispose()
     {
-        if (locked && sidecar is null && !OperatingSystem.IsMacOS())
+        if (disposed) { return; }
+        disposed = true;
+        if (locked && sidecar is null && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
         {
-            try { handle.Unlock(0, Math.Max(handle.Length, 1)); }
+            try
+            {
+                if (OperatingSystem.IsLinux()) { LinuxSourceLock.Set(handle.SafeFileHandle, Math.Max(handle.Length, 1), acquire: false); }
+                else { handle.Unlock(0, Math.Max(handle.Length, 1)); }
+            }
             catch (IOException) { /* best-effort; handle close below always releases OS-level locks. */ }
         }
         handle.Dispose();
@@ -95,6 +196,7 @@ public sealed class SourceWriteLock : IDisposable
         {
             try { File.Delete(sidecarPath); } catch (IOException) { }
         }
+        ActivePaths.TryRemove(path, out _);
     }
 }
 
@@ -126,10 +228,7 @@ public static class CommitJournal
         catch (JsonException) { return null; }
     }
 
-    public static void Delete(string journalPath)
-    {
-        try { File.Delete(journalPath); } catch (IOException) { }
-    }
+    public static void Delete(string journalPath) => File.Delete(journalPath);
 
     /// <summary>Scans a directory for journals left by interrupted direct commits.</summary>
     public static IReadOnlyList<(string JournalPath, TransactionRecord Record)> ScanDirectory(string directory)
@@ -168,8 +267,9 @@ public static class CommitBackup
 /// <summary>Startup/explicit interrupted-transaction discovery and recovery.
 /// Never assumes success: a journal at <see cref="CommitStage.Finalized"/> means the
 /// source was already safely replaced before interruption (do not restore the
-/// backup, only clean up); any earlier stage means the source was never modified
-/// (backup restore is only a defensive no-op/idempotent safety net).</summary>
+/// backup, only clean up). An earlier journal can also survive an atomic replace
+/// if the final journal write failed, so recovery must independently check the
+/// source rather than infer its contents from the journal stage.</summary>
 public static class CommitRecovery
 {
     public sealed record RecoveryAction(string SourcePath, string JournalPath, string BackupPath,
@@ -196,7 +296,22 @@ public static class CommitRecovery
         {
             throw new FileNotFoundException("No backup is available; the source was never modified by this interrupted commit.", action.BackupPath);
         }
-        CommitBackup.Restore(action.BackupPath, action.SourcePath);
+        string backupHash;
+        long backupLength;
+        using (var backup = File.OpenRead(action.BackupPath))
+        {
+            backupLength = backup.Length;
+            backupHash = Convert.ToHexString(SHA256.HashData(backup));
+        }
+        using SourceWriteLock sourceLock = SourceWriteLock.Acquire(action.SourcePath);
+        try { sourceLock.VerifySource(backupHash, backupLength); }
+        catch (IOException error)
+        {
+            throw new IOException("Source differs from the recovery backup; it may already have finalized or changed externally. "
+                + "Refusing to overwrite it. Review the source, backup and journal independently.", error);
+        }
+        // Before atomic finalize the source is already the backup, so no rewrite
+        // is needed. Never roll back a possibly completed replacement.
         Cleanup(action);
     }
 

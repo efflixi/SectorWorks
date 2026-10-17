@@ -17,7 +17,9 @@ internal static class NtfsWriteValidation
 {
     private const string UnsupportedRestartMessage =
         "NTFS transaction logs require two ordinary LFS 1.1 RSTR pages; "
-        + "CHKD and LFS 2.0/cached-metadata layouts remain unsupported.";
+        + "CHKD and LFS 2.0/cached-metadata layouts remain unsupported. "
+        + "An LFS 2.0 clean flag alone cannot establish that Windows has released cached metadata; "
+        + "replay, reset and normalization are not performed.";
 
     private sealed record Record(long Id, byte[] Bytes, List<Attribute> Attributes)
     {

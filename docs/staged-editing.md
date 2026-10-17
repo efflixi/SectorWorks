@@ -1,5 +1,59 @@
 # Staged editing and Save As: Phase 2 and partial Phase 2B
 
+## Phase 2D bounded closeout, 2026-10-17
+
+Owner authorized closing retained ordinary-NTFS Windows codec/media and LFS
+2.0/cached-metadata safety requirements under checklist 2D.2-2D.5, with reader
+qualification separately under 2D.6/2D.7. Existing 2B/2C statuses and historical
+envelopes remain unchanged until verified. This is not full permissions-editor
+development or exhaustive Windows-version certification. Keep allocation,
+security, metadata and independent output checks; dirty/ambiguous/recovery-needed
+logs stay refused without replay/reset/normalization. No validator-gate waiver.
+Newly readable legacy/attribute-list volumes stay noneditable under 3.0/3.7;
+all existing qualified FAT/NTFS writes remain enabled.
+
+This milestone follows 2C and precedes REMAINING Phase 3 work. The recorded
+October 16 Phase 3 authorization/backend implementation below is preserved and
+supersedes earlier current-state statements that all direct commit is future
+or unauthorized. 2D does not implement its remaining writer expansion, startup
+recovery/UI integration or later phases. BCL codec evidence is distinct from
+Windows-native disposable-volume edit/reopen interoperability.
+See [closure mapping](support-matrix.md#phase-2d-retained-closure-ledger-2026-10-17)
+and [preflight/evidence](platform-status.md#phase-2d-preflight-and-closeout-2026-10-17).
+
+Executed 2D Windows codec comparison passes **271/271**, separately from the
+still-incomplete authored-media edit/native-output requirement. Owner-local
+author/source-readonly reopen pass; the source remains unchanged. Native TxF/
+CLFS metadata is outside current writer qualification and has not been stripped
+or exempted. Writable-attached LFS 2.0 and detached raw LFS 1.1 observations are
+different lifecycle states; neither proves arbitrary LFS 2.0 cache-safe writing.
+All existing qualified FAT/NTFS writes remained intact in the initial **1136-pass/one
+Windows-only-skip** full Linux verification. No writer-envelope broadening is
+claimed by the separately passing reader/Tower closeout.
+
+Initial broader Windows runtime testing additionally found direct-commit source-sharing
+failures and parallel `ExplorerLog` contention in retained code, plus missing
+independent tools and a preference error-type mismatch. Full Linux regression
+success is not Windows commit qualification. Failed commit tests stop before
+their final integrity assertions; do not claim verified unchanged hashes for
+those failures. See [exact Windows outcomes](platform-status.md#broader-windows-runtime-execution-failures-retained-not-a-platform-pass).
+Owner selected bounded closeout/STOP for review with these defects and native
+TxF/LFS/ARM64 gates retained; no remaining Phase 3 implementation follows.
+The owner then resumed only the recommended Windows runtime corrective pass
+and portable generated-media verification (checklist 2D.10). Earlier failed
+runs remain historical. The frozen corrected source now passes actual Windows
+177/177 Services, 392/392 concurrent reader/security/safety, 168/168 matrix and
+9/9 measured-growth cases. Independent Linux checks pass all 186 exact outputs
+with 876 mandatory native commands, including full source/output hash binding.
+This closes retained runtime defects on qualified generated rows, not the
+Windows-authored-media or transaction/modern-log writer requirements.
+See [final corrective evidence](platform-status.md#final-global-session-corrective-snapshot).
+Final Linux complete verification passes **1178/one Windows-only skip**
+(1179 total), and all six current-source publishes/local AppImage pass.
+The corrective batch stops for owner review; remaining Phase 2D/Phase 3 gates
+are not closed by these runtime results.
+TxF/CLFS, LFS 2.0/cache-safety and unavailable ARM64 are not waived or resolved.
+
 Phase 2 is authorized independently of Phase 3 direct commit and Phase 4 ISO
 rebuild. Sources stay read-only. A modified workspace is not a modified source
 image, and saving a new image must never be described as committing the source.
@@ -33,7 +87,12 @@ See [platform status](platform-status.md).
 
 Undo, redo and discard concern the in-session staged state. Save As creates a
 separate destination; it does not grant permission to overwrite the original.
-Direct commit, recovery journaling and ISO rebuilding remain later-phase work.
+The separately authorized Phase 3 backend adds direct commit/recovery journaling
+for qualified rows; its Windows source-locking/atomic-finalize lifecycle is now
+verified on the retained generated matrix. Windows-authored transaction/log
+qualification is still unresolved.
+Startup recovery/UI integration and ISO rebuilding remain outside this 2D
+closeout, as do new legacy/attribute-list writer capabilities.
 
 ### Phase 2C reader-only expansion and Phase 3 writer prerequisites
 
@@ -419,21 +478,45 @@ journal/atomic-finalize layer, rather than reimplementing per-stack writers.
   backup -> journal `BackupTaken` -> apply to a disposable staged temp copy ->
   flush -> journal `Staged` -> independently reopen and validate (tree/SHA-256
   fingerprint plus the writer's `ValidateOutput`) -> journal `Validated` ->
-  recheck source identity again -> atomic `File.Move` finalize over the source
+  recheck source identity again -> atomic locked-source replacement
   -> journal `Finalized` -> delete backup/journal -> release lock.
-- Locking: Windows/Linux use `FileStream.Lock` (a real OS-level byte-range
-  advisory lock on the source file). macOS (where .NET does not support
+- Corrective locking: suspend the source reader before acquisition and reopen
+  a hash-checked backup as the preservation-validation baseline. Windows opens
+  a read/write handle denying other write handles while sharing deletion for
+  atomic replacement through `FileRenameInfoEx` replace/POSIX semantics. The
+  held handle retains the old file's identity; subsequent opens see the new
+  validated file. `File.Move` rejects the open destination, while `File.Replace`
+  has documented partial-failure and metadata-merge behavior, so neither is
+  used as a Windows shortcut. Unsupported atomic replacement refuses, without
+  unlocking early or falling back to a non-atomic overwrite.
+  Windows does not use mandatory byte-range locks that prevent
+  separate validation readers. Linux uses open-file-description `F_OFD_SETLK`,
+  conflicting with ordinary fcntl writers without losing ownership when an
+  unrelated reader in this process closes. A per-path in-process guard also
+  rejects concurrent commits. Unsupported Linux locking refuses explicitly.
+  Success reopens the committed source, updates its SHA-256 baseline and clears
+  committed staged history; failure preserves pending content and reopens the
+  original baseline. A changed/unreadable source makes the workspace explicitly
+  unavailable until close/reopen, rather than reusing disposed readers.
+  Hash verification uses the original physical container length for source/
+  backup checks and the actual output length for committed-output checks;
+  dynamic-container growth must not be mistaken for a changed input.
+  macOS (where .NET does not support
   `FileStream.Lock`) uses an exclusive sidecar marker file instead -- a
   narrower guarantee limited to concurrent SectorWorks writers, untested on
   physical macOS hardware, since macOS is a standing unsupported, build-only
   target (2026-10-16). Verified cross-process on Linux with an independent Python writer
-  holding a genuine fcntl byte-range lock (same-process relocking is not a
-  meaningful test under POSIX fcntl semantics, which are owned per-process).
+  holding a genuine fcntl byte-range lock. These guarantees do not make
+  arbitrary external path replacement or writers ignoring advisory locks safe.
 - Recovery safety: `CommitRecovery` distinguishes the `Finalized` stage (the
   source was already safely replaced) from earlier stages. `RestoreFromBackup`
   refuses to run once a transaction reached `Finalized`, so recovery can never
   silently undo an already-successful commit; only `Discard` (cleanup without
-  touching the source) is valid at that point. `CommitRecovery.Discover` is a
+  touching the source) is valid at that point. Corrective recovery additionally
+  requires the actual source to match the backup before cleanup of an earlier
+  stage: replacement may have succeeded before the final journal write failed.
+  A mismatch refuses restoration and retains the artifacts for review, rather
+  than rolling back a possibly committed source. `CommitRecovery.Discover` is a
   tested library-level primitive; it is **not yet wired into the application's
   actual startup sequence** -- flagged as an open follow-up, not a safety gap
   in the primitive itself.

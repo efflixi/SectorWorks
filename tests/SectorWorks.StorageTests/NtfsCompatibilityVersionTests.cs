@@ -24,11 +24,15 @@ public sealed class NtfsCompatibilityVersionTests
             Assert.Equal(version, fs.Properties["NTFS version"]);
             Assert.Contains(fs.ReadDirectory("/"), entry => entry.Name == "Legacy" && entry.IsDirectory);
             IReadOnlyList<FileEntry> children = fs.ReadDirectory("/Legacy");
-            Assert.Equal(2, children.Count);
+            Assert.Equal(3, children.Count);
             Assert.Contains(children, entry => entry.Name == "NOTE.TXT" && entry.Length == NtfsCompatibilityFixtures.ResidentData.Length);
             Assert.Contains(children, entry => entry.Name == "PAYLOAD.BIN" && entry.Length == NtfsCompatibilityFixtures.NonresidentData.Length);
             AssertFile(fs, NtfsCompatibilityFixtures.ResidentPath, NtfsCompatibilityFixtures.ResidentData);
             AssertFile(fs, NtfsCompatibilityFixtures.NonresidentPath, NtfsCompatibilityFixtures.NonresidentData);
+            AssertFile(fs, NtfsCompatibilityFixtures.UnicodePath, NtfsCompatibilityFixtures.UnicodeData);
+            FileEntry unicode = Assert.Single(children, entry => entry.Name == "Unicode-λ.txt");
+            Assert.Equal(NtfsCompatibilityFixtures.ModifiedUtc, unicode.ModifiedUtc);
+            Assert.Equal(DateTimeKind.Utc, unicode.ModifiedUtc!.Value.Kind);
             Assert.True(fs.Capabilities.Browse.Available);
             Assert.True(fs.Capabilities.Extract.Available);
             Assert.False(fs.Capabilities.Modify.Available);
@@ -55,17 +59,24 @@ public sealed class NtfsCompatibilityVersionTests
         Assert.True(layout.ActiveRecords > 20);
         Assert.True(layout.ResidentFile);
         Assert.True(layout.NonresidentFile);
+        Assert.Equal(NtfsCompatibilityFixtures.ModifiedUtc, layout.UnicodeModifiedUtc);
+        Assert.Equal(major == 1 ? 48 : 72, layout.UnicodeStandardInformationLength);
         if (major == 1)
         {
             Assert.True(layout.ShortStandardInformation > 20);
             Assert.Equal(layout.ActiveRecords, layout.PerFileSecurityDescriptors);
             Assert.Equal(0, layout.ModernStandardInformation);
+            Assert.Equal(0u, layout.UnicodeSecurityId);
+            Assert.Equal("4597B39D4646C2E2120FDDFED1F7A92A90CB223B96D0572AA69FD7C0B2FE2D56",
+                layout.UnicodeSecurityHash);
         }
         else
         {
             // Native-authored modern metadata may legally retain 48-byte SI.
             Assert.True(layout.ModernStandardInformation > 0);
             Assert.True(layout.ShortStandardInformation + layout.ModernStandardInformation > 20);
+            Assert.NotEqual(0u, layout.UnicodeSecurityId);
+            Assert.Null(layout.UnicodeSecurityHash);
         }
         Assert.Equal(minor == 1 ? 0 : layout.ActiveRecords, layout.PreXpHeaders);
     }

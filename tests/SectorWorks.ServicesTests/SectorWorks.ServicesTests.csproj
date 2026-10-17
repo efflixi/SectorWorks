@@ -11,6 +11,7 @@
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/SectorWorks.Services/SectorWorks.Services.csproj" />
     <ProjectReference Include="../../tools/SectorWorks.DependencyProbe/SectorWorks.DependencyProbe.csproj" />
+    <ProjectReference Include="../../tools/SectorWorks.RuntimeProbe/SectorWorks.RuntimeProbe.csproj" />
     <None Include="../../fixtures/golden/*" Link="fixtures/golden/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

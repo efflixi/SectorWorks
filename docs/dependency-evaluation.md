@@ -1,5 +1,109 @@
 # Foundation storage dependency evaluation
 
+## Phase 2D bounded qualification authority, 2026-10-17
+
+Owner authorized closeout of retained Phase 2B current-Windows reference/media
+and LFS 2.0/cache-safety gaps under 2D.2-2D.5, not dependency replacement,
+complete permissions-editor development or exhaustive Windows certification.
+Execute focused Windows BCL codec comparison separately from actual Windows-
+authored disposable NTFS edit/native-reopen checks. Preserve allocation,
+security/metadata validation, signed packages and the isolated managed repair.
+Only a demonstrably safe bounded clean modern-log subset may qualify; dirty,
+ambiguous/recovery-needed logs remain refused without replay/reset/normalization
+or simply deleting validator gates. Infeasibility requires an explicit blocker/
+owner decision, not a read-only scope reduction.
+
+The bounded investigation has a concrete cache-safety obstacle, not merely a
+version-number check. Pinned ntfs-3g 2022.10.3
+[`ntfs_volume_check_logfile`](https://github.com/tuxera/ntfs-3g/blob/2022.10.3/libntfs-3g/volume.c#L699-L717)
+explicitly refuses LFS 2.0 even after its clean-log checks, because Windows may
+retain metadata for fast restart/hibernation or the volume may have been
+abruptly detached.
+[`ntfsrecover`](https://github.com/tuxera/ntfs-3g/blob/2022.10.3/ntfsprogs/ntfsrecover.c#L2979-L2987)
+likewise calls out fast-restart data-loss risk. Its bypass/reset options are
+not an approved SectorWorks strategy. Linux v6.12
+[`fslog.c`](https://github.com/torvalds/linux/blob/v6.12/fs/ntfs3/fslog.c#L1313-L1325)
+also distinguishes the modern 34-page special area from the older four-page
+layout; accepting a version-field mutation under LFS 1.1 checks cannot qualify
+modern tail/checkpoint semantics. These are inspected public safety references,
+not imported source or proof that every clean LFS 2.0 image is unsafe.
+Actual native detached-media evidence and a demonstrable cache-absence/safe
+checkpoint criterion remain necessary before broadening capabilities.
+
+Further bounded source inspection distinguishes actual modern-log support
+from a clean-volume validator. Linux v6.12
+[`last_log_lsn`](https://github.com/torvalds/linux/blob/v6.12/fs/ntfs3/fslog.c#L1629-L1715)
+examines paired modern tail regions starting at pages 2 and 18, not the
+older two-tail-page layout. Its restart path reads checkpoint transaction and
+dirty-page tables and scans subsequent records before recovery decisions.
+At [the end of recovery](https://github.com/torvalds/linux/blob/v6.12/fs/ntfs3/fslog.c#L5139-L5181),
+the writable path emits LFS 1.1 restart pages with no active client. Successful
+native mounting through that recovery/write path would therefore not qualify
+SectorWorks' required **unchanged-log, no-replay/reset** behavior. No kernel
+mount or recovery experiment was used as a shortcut.
+
+The actual Windows 11 Home disposable fixture gives a useful distinction:
+`fsutil` reports LFS 2.0 while writable-attached, then 1.1 on the cleanly
+detached/read-only-reopened image; raw detached pages confirm 1.1. The exact
+transition was not captured in raw bytes, so do not claim a proven transition
+instant or that Windows Home cannot use 2.0. All post-detach image hashes agree.
+No additional Windows machine or unsafe shutdown is required by this evidence.
+
+Independent current-Windows writer blockers are now concrete: native
+`$Extend/$Deleted` and `$RmMetadata`, root/resource-directory `$TXF_DATA`,
+named `$Tops:$T`/`$Repair:$Config` streams and initialized CLFS transaction
+logs. Empty transaction directories and matching opaque-stream hashes alone
+do not establish inactive transactions. No metadata was removed, reset,
+normalized or exempted from validation. Establishing a bounded offline
+TxF/CLFS inactivity/preservation rule remains an investigation, not an
+enabled writing subset. See [native evidence](platform-status.md#phase-2d-preflight-and-closeout-2026-10-17).
+
+### Bounded offline transaction-safety investigation outcome
+
+The focused public-reference investigation found **no sufficient offline
+inactivity/no-recoverable-transactions predicate** for the observed TxF/CLFS
+metadata. This is a concrete qualification blocker, not proof that a smaller
+safe verifier can never exist or that every such volume is corrupt.
+
+Microsoft documents that metadata-only undo information can reside entirely
+in the transaction log, including for moves/renames/appends/attribute changes
+([pinned performance documentation](https://github.com/MicrosoftDocs/win32/blob/ca8274decead49403d70ceeed4af8d4ca74eaf11/desktop-src/FileIO/performance-considerations-for-transactional-ntfs.md#L15-L24)).
+Thus empty `$Txf`/`$Deleted` and all-zero `$Tops:$T` cannot establish quiescence.
+Live [RM information](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ns-winioctl-txfs_query_rm_information)
+and [transaction-list queries](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_txfs_list_transactions)
+describe current runtime state, not a detached-byte recovery predicate.
+[KTM recovery](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/handling-recovery-operations)
+reconstructs transactions/enlistments/resource managers and handles commit,
+rollback and indoubt outcomes. An inactive runtime manager is not documented
+as absence of persistent recovery obligations.
+
+Pinned [libfsntfs format research](https://github.com/libyal/libfsntfs/blob/faaa031d0f779578559d5c025c9583d103702bcc/documentation/New%20Technologies%20File%20System%20(NTFS).asciidoc#L2457-L2613)
+recognizes TOPS, multiplexed KTM/TxF CLFS stores and `$TXF_DATA` references/LSNs,
+but retains unknown/tentative field semantics; recognition is not write
+qualification. Microsoft's distinction between nontransacted and transacted
+APIs also supplies no offline operation-by-operation guarantee that every
+TxF field may remain unchanged during ordinary create/delete/rename/write.
+
+Remaining proof obligations are persistent quiescence for both KTM/TxF clients
+(including prepared/indoubt state), versioned TOPS/`$TXF_DATA` semantics, CLFS
+copy/active-range selection, directory/file update obligations and secondary
+resource-manager/`$Deleted`/`$Repair` interpretation. Opaque byte/hash preservation
+alone proves none of these. No parser was imported or capability enabled.
+
+Pinned [ntfs-3g writable mounting](https://github.com/tuxera/ntfs-3g/blob/78414d93613532fd82f3a82aba5d4a1c32898781/libntfs-3g/volume.c#L852-L904)
+can make nonresident root `$TXF_DATA` resident by truncate/rewrite, called
+[on its writable path](https://github.com/tuxera/ntfs-3g/blob/78414d93613532fd82f3a82aba5d4a1c32898781/libntfs-3g/volume.c#L1308-L1312).
+That conditional compatibility repair is not an inactivity test, nor evidence
+that it occurs on this fixture. It further prevents treating successful mature
+driver mounting as proof of unchanged metadata representation. No such writable
+mount, repair or normalization was performed in this investigation.
+
+Retained reader closure is 2D.6-2D.9; authentic historical authoring stays
+post-1.0 P1.NTFS and MFT-bootstrap lists unsupported. New legacy/attribute-list
+writers stay under remaining Phase 3 3.0/3.7. Earlier statements that Phase 3
+has never been authorized are historical: retain its October 16 backend delivery,
+without continuing it under 2D. See [closure ledger](support-matrix.md#phase-2d-retained-closure-ledger-2026-10-17).
+
 Evaluated 2026-10-13 on the available Linux x64 host, SDK 10.0.402 / .NET 10.
 Scope: **historical foundation experiments only, before Phase 1**. At that
 evaluation point there were no product storage handlers or UI capabilities.

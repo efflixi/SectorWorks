@@ -15,13 +15,17 @@ internal static class NtfsCompatibilityFixtures
 {
     internal const string ResidentPath = "/Legacy/NOTE.TXT";
     internal const string NonresidentPath = "/Legacy/PAYLOAD.BIN";
+    internal const string UnicodePath = "/Legacy/Unicode-λ.txt";
+    internal static readonly DateTime ModifiedUtc = new(2000, 2, 29, 12, 34, 56, DateTimeKind.Utc);
+    internal static readonly byte[] UnicodeData = "SectorWorks generated Unicode λ metadata probe.\n"u8.ToArray();
     internal static readonly byte[] ResidentData = "Synthetic legacy NTFS layout probe.\n"u8.ToArray();
     internal static readonly byte[] NonresidentData = Enumerable.Range(0, 16384)
         .Select(index => checked((byte)(index % 251))).ToArray();
 
     internal sealed record Evidence(int ActiveRecords, int ShortStandardInformation,
         int PerFileSecurityDescriptors, int PreXpHeaders, int ModernStandardInformation,
-        bool ResidentFile, bool NonresidentFile);
+        bool ResidentFile, bool NonresidentFile, int UnicodeStandardInformationLength,
+        uint UnicodeSecurityId, string? UnicodeSecurityHash, DateTime UnicodeModifiedUtc);
     internal sealed record Fixture(string Path, Evidence Layout);
 
     internal static Fixture Create(WorkDirectory work, byte major, byte minor)
@@ -44,6 +48,11 @@ internal static class NtfsCompatibilityFixtures
             {
                 large.Write(NonresidentData);
             }
+            using (Stream unicode = fs.OpenFile(@"Legacy\Unicode-λ.txt", FileMode.Create, FileAccess.Write))
+            {
+                unicode.Write(UnicodeData);
+            }
+            fs.SetLastWriteTimeUtc(@"Legacy\Unicode-λ.txt", ModifiedUtc);
         }
 
         byte[] bytes = File.ReadAllBytes(path);
@@ -131,6 +140,10 @@ internal static class NtfsCompatibilityFixtures
         byte[] bytes = File.ReadAllBytes(path);
         int active = 0, shortSi = 0, descriptors = 0, oldHeaders = 0, modernSi = 0;
         bool resident = false, nonresident = false;
+        int unicodeSiLength = 0;
+        uint unicodeSecurityId = 0;
+        string? unicodeSecurityHash = null;
+        DateTime unicodeModified = default;
         for (int offset = 0; offset < initialized; offset += recordSize)
         {
             byte[] record = Decode(bytes.AsSpan(PhysicalOffset(runs, offset, recordSize), recordSize).ToArray());
@@ -162,9 +175,32 @@ internal static class NtfsCompatibilityFixtures
                 byte[]? content = attributes.SingleOrDefault(attribute => U32(attribute, 0) == 0x80 && attribute[9] == 0);
                 if (filename == "NOTE.TXT") { resident = content is not null && content[8] == 0; }
                 if (filename == "PAYLOAD.BIN") { nonresident = content is not null && content[8] == 1; }
+                if (filename == "Unicode-λ.txt")
+                {
+                    byte[] si = attributes.Single(attribute => U32(attribute, 0) == 0x10);
+                    int valueOffset = U16(si, 20);
+                    unicodeSiLength = checked((int)U32(si, 16));
+                    unicodeModified = DateTime.FromFileTimeUtc(checked((long)U64(si, valueOffset + 8)));
+                    unicodeSecurityId = unicodeSiLength >= 72 ? U32(si, valueOffset + 52) : 0;
+                    byte[]? security = attributes.SingleOrDefault(attribute => U32(attribute, 0) == 0x50);
+                    if (security is not null)
+                    {
+                        byte[] valueBytes = security.AsSpan(U16(security, 20), checked((int)U32(security, 16))).ToArray();
+                        PortableSecurityDescriptor descriptor = PortableSecurityDescriptor.Parse(valueBytes);
+                        if (descriptor.Control != 0x8004 || !descriptor.HasDiscretionaryAcl ||
+                            descriptor.IsDiscretionaryAclNull || descriptor.HasSystemAcl ||
+                            !descriptor.OwnerSid!.SequenceEqual(SecurityDescriptor().AsSpan(20, 12).ToArray()) ||
+                            !descriptor.GroupSid!.SequenceEqual(descriptor.OwnerSid))
+                        {
+                            throw new InvalidDataException("Synthetic NTFS 1.2 security semantics differ from the declared fixture.");
+                        }
+                        unicodeSecurityHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(valueBytes));
+                    }
+                }
             }
         }
-        return new(active, shortSi, descriptors, oldHeaders, modernSi, resident, nonresident);
+        return new(active, shortSi, descriptors, oldHeaders, modernSi, resident, nonresident,
+            unicodeSiLength, unicodeSecurityId, unicodeSecurityHash, unicodeModified);
     }
 
     private static byte[] ResidentAttribute(uint type, ushort id, byte[] value)

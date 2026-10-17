@@ -2,7 +2,9 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Security.Cryptography;
 using SectorWorks.Core;
+using SectorWorks.Services;
 using SectorWorks.Storage;
 using static SectorWorks.StorageTests.StorageTests;
 
@@ -327,6 +329,61 @@ public sealed class NtfsWriteValidationTests
         int attribute = FindAttribute(bytes, mft + 2048, 0x80, "");
         length = checked((int)U64(bytes, attribute + 48));
         return RunOffset(bytes, attribute, cluster);
+    }
+
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(3, false)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    public async Task ModernLogCleanOrClosedMarkersNeverBypassCachedMetadataRefusal(int modernPages, bool closed)
+    {
+        using var work = new WorkDirectory();
+        string path = work.Golden("ntfs.img");
+        byte[] bytes = File.ReadAllBytes(path);
+        int log = LogOffset(bytes, out int length);
+        for (int index = 0; index < 2; index++)
+        {
+            byte[] page = Lfs11RestartPage(length, closed);
+            if ((modernPages & (1 << index)) != 0)
+            {
+                UnprotectRestartPage(page);
+                Put16(page, 26, 0);
+                Put16(page, 28, 2);
+                ProtectRestartPage(page, 0x4321);
+            }
+            page.CopyTo(bytes, log + index * 4096);
+        }
+        File.WriteAllBytes(path, bytes);
+        byte[] before = SHA256.HashData(bytes);
+
+        ImageFormatException error = Assert.Throws<ImageFormatException>(() => Capture(path));
+        Assert.Contains("LFS 2.0", error.Message, StringComparison.Ordinal);
+        Assert.Contains("cached metadata", error.Message, StringComparison.Ordinal);
+        using (IImageSession image = new ImageOpener().OpenReadOnly(path))
+        {
+            Assert.False(new DiskImageWriter().Qualify(image).Available);
+            Assert.True(Assert.Single(image.Volumes).FileSystem.Capabilities.Browse.Available);
+        }
+
+        using var service = new ExplorerService(stagingDirectory: Path.GetDirectoryName(path));
+        WorkspaceInfo info = await service.OpenAsync(path);
+        VolumeInfo volume = Assert.Single(info.Volumes);
+        Assert.Equal(WorkspaceState.ReadyReadOnly, info.State);
+        Assert.False(volume.Capabilities!.Modify.Available);
+        Assert.False(volume.Capabilities.SaveAs.Available);
+        Assert.False(volume.Capabilities.CommitInPlace.Available);
+        await Assert.ThrowsAsync<NotSupportedException>(() => service.StageAsync(info.Id,
+            new(ImageChangeKind.Delete, volume.Id, "/SENTINEL.TXT")));
+        string output = work.PathFor("must-not-publish.img");
+        await Assert.ThrowsAsync<NotSupportedException>(() => service.SaveAsAsync(info.Id, output));
+        await Assert.ThrowsAsync<NotSupportedException>(() => service.CommitAsync(info.Id));
+        Assert.False(File.Exists(output));
+        Assert.Equal(before, SHA256.HashData(File.ReadAllBytes(path)));
+        await service.CloseAsync(info.Id);
+        using FileStream released = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
     }
 
     // Field offsets come from the documented LFS 1.1 on-disk structures, not

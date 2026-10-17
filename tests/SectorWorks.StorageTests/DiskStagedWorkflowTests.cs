@@ -62,14 +62,18 @@ public sealed class DiskStagedWorkflowTests
             Assert.Equal("overlay bytes\n", replaced.ReadToEnd());
             Assert.DoesNotContain(reopened.Volumes[0].FileSystem.ReadDirectory("/"), entry => entry.Name == "Temporary λ.txt");
         }
-        string raw = work.PathFor("service-independent.raw");
-        if (container == "raw") { File.Copy(output, raw); }
-        else
+        if (!PortableWriterHandoff.Queue(source, output,
+            PortableWriterHandoff.Row(container, layout, fat, physical, true), "saveas"))
         {
-            DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
-                container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", output, raw);
+            string raw = work.PathFor("service-independent.raw");
+            if (container == "raw") { File.Copy(output, raw); }
+            else
+            {
+                DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
+                    container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", output, raw);
+            }
+            DiskWriterFixtures.CheckFat(work, raw);
         }
-        DiskWriterFixtures.CheckFat(work, raw);
         Assert.True((await service.GetEditingSnapshotAsync(info.Id)).IsModified);
         await service.DiscardAsync(info.Id);
         Assert.Empty((await service.GetEditingSnapshotAsync(info.Id)).Changes);
@@ -105,14 +109,18 @@ public sealed class DiskStagedWorkflowTests
         Assert.Empty(Directory.GetFiles(directory, ".sectorworks-commit-*"));
         Assert.Empty(CommitRecovery.Discover(directory));
 
-        string raw = work.PathFor("commit-independent.raw");
-        if (container == "raw") { File.Copy(source, raw); }
-        else
+        if (!PortableWriterHandoff.Queue(source, source,
+            PortableWriterHandoff.Row(container, layout, fat, physical, true), "commit"))
         {
-            DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
-                container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", source, raw);
+            string raw = work.PathFor("commit-independent.raw");
+            if (container == "raw") { File.Copy(source, raw); }
+            else
+            {
+                DiskWriterFixtures.Run("qemu-img", "convert", "-q", "-f",
+                    container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vpc", "-O", "raw", source, raw);
+            }
+            DiskWriterFixtures.CheckFat(work, raw);
         }
-        DiskWriterFixtures.CheckFat(work, raw);
 
         using IImageSession reopened = new ImageOpener().OpenReadOnly(source);
         using var text = new StreamReader(reopened.Volumes[0].FileSystem.OpenRead("/Existing long λ.txt"));

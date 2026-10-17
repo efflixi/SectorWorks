@@ -66,7 +66,12 @@ public sealed class PreferencesTests : IDisposable
     public void ReplacementFailureIsReportedAndReplacementFileIsCleaned()
     {
         Directory.CreateDirectory(SettingsPath);
-        Assert.ThrowsAny<IOException>(() => new JsonPreferencesStore(SettingsPath).Save(new ApplicationPreferences()));
+        string sentinel = Path.Combine(SettingsPath, "retained.txt");
+        File.WriteAllText(sentinel, "Do not replace this directory.");
+        Exception? error = Record.Exception(() => new JsonPreferencesStore(SettingsPath).Save(new ApplicationPreferences()));
+        Assert.True(error is IOException or UnauthorizedAccessException, error?.ToString() ?? "Save unexpectedly succeeded.");
+        Assert.Equal("Do not replace this directory.", File.ReadAllText(sentinel));
+        Assert.True(Directory.Exists(SettingsPath));
         Assert.Empty(Directory.GetFiles(directory));
     }
 
@@ -75,6 +80,34 @@ public sealed class PreferencesTests : IDisposable
     {
         Directory.CreateDirectory(SettingsPath);
         Assert.Throws<UnauthorizedAccessException>(() => new JsonPreferencesStore(SettingsPath).Load());
+    }
+
+    [Fact]
+    public void DestinationHandleSharingPreservesExistingBytesAndCleansReplacementFiles()
+    {
+        var store = new JsonPreferencesStore(SettingsPath);
+        var original = new ApplicationPreferences();
+        var replacement = original with { SortField = BrowserSortField.Size };
+        store.Save(original);
+        byte[] originalBytes = File.ReadAllBytes(SettingsPath);
+        using var reader = new FileStream(SettingsPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (OperatingSystem.IsWindows())
+        {
+            Exception? error = Record.Exception(() => store.Save(replacement));
+            Assert.True(error is IOException or UnauthorizedAccessException, error?.ToString() ?? "Replacement unexpectedly succeeded.");
+            Assert.Equal(originalBytes, File.ReadAllBytes(SettingsPath));
+            Assert.Equal(original, store.Load());
+        }
+        else
+        {
+            store.Save(replacement);
+            Assert.Equal(replacement, store.Load());
+        }
+        byte[] heldBytes = new byte[reader.Length];
+        reader.ReadExactly(heldBytes);
+        Assert.Equal(originalBytes, heldBytes);
+        Assert.Single(Directory.GetFiles(directory));
+        Assert.Empty(Directory.GetFiles(directory, "*.tmp-*"));
     }
 
     public void Dispose()

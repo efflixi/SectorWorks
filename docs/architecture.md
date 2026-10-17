@@ -1,5 +1,67 @@
 # Architecture
 
+## Phase 2D scope, 2026-10-17
+
+Owner-authorized 2D closes retained 2B ordinary-current-NTFS Windows reference/
+media/log-safety and 2C bounded reader/integrity/workflow gates, not new legacy/
+attribute-list writer capabilities. Keep existing Storage/Services/security
+boundaries and all qualified writes. No host mounting is introduced for core
+image access: owner-launched Windows-native disposable virtual-volume checks
+are independent interoperability evidence only. BCL codec comparison alone
+is neither complete inheritance proof nor filesystem interoperability.
+Do not continue Phase 3 recovery/UI/new-target writer implementation; preserve
+the October 16 backend delivery below. See [named closure items](../checklist.txt)
+and [current evidence](platform-status.md#phase-2d-preflight-and-closeout-2026-10-17).
+
+The opt-in `tools/SectorWorks.ReaderProbe` remains a Linux diagnostic, outside
+the product dependency graph and release payload. It uses existing reader/
+Services contracts for approved external-media source hashes, bounded workflows
+and selected temporary extraction; it does not implement a new reader or writer.
+Windows-native scripts are likewise independent generated-media verification,
+not host-driver-backed product access. Their process/evidence helpers have
+actual Windows exit/timeout and strict UTF-8 metadata regressions.
+The initial 2D application change was a clearer existing log-refusal diagnostic,
+not modern-log or TxF capability broadening. The owner-resumed corrective pass
+also repairs commit resource ownership and log concurrency, without expanding
+the writer envelope. New Windows runtime failures and
+transaction-safety proof obligations remain [explicit blockers](platform-status.md#broader-windows-runtime-execution-failures-retained-not-a-platform-pass).
+
+Commit suspends the original read-only session before taking a source write
+lock, streams a hash-checked recovery backup through the locked handle, and
+validates preservation against an independently reopened backup session.
+Windows denies other write handles but shares deletion for atomic finalize;
+finalize uses one `FileRenameInfoEx` operation with replace/POSIX semantics,
+not `File.Move` (which rejects the open target) or `File.Replace` (whose
+documented partial-failure/metadata-merge behavior is unsuitable here).
+The source lock is never released early to make replacement succeed.
+Unsupported Windows/host-filesystem atomic replacement fails explicitly;
+there is no non-atomic fallback.
+Linux uses descriptor-owned `F_OFD_SETLK`, not process-owned `F_SETLK` (closing
+an unrelated reader must not drop the lock). Unsupported Linux locking fails
+explicitly. A per-path guard also refuses concurrent writers in this process.
+Success refreshes the workspace baseline and clears committed staging/history;
+failure reopens the unchanged baseline and retains pending content. If reopening
+fails or source identity changed, further operations refuse explicitly while
+close still cleans owned payloads. A pre-finalized recovery journal alone is
+not proof that replacement never occurred: restoration refuses a source that
+does not match the backup, including the atomic-replace/final-journal gap.
+
+`JsonExplorerLog` serializes append and rotation with a bounded, path-keyed
+`Global\` named mutex on every OS, not per-instance or session-local locks.
+Linux tests create a new process session before CLR startup with `setsid --wait`;
+switching sessions from managed `Main` does not establish a trustworthy isolated
+mutex namespace. I/O, timeout and abandoned
+writer failures remain explicit. The test-only `tools/SectorWorks.RuntimeProbe`
+provides independent .NET writer/log workers without a product runtime
+dependency or inclusion in release payloads.
+
+Preference saving already reports filesystem errors and removes its uniquely
+named replacement in `finally`. The corrected tests preserve the platform's
+`IOException`/`UnauthorizedAccessException` distinction rather than hiding or
+normalizing access failures. They also verify untouched destination-directory
+contents, no temporary residue and actual Windows deny-delete handle behavior
+(Unix replacement instead preserves the old reader's bytes).
+
 The foundation's layered solution is retained. Phase 1 supplies the read-only
 pipeline and Avalonia explorer. Phase 2 adds staged modifications and Save As
 through separate editing contracts. Phase 3 (2026-10-16) adds a container/

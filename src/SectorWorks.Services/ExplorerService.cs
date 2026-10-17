@@ -101,7 +101,7 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
         await lease.Gate.WaitAsync().ConfigureAwait(false);
         try
         {
-            EnsureOpen(lease);
+            if (lease.Closed) { throw new InvalidOperationException("Workspace is closed."); }
             string path = lease.Image.Metadata.Path;
             log.Write("Closed", path, "Closing read-only workspace.");
             lease.Closed = true;
@@ -364,6 +364,10 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
         {
             throw new InvalidOperationException("Workspace is closed.");
         }
+        if (lease.UnavailableReason is not null)
+        {
+            throw new IOException("Close and reopen this workspace before further operations: " + lease.UnavailableReason);
+        }
     }
 
     private static ImageVolume GetVolume(SessionLease lease, string id)
@@ -550,11 +554,12 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
 
     private sealed class SessionLease(IImageSession image, string? sourceHash, string stagingPath)
     {
-        public IImageSession Image { get; } = image;
+        public IImageSession Image { get; set; } = image;
         public SemaphoreSlim Gate { get; } = new(1, 1);
         public bool Closed { get; set; }
+        public string? UnavailableReason { get; set; }
         public EditingState? Editing { get; set; }
-        public string? SourceHash { get; } = sourceHash;
+        public string? SourceHash { get; set; } = sourceHash;
         public string StagingPath { get; } = stagingPath;
     }
 }

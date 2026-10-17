@@ -68,7 +68,8 @@ into ignored artifacts, fixtures or packages. Initial diagnosis: live directory
 attribute list at MFT 26 references indexing extension 8336; an independent
 native index warning is now diagnosed as a whole-attribute native-tool size
 limit (**2C.6/2C.V5**), not corruption or health certification. Initial in-place
-enumeration succeeds; full extraction/source-hash qualification remains pending. Do not
+enumeration succeeds; subsequent bounded Phase 2D source-hash/selected-extraction
+evidence is recorded below, not whole-volume qualification. Do not
 promote owner content into synthetic fixtures or infer successful qualification.
 
 Newly readable legacy/attribute-list variants remain noneditable until Phase 3
@@ -82,8 +83,10 @@ remain unchanged; reader fixtures cannot close writer gates.
 `NtfsCompatibilityFixtures` creates runtime synthetic
 derivatives of the lawful 32 MiB `mkntfs`/`ntfscp` golden in a disposable
 `WorkDirectory`; the immutable compressed golden remains unchanged.
-The existing-volume managed backend authors `Legacy`, resident `NOTE.TXT` and
-16 KiB nonresident `PAYLOAD.BIN` before structural reconstruction:
+The existing-volume managed backend authors `Legacy`, resident `NOTE.TXT`,
+16 KiB nonresident `PAYLOAD.BIN` and resident `Unicode-λ.txt` before structural
+reconstruction. The Unicode file has the independently specified last-write
+timestamp `2000-02-29T12:34:56Z`:
 
 | Synthetic target | Structural changes under test |
 | --- | --- |
@@ -146,6 +149,141 @@ The extension identity guard checks header offset 44 only when USA offset is
 at least 48; legacy offset 42 is not misread as a record number. Empty nonresident
 index bitmaps do not trigger a spurious empty-run read failure.
 See [reader resource bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
+
+### Phase 2D reproducible bounded reader rows, 2026-10-17
+
+`NtfsReaderQualificationTests` adds **17 cases** to the retained 49-case reader
+selection: **66 passed, zero failed/skipped** on Linux x64. These are synthetic
+structural qualification, not NT4/Windows 2000/XP-authored interoperability.
+There are **nine shared-workflow rows**, not an untested version/feature cross-product:
+
+| Rows | Serialized layout and independently checked expectations |
+| --- | --- |
+| NTFS 1.2 ordinary | 25 active pre-XP records; all 25 SI values are 48 bytes and all 25 have per-file descriptors; Unicode file has no shared Security ID |
+| NTFS 3.0 ordinary | 25 active pre-XP records; ten 48-byte and fifteen 72-byte SI values; ten baseline per-file descriptors coexist with modern shared metadata; Unicode file has a 72-byte SI and Security ID 259 |
+| NTFS 3.1 ordinary | Same declared SI/security mixture as 3.0, with modern USA/header layout, no pre-XP headers |
+| NTFS 3.1 attribute-list: six rows | Resident/nonresident lists independently combined with a moved ordinary DATA stream, moved directory index, or split DATA stream |
+
+The first three rows exercise resident/nonresident content, Unicode spelling and
+the exact UTC timestamp through the production reader. Raw serialized SI fields
+are inspected afresh rather than trusting authoring counters. The 1.2 descriptor
+is parsed and checked as self-relative control `0x8004`, separate owner/group
+`S-1-5-18` SID copies, present non-null empty DACL and no SACL. Its exact stored
+52-byte SHA-256 is
+`4597B39D4646C2E2120FDDFED1F7A92A90CB223B96D0572AA69FD7C0B2FE2D56`.
+This is bounded on-disk interpretation, not an access-check/permissions editor,
+authentic NT4 authoring or complete Windows security interoperability proof.
+Attribute-list fixtures are **3.1 only**; do not infer that all combinations
+of 1.2/3.0 and attribute-list/security layouts have been qualified.
+
+All nine rows run shared service directory browsing, text preview, first/paged
+hex byte checks, filename search and persisted extraction. Every extracted byte
+is compared with independently declared generated content; complete SHA-256
+also agrees with native `ntfscat` **2022.10.3** on this Linux host. Native comparison
+is optional when the external tool is absent, explicitly represented by a null
+native hash in per-test evidence; it is not a runtime dependency. The complete
+source hash is unchanged after workflows and cancellation/rejection checks.
+Legacy/attribute-list staging, Save As and direct commit remain denied;
+ordinary 3.1 retains its already-qualified writer/commit capabilities.
+
+Stable generated content vectors:
+
+| Content | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `NOTE.TXT` UTF-8 literal | 36 | `024526B839EAF510847DE63C2E6FDF7C54D2B24E36F2E3C084F7A5D1F387C7CB` |
+| `PAYLOAD.BIN`, byte `i % 251` | 16384 | `4348E3B98E8A327B34CED39C1DA9E67CDB4CD5E48E4D7960607A3AE403D35F0C` |
+| `Unicode-λ.txt` UTF-8 literal | 49 | `5A0FD02AA0A76181092ECE007BB35A8A8861099DF585957B77DC66B7907EE866` |
+
+The legal 32 MiB immutable NTFS seed has expanded SHA-256
+`32387eca91198698908cfb2852aa2355cc5212a910cde0c9993aeb99ddb0fdfc`
+and compressed SHA-256
+`e36abcc2e1dcae575b4505f1e08f8cd74ca19a48c4e38ab4203fed460a95ab84`.
+Generated derivatives are not byte-deterministic because authoring retains
+ordinary creation times. Each workflow row emits its **actual full source hash,
+feature parameters, observed metadata and independent content hashes** into TRX
+output; do not regenerate fixed hashes to conceal changes. Local evidence:
+`artifacts/phase2d-reader.log`, `artifacts/phase2d-reader-tests/phase2d-reader.trx`
+and extracted metadata/hash summary `artifacts/phase2d-reader-evidence.json`.
+No owner content is part of these fixtures or records.
+
+Six additional instrumented preflight cases assert at most 64 KiB/request,
+2 MiB total metadata I/O and 2048 reads on these small fixtures, without raising
+production limits. Two cases cancel **during** metadata reads, require
+`OperationCanceledException` rather than corruption, release the source handle
+and preserve its hash. Each workflow also cancels browse/preview/hex/search/
+extraction, leaves no partial extraction and verifies subsequent browsing works.
+Existing malformed/reference/VCN/list-cap/bootstrap/index tests now explicitly
+check unchanged source hashes on their error/cancellation paths. Existing
+mixed-volume capability-isolation coverage remains selected. MFT bootstrap lists,
+unqualified sparse/compressed/encrypted/link/reparse/ADS content and legacy/
+attribute-list writing remain unsupported.
+
+Repeat the focused selection from the repository root:
+
+```sh
+source scripts/common.sh
+"$DOTNET" test tests/SectorWorks.StorageTests/SectorWorks.StorageTests.csproj \
+  --configuration Release --no-restore \
+  --filter 'FullyQualifiedName~NtfsReaderQualificationTests|FullyQualifiedName~NtfsCompatibilityVersionTests|FullyQualifiedName~NtfsAttributeListTests' \
+  --logger 'trx;LogFileName=phase2d-reader.trx' \
+  --results-directory artifacts/phase2d-reader-tests
+```
+
+### Local-only owner-media probe
+
+`tools/SectorWorks.ReaderProbe` is a Linux-only diagnostic executable, not a
+fixture generator, product dependency or package input. It hashes the external
+source completely **before** opening production readers and **after** closing
+all sessions and deleting selected extraction. Linux stat device/inode/size/
+mtime/ctime fingerprints must also remain identical. The source is never copied,
+mounted, changed or transferred. The caller must provide an existing empty
+owner-only directory outside the repository/Dropbox on private local storage;
+the tool rejects symlinked output paths and removes its owned child directory.
+It never writes content logs: text/hex stay in memory, service logging is
+disabled, and selected source filenames are replaced by aliases in JSON.
+
+With the owner's explicit 2026-10-17 permission, three complete runs matched
+full before/after source SHA-256 and identity. Final safe hash/metadata-only JSON
+is local at `artifacts/phase2d-tower-final-result.json`; the private source path
+is deliberately not documented. The final run streamed/extracted a **45-byte
+resident text**, **491792-byte nonresident DLL** and **743184-byte nonresident
+DLL**, **1235021 bytes total**, below the **67108864-byte** approved output cap.
+Native `ntfsinfo` independently confirms residence. Production streams, native
+`ntfscat` and persisted extraction hashes match for all three; selected content
+and the private output directory were removed. The known 191-byte `boot.ini`
+stream is separately hashed in memory and matches native bytes; retained
+hidden/system enumeration filters are unchanged.
+
+Counts are now labeled precisely: **904 filtered child directories / 905
+including root, 16199 files**, zero enumeration failures; **10 filtered root
+entries versus native 24**, and **1844 filtered system32 entries versus native
+1851**. Earlier root count 24 was the native view, not a promise that the
+unchanged signed-reader filters expose every entry. The strict historical
+preflight still rejects attribute lists/extensions; current production reading
+succeeds. Current writer qualification separately rejects the BPB hidden-sector/
+absolute-offset mismatch. Neither is silently repaired. The documented initial
+MFT-26/extension-8336 diagnosis and native **65536-byte readall limit versus
+344064-byte index** remain distinct; successful selected reads do not certify
+whole-volume health, safe writing or authentic historical authoring.
+
+To repeat only after equivalent explicit owner approval:
+
+```sh
+source scripts/common.sh
+"$DOTNET" restore tools/SectorWorks.ReaderProbe --locked-mode
+"$DOTNET" build tools/SectorWorks.ReaderProbe --configuration Release --no-restore
+"$DOTNET" tools/SectorWorks.ReaderProbe/bin/Release/net10.0/SectorWorks.ReaderProbe.dll \
+  "$APPROVED_EXTERNAL_SOURCE" "$EXISTING_PRIVATE_LOCAL_OUTPUT" \
+  > artifacts/owner-reader-result.json
+```
+
+The source is not discovered or hardcoded by the tool. Native `ntfscat`,
+`ntfsls`, `ntfsinfo` and `stat` must be available at the declared Linux paths.
+The selected workflow has an eight-minute cancellation deadline; native
+processes are terminated by their specific process handle on cancellation.
+This diagnostic does not broaden product support, filters or writer eligibility.
+Remaining full-repository, unavailable-platform and owner-review gates are
+tracked separately by the parent Phase 2D ledger.
 
 ## Immutable golden catalog
 

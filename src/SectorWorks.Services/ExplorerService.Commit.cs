@@ -49,23 +49,32 @@ public sealed partial class ExplorerService
             bool stagingCreated = false;
             bool journalWritten = false;
             bool backupCreated = false;
+            bool finalized = false;
+            Exception? commitFailure = null;
+            IImageSession? baseline = null;
+            SourceWriteLock? writeLock = null;
+            string? outputHash = null;
+            long outputLength = length;
+            string sourceHash = lease.SourceHash ?? throw new IOException("Direct commit requires a source baseline.");
+            string[] changedVolumes = operations.Select(operation => operation.Request.VolumeId)
+                .Distinct(StringComparer.Ordinal).ToArray();
+            var expected = changedVolumes.ToDictionary(volumeId => volumeId,
+                volumeId => Fingerprint(GetVolume(lease, volumeId).FileSystem, cancellationToken), StringComparer.Ordinal);
+            int files = changedVolumes.Sum(volumeId => state.Current.Volumes[volumeId].Values.Count(node => !node.Entry.IsDirectory));
 
-            progress?.Report(new OperationProgress("Acquiring exclusive lock", source, 0, 0));
-            using SourceWriteLock writeLock = SourceWriteLock.Acquire(source);
+            lease.Image.Dispose();
             try
             {
-                VerifySource(lease, cancellationToken);
-
-                string[] changedVolumes = operations.Select(operation => operation.Request.VolumeId)
-                    .Distinct(StringComparer.Ordinal).ToArray();
-                var expected = changedVolumes.ToDictionary(volumeId => volumeId,
-                    volumeId => Fingerprint(GetVolume(lease, volumeId).FileSystem, cancellationToken), StringComparer.Ordinal);
+                progress?.Report(new OperationProgress("Acquiring exclusive lock", source, 0, 0));
+                writeLock = SourceWriteLock.Acquire(source);
+                writeLock.VerifySource(sourceHash, length, cancellationToken);
 
                 progress?.Report(new OperationProgress("Creating recovery backup", backupPath, 0, 0));
-                CommitBackup.Create(source, backupPath);
+                writeLock.CreateBackup(backupPath, sourceHash, length, cancellationToken);
                 backupCreated = true;
                 CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, staging, CommitStage.BackupTaken, DateTime.UtcNow));
                 journalWritten = true;
+                baseline = opener.OpenReadOnly(backupPath, cancellationToken);
 
                 progress?.Report(new OperationProgress("Staging changes", staging, 0, 0));
                 File.Copy(backupPath, staging, overwrite: false);
@@ -78,15 +87,15 @@ public sealed partial class ExplorerService
                 progress?.Report(new OperationProgress("Validating tree and SHA-256", staging, length, 0));
                 using (IImageSession reopened = opener.OpenReadOnly(staging, cancellationToken))
                 {
-                    if (reopened.Metadata.Format != lease.Image.Metadata.Format
-                        || reopened.Device.Length != lease.Image.Device.Length
-                        || reopened.Device.LogicalSectorSize != lease.Image.Device.LogicalSectorSize
-                        || reopened.Device.PhysicalSectorSize != lease.Image.Device.PhysicalSectorSize
-                        || !reopened.Partitions.SequenceEqual(lease.Image.Partitions)
-                        || reopened.Volumes.Count != lease.Image.Volumes.Count
-                        || reopened.Volumes.Where((volume, index) => volume.Id != lease.Image.Volumes[index].Id
-                            || volume.FileSystem.Name != lease.Image.Volumes[index].FileSystem.Name
-                            || volume.Partition != lease.Image.Volumes[index].Partition).Any())
+                    if (reopened.Metadata.Format != baseline.Metadata.Format
+                        || reopened.Device.Length != baseline.Device.Length
+                        || reopened.Device.LogicalSectorSize != baseline.Device.LogicalSectorSize
+                        || reopened.Device.PhysicalSectorSize != baseline.Device.PhysicalSectorSize
+                        || !reopened.Partitions.SequenceEqual(baseline.Partitions)
+                        || reopened.Volumes.Count != baseline.Volumes.Count
+                        || reopened.Volumes.Where((volume, index) => volume.Id != baseline.Volumes[index].Id
+                            || volume.FileSystem.Name != baseline.Volumes[index].FileSystem.Name
+                            || volume.Partition != baseline.Volumes[index].Partition).Any())
                     {
                         throw new InvalidDataException("Staged output container, partitions or filesystem identities differ from the source.");
                     }
@@ -106,7 +115,7 @@ public sealed partial class ExplorerService
                             throw new InvalidDataException("Staged output validation failed: directory tree, file lengths or SHA-256 content hashes differ.");
                         }
                     }
-                    try { writer.ValidateOutput(lease.Image, reopened, operations, cancellationToken); }
+                    try { writer.ValidateOutput(baseline, reopened, operations, cancellationToken); }
                     catch (Exception error) when (error is IOException or InvalidDataException or NotSupportedException)
                     {
                         throw new InvalidDataException("Staged output metadata/preservation validation failed: " + error.Message, error);
@@ -116,27 +125,37 @@ public sealed partial class ExplorerService
 
                 cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report(new OperationProgress("Rechecking source baseline", source, length, 0));
-                VerifySource(lease, cancellationToken);
+                writeLock.VerifySource(sourceHash, length, cancellationToken);
+                outputLength = new FileInfo(staging).Length;
+                outputHash = HashSourceFile(staging, outputLength, cancellationToken);
 
                 progress?.Report(new OperationProgress("Finalizing commit", source, length, 0));
-                File.Move(staging, source, overwrite: true);
+                cancellationToken.ThrowIfCancellationRequested();
+                writeLock.ReplaceSource(staging);
+                finalized = true;
                 stagingCreated = false;
                 // The source is now authoritative; a crash past this point must never restore the backup.
                 CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, staging, CommitStage.Finalized, DateTime.UtcNow));
 
+                baseline.Dispose();
+                baseline = null;
                 File.Delete(backupPath);
                 CommitJournal.Delete(journalPath);
                 journalWritten = false;
 
-                int files = changedVolumes.Sum(volumeId => state.Current.Volumes[volumeId].Values.Count(node => !node.Entry.IsDirectory));
-                long outputLength = new FileInfo(source).Length;
                 log.Write("CommitValidated", source, $"Direct-committed {files} files; backup and journal removed after validated finalize.");
                 return new CommitResult(source, outputLength, files,
                     "Locked source; retained backup until validated reopen; reopened image; container/partition identities and qualified volume allocation, metadata, complete directory trees, lengths and SHA-256 hashes verified; atomically finalized.",
                     transactionId);
             }
-            catch (Exception)
+            catch (Exception error)
             {
+                commitFailure = error;
+                if (finalized && !journalWritten)
+                {
+                    log.Write("CommitPostFinalizeFailure", source,
+                        "Source was committed, but post-finalize reporting or cleanup failed: " + error.Message, "Error");
+                }
                 if (stagingCreated)
                 {
                     try { File.Delete(staging); }
@@ -148,7 +167,9 @@ public sealed partial class ExplorerService
                 if (journalWritten)
                 {
                     log.Write("InterruptedCommit", source,
-                        $"Direct commit failed before finalize; source was not modified. Backup retained at {backupPath}; journal retained at {journalPath} for recovery.",
+                        finalized
+                            ? $"Source was committed, but post-finalize bookkeeping failed. Do not restore the old backup. Review retained backup {backupPath} and journal {journalPath}."
+                            : $"Direct commit failed before finalize; source was not replaced. Backup retained at {backupPath}; journal retained at {journalPath} for recovery.",
                         "Warning");
                 }
                 else if (backupCreated)
@@ -156,9 +177,50 @@ public sealed partial class ExplorerService
                     // Backup was taken but no journal references it yet (failure happened in the
                     // narrow window between copy and the first durable journal write); it is
                     // orphaned and safe to remove since no recovery scan can find it anyway.
-                    try { File.Delete(backupPath); } catch (IOException) { }
+                    baseline?.Dispose();
+                    baseline = null;
+                    try { File.Delete(backupPath); }
+                    catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
+                    {
+                        log.Write("ResidualCommitBackup", backupPath, cleanup.Message, "Warning");
+                    }
                 }
                 throw;
+            }
+            finally
+            {
+                baseline?.Dispose();
+                writeLock?.Dispose();
+                IImageSession? refreshed = null;
+                try
+                {
+                    refreshed = opener.OpenReadOnly(source);
+                    string actualHash = HashSourceFile(source, finalized ? outputLength : length, CancellationToken.None);
+                    if (actualHash != (finalized ? outputHash : sourceHash))
+                    {
+                        throw new IOException("Source no longer matches the verified workspace baseline.");
+                    }
+                    lease.Image = refreshed;
+                    refreshed = null;
+                    lease.SourceHash = actualHash;
+                    if (finalized)
+                    {
+                        lease.Editing = null;
+                        state.Dispose();
+                    }
+                }
+                catch (Exception error) when (IsOperationFailure(error))
+                {
+                    lease.UnavailableReason = error.Message;
+                    log.Write("CommitWorkspaceUnavailable", source,
+                        (finalized ? "Source was committed. " : "Commit did not finalize. ")
+                        + "Workspace could not be reopened; pending payloads remain owned until close. " + error.Message, "Error");
+                    if (commitFailure is null)
+                    {
+                        throw new IOException("Source was committed, but the workspace could not be reopened. Close and reopen it.", error);
+                    }
+                }
+                finally { refreshed?.Dispose(); }
             }
         }, cancellationToken);
 }

@@ -5,7 +5,44 @@ in C# with Avalonia and MVVM. It will inspect, browse, extract and, when safely
 supported, stage modifications and commit or rebuild images without host-OS
 mounting. Source data integrity and capability-based support are central.
 
-**Status: Phase 2B partially delivered; Phase 2C's bounded reader is implemented,
+**Current milestone: owner-authorized Phase 2D closeout (2026-10-17), in progress.**
+The [2D closure ledger](checklist.txt) retains the incomplete 2B ordinary-NTFS
+Windows reference/media/LFS 2.0 gates and 2C bounded-reader/Tower integrity and
+workflow gates. Reassignment is not completion. Existing October 16 Phase 3
+backend direct-commit delivery is preserved; its remaining new-target writer,
+startup recovery and UI work is not authorized by 2D. Older "Phase 3 not
+authorized/unimplemented" wording below is historical, not the current state.
+Newly readable legacy/attribute-list NTFS stays noneditable; qualified FAT/NTFS
+writes remain intact. ARM64 verification is explicitly blocked by unavailable
+hardware; macOS remains unsupported/build-only. No later-phase or publication
+authority follows. See [current evidence](docs/platform-status.md).
+
+Verified 2D subwork now includes the Windows security codec reference, nine
+bounded synthetic reader workflow rows on Linux/Windows x64, and local-only
+Tower full-source hashes/selected extraction checks. Initial full Linux verification:
+**1136 passed, one Windows-only skip**; all six publishes/Linux AppImage pass.
+Final corrective-source Linux verification now passes **1178 tests, one
+Windows-only skip** (1179 total), with zero build warnings/errors and formatting/
+resource/reference-copy checks passing. All six publishes/AppImage are refreshed.
+Windows-authored edited-output interoperability, transaction/modern-log safety
+and unavailable ARM64 evidence remain incomplete. Passing reader/build checks
+does not enable additional writing or complete Phase 2D.
+The initial broader Windows run exposed direct-commit sharing, logging and
+preference-test failures; its failed results remain historical evidence.
+The owner-resumed corrective pass now passes actual Windows **177/177 Services**,
+**392/392 reader/security/safety**, **168/168 writer workflows** and **9/9 real
+two-commit growth cases**. All **186 exact outputs** pass **876** independent
+Linux native commands; no missing-tool checks were silently dropped.
+This qualifies the retained Linux-authored/generated rows on Windows, **not**
+Windows-authored TxF/CLFS or LFS 2.0 writing. See
+[current results and retained blockers](docs/platform-status.md#final-global-session-corrective-snapshot).
+
+The bounded corrective pass does not authorize
+remaining Phase 3 features or waive TxF/CLFS, LFS 2.0 or ARM64 requirements.
+Full Linux and cross-publish evidence is recorded separately against its
+verified source snapshot; counts are not combined into a Windows solution pass.
+
+**Historical Phase 2B/2C delivery: Phase 2B partially delivered; Phase 2C's bounded reader is implemented,
 with remaining 1.0 verification/review gates open.** Authentic NT4/Windows
 2000/XP-created-media qualification is owner-deferred to a tracked post-1.0
 update, not a 1.0 blocker or a passed qualification. Managed NTFS writing is implemented
@@ -29,7 +66,8 @@ as recorded in the checklist. Phase 2B adds shared staged modifications and Save
 new image for individually qualified FAT and ordinary NTFS volumes in raw, fixed/dynamic VHD and
 fixed/dynamic VHDX; source images remain read-only.
 See [staged editing and safety](docs/staged-editing.md). Direct commit
-(Phase 3), ISO rebuild (Phase 4) and audio workflows (Phase 6) are not enabled.
+(Phase 3) has a verified backend-only increment, not a user-facing command.
+ISO rebuild (Phase 4) and audio workflows (Phase 6) are not enabled.
 
 Owner-authorized ISO reader refinements now handle zero-length files with
 unused out-of-range sector addresses without seeking or rewriting the image,
@@ -193,9 +231,12 @@ writer diagnostic now names its Phase 2B subset/Phase 3, not obsolete Phase 1 sc
 - .NET SDK **10.0.402**, pinned exactly in `global.json`.
 - .NET **10 LTS**, target `net10.0`; validation host runtime **10.0.13**.
 - Bash and network access to NuGet for the first restore/publish.
-- `qemu-img` for Phase 2B disposable container/interoperability tests. Native
-  `fsck.fat`/mtools and NTFS tools add independent checks when installed; none
-  is a runtime application dependency.
+- `qemu-img`, `fsck.fat`/mtools and NTFS tools for complete Linux writer/
+  interoperability qualification, including the mandatory exact-output handoff
+  checks. Windows managed workflows use the sealed generated-input catalog and
+  return outputs for Linux validation; missing checks are not silent passes.
+- Linux `setsid` (`util-linux`) for independent-session log-concurrency tests.
+  Neither the native checking tools nor `setsid` is an application dependency.
 - Primary host: Linux Mint 22 x86-64 / VS Code.
 
 Install that SDK using Microsoft's [.NET installation instructions](https://learn.microsoft.com/dotnet/core/install/).

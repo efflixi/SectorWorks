@@ -316,6 +316,53 @@ and enroll a new dedicated key rather than reusing the exposed key.
 VERIFIED STATUS AND REMAINING WORK
 ---------------------------------
 
+2026-10-17 Phase 2D preflight: strict explicit-key/publickey-only/BatchMode/-T
+access was reverified as the standard testing account after the owner changed
+the active laptop LAN profile from Public back to Private. A running sshd
+service alone did not prevent the earlier port-22 timeouts under the existing
+Private-only firewall rule. No firewall bypass or agent elevation was used.
+Read-only inventory found no dotnet/Git, 64-bit OS/process and about 131 GiB
+free. Owner authorized user-local pinned tooling/project transfer and generated
+disposable test media, with privileged native virtual-disk preparation/reopen
+performed only through finite bounded scripts launched locally by the owner.
+This does not elevate the testing account, authorize a privileged command
+broker/service/schedule, or permit real-disk operations. Testing results are
+recorded separately in docs/platform-status.md; access is not qualification.
+
+Executed 2D tooling is user-local official SDK 10.0.402/runtime 10.0.13,
+archive SHA-512 verified against official metadata. No Git/global SDK
+installation or elevation of the SSH account was required.
+
+Repository qualification helpers:
+- scripts/windows-setup-sdk.ps1: pinned user-local SDK preparation.
+- scripts/windows-native-process.ps1 and windows-native-process-tests.ps1:
+  finite native process exit/timeout collection and no-admin regressions.
+- scripts/windows-native-evidence.ps1 and windows-native-evidence-tests.ps1:
+  strict UTF-8/no-BOM JSON metadata reading and no-admin Unicode/error tests.
+- scripts/windows-native-ntfs.ps1: owner-local administrator only; finite
+  Author/ReopenSource/ReopenSourceRetry/ReopenOutput modes for its exact
+  dedicated disposable 128 MiB virtual files. No arbitrary disk arguments,
+  automatic elevation, chkdsk repair, physical disks or existing-root reuse.
+- scripts/windows-native-recover.ps1: one-time exact first-attempt generated
+  VHD detach/evidence preservation; not a general recovery or cleanup utility.
+- scripts/inspect-windows-ntfs.py: read-only bounded raw derivative metadata
+  observations; not a writer or native clean-state certification.
+- scripts/writer-handoff.py and windows-writer-handoff.ps1: standard-user
+  generated-fixture transfer/managed runtime qualification, with exact-output
+  independent Linux native checks. No Windows mount/elevation is required.
+  See docs/windows-writer-handoff.md for sealed source/input/output manifests
+  and mandatory pending-versus-verified evidence states. These checks do not
+  qualify Windows-authored TxF/CLFS or LFS 2.0/cache safety.
+
+Run the process/evidence regression scripts with Windows PowerShell -NoProfile;
+if local execution policy blocks a reviewed script, use -ExecutionPolicy Bypass
+for that one process only, never change machine-wide policy as a workaround.
+The native administrator script remains a separate owner-local action; do not
+run it via SSH/elevation or repeat single-use modes against existing evidence.
+Initial failed attempts and all reports remain preserved. Source-readonly retry
+passed; native edited-output interoperability did not run. Actual broader
+Windows test failures/tool gaps are recorded in docs/platform-status.md.
+
 2026-10-15: The owner reports password SSH working on a Windows 11 Home x64
 laptop. After public-key enrollment reported success, the agent verified an
 explicit-key, BatchMode, publickey-only, strict-host-checking whoami command:

@@ -64,9 +64,11 @@ public sealed class NtfsAttributeListTests
         using var work = new WorkDirectory();
         var fixture = new ExtensionFixture(work, false, false, corruption == "split-gap");
         fixture.Corrupt(corruption);
+        string before = Hash(fixture.Path);
         ImageFormatException error = Assert.Throws<ImageFormatException>(() =>
             new ImageOpener().OpenReadOnly(fixture.Path));
         Assert.Contains("NTFS", error.Message, StringComparison.Ordinal);
+        Assert.Equal(before, Hash(fixture.Path));
         using FileStream unlocked = File.Open(fixture.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
     }
 
@@ -131,8 +133,10 @@ public sealed class NtfsAttributeListTests
         using var work = new WorkDirectory();
         var fixture = new ExtensionFixture(work, true, true, false);
         fixture.Limit(kind);
+        string before = Hash(fixture.Path);
         ImageFormatException error = Assert.Throws<ImageFormatException>(() => new ImageOpener().OpenReadOnly(fixture.Path));
         Assert.Contains(message, error.Message, StringComparison.Ordinal);
+        Assert.Equal(before, Hash(fixture.Path));
     }
 
     [Theory]
@@ -153,8 +157,10 @@ public sealed class NtfsAttributeListTests
     {
         using var work = new WorkDirectory();
         var fixture = new ExtensionFixture(work, false, true, false);
+        string before = Hash(fixture.Path);
         Assert.Throws<OperationCanceledException>(() => new ImageOpener()
             .OpenReadOnly(fixture.Path, new CancellationToken(true)));
+        Assert.Equal(before, Hash(fixture.Path));
         using FileStream unlocked = File.Open(fixture.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
     }
 
@@ -206,7 +212,7 @@ public sealed class NtfsAttributeListTests
         Assert.Equal(baseline, Hash(source));
     }
 
-    private sealed class ExtensionFixture
+    internal sealed class ExtensionFixture
     {
         private readonly byte[] _bytes;
         private readonly int _cluster;

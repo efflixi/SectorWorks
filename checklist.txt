@@ -13,6 +13,7 @@ WORKFLOW AUTHORITY
 - At the end of every phase, the agent must perform verification, update this checklist truthfully, request user review, and STOP.
 - Phase 2B is a separate owner-approved roadmap milestone between Phase 2 and Phase 3. It requires explicit implementation authorization; documentation approval is not authorization to start it.
 - Phase 2C is the owner-authorized NTFS reader-compatibility milestone before Phase 3 (2026-10-15). Newly readable attribute-list/legacy variants remain noneditable until separate Phase 3 staged-editing, Save As and NTFS-write qualification precedes their direct-commit qualification.
+- Phase 2D is owner-authorized on 2026-10-17 to close retained Phase 2B/2C work using the bounded closure ledger below. It follows 2C and precedes REMAINING Phase 3 work; it does not revoke the 2026-10-16 Phase 3 authorization or erase its delivered backend evidence. Earlier statements that Phase 3 is unauthorized/unstarted describe the earlier dated envelope only.
 - macOS support policy (owner-approved, 2026-10-16): macOS has no reliable owner test environment and macOS verification will not be pursued. macOS is a standing unsupported, build-only target, not dropped: cross-compiled osx-x64/osx-arm64 builds and publishes continue, but no physical runtime testing, workflow verification, or compatibility support is performed or claimed anywhere in this checklist or related documentation. See the technical specification section 4.2 amendment. Release notes and README must inform users plainly that macOS builds are unsupported and untested.
 
 STATUS KEY
@@ -795,6 +796,14 @@ GOAL:
 Extend the shared staged workflow and validated Save As to the already-readable
 disk-container/filesystem stacks before adding direct commit in Phase 3.
 
+    CLOSEOUT (owner-authorized 2026-10-17): Retain every status/evidence below.
+    Outstanding 2B.3/2B.4/2B.5 row qualifications and 2B.6 ordinary-operation/
+    replaceability/Windows-reference/Windows-media/LFS requirements map to
+    2D.2-2D.5. Outstanding 2B.7 fixture/workflow requirements and the blocked
+    shared-workflow verification gate map to 2D.3/2D.5/2D.9. Both blocked 2B
+    exits map to 2D.E1/2D.E4. Reassignment is not a pass or a scope waiver;
+    actual current Windows-media/security-reference/LFS 2.0 gates stay required.
+
     NOTE: Owner authorized Phase 2B implementation on 2026-10-15 following
     the 1.0 read-only scope correction. Phase 3 remains unauthorized.
     Required coverage is raw, fixed/dynamic VHD and fixed/dynamic VHDX, each
@@ -938,6 +947,10 @@ disk-container/filesystem stacks before adding direct commit in Phase 3.
     command access (2026-10-15). SDK/Git preparation, Windows tests/reference,
     authored fixtures and interactive GUI verification have not been performed.
     Access alone does not resolve this blocker or qualify modern-log safety.
+    NOTE: 2D update 2026-10-17 supersedes the infrastructure-only status:
+    actual Windows codec 271/271 and reader 66/66 pass; owner-authored native
+    source/reopen checks pass on disposable media. Native edited-output/stack
+    matrix and modern-log/cache safety remain incomplete; GUI is not claimed.
 
 2B.7 Verification and coverage evidence
 [!] Add legal repeatable disposable fixtures for every required container/layout/filesystem row and meaningful naming/sector/allocation variants.
@@ -1015,6 +1028,14 @@ GOAL:
 Expand and independently qualify safe NTFS reading before Phase 3, without
 expanding the qualified Phase 2B writer.
 
+    CLOSEOUT (owner-authorized 2026-10-17): Retain every status/evidence below.
+    Outstanding 2C.3 bounded metadata/content and 2C.5 synthetic fixture hashes/
+    feature records map to 2D.6; 2C.6 source hash/rejection/extraction maps to
+    2D.7. 2C.V1/V2/V7/V8 map to 2D.1/2D.9; V3 to 2D.6/2D.7; parent V6
+    to 2D.8. E1 maps to 2D.6; E4 to 2D.7; E5 to 2D.5-2D.9; E6 to
+    2D.1/2D.9. Existing checked subitems remain historical evidence; deferred
+    authentic-media portions remain P1.NTFS, not 2D work or passed tests.
+
     NOTE: Owner explicitly authorized this roadmap/specification change and
     Phase 2C implementation on 2026-10-15. Qualification targets are NTFS 1.2
     (Windows NT 4.0), 3.0 (Windows 2000) and 3.1 (Windows XP and later), each
@@ -1072,9 +1093,12 @@ expanding the qualified Phase 2B writer.
     Zero-length nonresident index bitmaps are supported without reading empty runs.
 
 2C.3 Legacy metadata and ordinary-content access
-[ ] Qualify ordinary resident/nonresident files, directory indexes, Unicode names, timestamps and version-specific metadata/security interpretation for each declared target.
+[x] Qualify ordinary resident/nonresident files, directory indexes, Unicode names, timestamps and version-specific metadata/security interpretation for each declared target.
     NOTE: Retain bounded structural/automated qualification in 1.0;
     authentic historical-media comparisons move to P1.NTFS.3-P1.NTFS.4.
+    Closed under 2D.6: nine declared workflow rows, 66 focused passes on
+    Linux x64 and Windows x64. Three ordinary synthetic versions plus six
+    3.1 list variants, not an all-version/feature cross-product.
 [x] Expose the detected version in filesystem Properties under "NTFS version"; distinguish observed version metadata from authentic authoring provenance.
 [x] Exercise browse, bounded preview/hex, search and extraction through the existing shared read-only service contracts, without host mounting or source modification.
     NOTE: Fourteen version/layout tests now include shared-service workflows,
@@ -1102,12 +1126,17 @@ expanding the qualified Phase 2B writer.
     reconstructed synthetic 1.2/3.0/3.1 browse/content hashes/writer gates,
     serialized layouts and five unsupported versions. No authentic NT4/2000/XP
     authoring/runtime interoperability follows; provenance in docs/fixtures.md.
-[ ] Record hashes and exact supported layouts/features; do not redistribute proprietary OS/owner content or promote it into fixtures.
+[x] Record hashes and exact supported layouts/features; do not redistribute proprietary OS/owner content or promote it into fixtures.
     NOTE: This retained 1.0 item covers current legal synthetic/read fixtures.
     Authentic-media hashes/provenance are tracked separately in P1.NTFS.2.
+    Closed under 2D.6; docs/fixtures.md records serialized SI/security/header
+    layouts, stable content/seed hashes and actual per-row source hashes in TRX.
 
 2C.6 Owner Tower-image diagnosis and independent index warning
-[ ] Reproduce the supplied initial rejection through read-only diagnostics with explicit bounds and unchanged source hash.
+[x] Reproduce the supplied initial rejection through read-only diagnostics with explicit bounds and unchanged source hash.
+    NOTE: Closed under 2D.7 with full before/after SHA-256 and separately
+    reproduced original rejection/current bounded-reader success. Earlier
+    partial observations below remain historical, not the final evidence.
     NOTE: Initial diagnosis only: approximately 8.42 GB raw NTFS 3.0; live
     directory attribute list at MFT record 26 references indexing extension
     record 8336. Initial native index warning was investigated separately below;
@@ -1130,9 +1159,13 @@ expanding the qualified Phase 2B writer.
     Tower's in-bounds contiguous index is 344064 bytes. Warning resolved as
     a native-tool limit, not evidence of corruption or volume-health certification.
     Public pinned source inspected; references in docs/platform-status.md.
-[ ] Verify supported Tower browse/extraction locally only when safe, without copying, modifying or distributing the owner image.
+[x] Verify supported Tower browse/extraction locally only when safe, without copying, modifying or distributing the owner image.
     NOTE: Tower remains outside the repository. Do not copy it into artifacts,
     fixtures or packages; no content distribution, source repair or write test.
+    Closed under 2D.7: 1235021 selected bytes, production/native/extraction
+    hashes agree, temporary private outputs removed. Full source hash and
+    identity unchanged. 904 child directories / 905 including root; unchanged
+    filtered/native counts root 10/24, system32 1844/1851. Not whole-volume health.
 
 2C.7 Evidence and documentation
 [x] Publish exact delivered version/feature rows, authentic-fixture gaps, independent-tool disagreements and resource/capability limitations.
@@ -1141,8 +1174,14 @@ expanding the qualified Phase 2B writer.
 ----------------------------------------
 PHASE 2C VERIFICATION AND USER REVIEW GATE
 ----------------------------------------
-[ ] 2C.V1 Re-read mandatory rules, full checklist and synchronized technical specifications; review all 2C tasks.
-[ ] 2C.V2 Run restore/build/verify with new reader, malformed-reference and structural version/layout tests; record pass/skip/blocker counts, not synthetic-only authentic legacy completion.
+[x] 2C.V1 Re-read mandatory rules, full checklist and synchronized technical specifications; review all 2C tasks.
+    NOTE: Repeated under owner-authorized 2D preflight/closure review.
+[x] 2C.V2 Run restore/build/verify with new reader, malformed-reference and structural version/layout tests; record pass/skip/blocker counts, not synthetic-only authentic legacy completion.
+    NOTE: Closed under 2D full verify: 1136 passed/one Linux Windows-only BCL
+    skip, 1137 total; 871 storage passes/one skip, 156 Services, 68 UI,
+    27 dependency, 14 foundation. No build warnings/errors; formatting,
+    UI resources/AppRun and all five reference-copy pairs pass.
+    artifacts/phase2d-verify.log. Earlier chronology below remains unchanged.
     NOTE: scripts/verify.sh passed: 1001 passed/one Windows-only security-
     reference skip, 1002 total (14 foundation, 27 dependency, 68 UI,
     156 Services, 736 storage passes/one skip; storage 10m50s).
@@ -1164,9 +1203,11 @@ PHASE 2C VERIFICATION AND USER REVIEW GATE
     Authentic legacy evidence is deferred to P1.NTFS.1-P1.NTFS.4.
     Owner-image full source hashes/extraction remain pending in 2C.6.
 [-] 2C.V2h Authentic historical-media test execution/reporting: moved to post-1.0 P1.NTFS.3-P1.NTFS.4; remaining automated verification above is still required.
-[ ] 2C.V3 Exercise browse/preview/hex/search/extraction and unchanged source hashes for each claimed version/feature row with independent read comparisons where available.
+[x] 2C.V3 Exercise browse/preview/hex/search/extraction and unchanged source hashes for each claimed version/feature row with independent read comparisons where available.
     NOTE: Retain current bounded synthetic/owner-image workflow and integrity
     requirements; authentic historical-media repetitions move to P1.NTFS.4.
+    Closed under 2D.6/2D.7: nine declared synthetic rows plus local-only Tower,
+    complete source hashes, persisted selected extraction and native comparisons.
 [x] 2C.V4 Regress existing Phase 2B FAT/managed-NTFS staged operations, history, Save As, allocation/metadata checks and mixed-volume capability isolation.
     NOTE: Full verification retains existing writer checks; latest 49/49 adds
     GPT qualified FAT Save As/unchanged attribute-list NTFS partition hash.
@@ -1181,18 +1222,27 @@ PHASE 2C VERIFICATION AND USER REVIEW GATE
     GUI testing, authentic legacy-media qualification or release publication.
     The parent 2C.V6 gate stays open for remaining general platform gaps;
     authentic historical-media workflows move to P1.NTFS.4.
-[ ] 2C.V7 Review safety bounds, TODOs/stubs/skips, all exit criteria and documentation; verify technical-spec copies remain byte-identical.
-[ ] 2C.V8 Prepare owner review summary and STOP. Phase 3 requires explicit separate authorization; do not implement new-target editing or direct commit.
+[x] 2C.V7 Review safety bounds, TODOs/stubs/skips, all exit criteria and documentation; verify technical-spec copies remain byte-identical.
+    NOTE: Closed in 2D review; new reader/tools contain no TODO/stub/skip
+    placeholders. Pinned imports unchanged, spec copies equal. Windows/ARM64/
+    writer proof gaps remain explicitly incomplete, not reviewed-as-passed.
+[x] 2C.V8 Prepare owner review summary and STOP. Phase 3 requires explicit separate authorization; do not implement new-target editing or direct commit.
+    NOTE: Closed under 2D owner-selected bounded review stop. Existing separately
+    authorized October 16 backend work is preserved; remaining Phase 3 not begun.
 
 PHASE 2C EXIT CRITERIA
-[ ] 2C.E1 Each claimed bounded NTFS 1.2/3.0/3.1 row has reproducible supported-feature evidence and exact synthetic/observed provenance and exclusions; no authentic historical-OS compatibility claim follows.
+[x] 2C.E1 Each claimed bounded NTFS 1.2/3.0/3.1 row has reproducible supported-feature evidence and exact synthetic/observed provenance and exclusions; no authentic historical-OS compatibility claim follows.
+    NOTE: Closed under 2D.6; exact nine-row envelope/provenance is in
+    docs/fixtures.md. Authentic-media and untested cross-products are not passed.
 [-] 2C.E1h Authentic historical authoring-provenance exit gate: moved to post-1.0 P1.NTFS.2-P1.NTFS.4, not a 1.0 blocker.
 [x] 2C.E2 Supported attribute lists/extensions and version-specific ordinary-content reads pass bounded normal/malformed/reference tests without incorrect bytes or hangs.
     NOTE: Exact bounded synthetic subset, latest 49/49 focused tests; MFT bootstrap lists
     explicitly rejected. This does not complete remaining 1.0 phase gates
     or deferred P1.NTFS authentic legacy qualification.
 [x] 2C.E3 Newly readable attribute-list/legacy variants remain noneditable; existing qualified Phase 2B editing and its incomplete mandatory gates are unchanged.
-[ ] 2C.E4 Tower's rejection and independent native index warning have documented read-only outcomes/remaining blockers; owner media stays unchanged, outside the repository and undistributed.
+[x] 2C.E4 Tower's rejection and independent native index warning have documented read-only outcomes/remaining blockers; owner media stays unchanged, outside the repository and undistributed.
+    NOTE: Closed under 2D.7 with full source SHA-256/identity and selected
+    content/extraction checks. Native readall limit is not corruption evidence.
 [ ] 2C.E5 Reader workflows, source integrity, existing-writer regressions and available build/platform checks pass for advertised rows; no blanket legacy or physical-platform claim.
     NOTE: Local automated/targeted checks and final-source six publishes/AppImage
     pass. Remaining general platform gates stay open; authentic historical
@@ -1201,11 +1251,235 @@ PHASE 2C EXIT CRITERIA
 
 
 ============================================================
+PHASE 2D - RETAINED PHASE 2B / 2C CLOSEOUT
+============================================================
+
+GOAL:
+Close older ordinary-NTFS writing and bounded NTFS reader qualification gaps
+without expanding legacy/attribute-list writing or continuing Phase 3.
+
+    AUTHORITY: Owner explicitly authorized documentation and implementation
+    on 2026-10-17, subject to a read-only preflight/owner prerequisite gate.
+    Preflight is complete for available Linux x64/Windows x64 work. Windows
+    strict-key SSH works after the owner restored the Private LAN profile;
+    the account remains standard. User-local pinned tooling/project transfer,
+    disposable generated virtual media and finite tests are authorized.
+    Owner will launch narrowly bounded privileged Windows-native virtual-disk
+    preparation/reopen steps locally; no elevated agent shell/account, service,
+    physical-disk operation or recurring automation is authorized.
+    Tower may be read/fully hashed IN PLACE on Linux, with representative
+    temporary selected extraction <=64 MiB outside repository/synchronized
+    storage and cleanup. Never copy/modify/mount/transfer/distribute its image.
+    ARM64 is unavailable; owner approved proceeding while keeping its named
+    verification gate blocked, not waived. Latest-build owner report alone
+    lacks build/workflow detail to close that gate.
+    Existing Phase 3 backend implementation/authorization is preserved.
+    Remaining Phase 3 3.0/3.7 expansion, startup recovery/UI integration and
+    Phase 4/5/6/7/PMFX implementation are outside this milestone. Newly readable
+    legacy/attribute-list volumes stay NONEDITABLE; all qualified FAT/NTFS
+    writes remain. Authentic NT4/2000/XP authoring remains post-1.0 P1.NTFS.
+    MFT-bootstrap attribute lists remain explicitly unsupported. macOS stays
+    unsupported/build-only, both cross-publishes retained, no physical checks.
+
+2D.1 Closure ledger and authority reconciliation
+[x] Read mandatory instructions/full checklist/specification and perform read-only prerequisite preflight before actual work; obtain owner permissions/readiness decisions here.
+[x] Map every retained outstanding 2B/2C requirement to named 2D closure evidence, preserving original statuses and historical envelopes until genuinely verified.
+[x] Reconcile current implementation/authorization and directly relevant documentation; keep technical-specification root/documentation copies byte-identical.
+
+2D.2 Focused Windows security-descriptor reference
+[x] Execute the Windows BCL codec reference against current portable descriptor bytes/flags/SIDs/ACL semantics and retain reproducible pass/failure evidence.
+    NOTE: Actual Windows x64 PortableNtfsSecurityTests 271/271, no skips.
+    SDK 10.0.402/runtime 10.0.13; evidence artifacts/windows-phase2d/.
+    NOTE: Codec comparison is not complete inheritance proof, a permissions
+    editor, exhaustive Windows-version certification or NTFS interoperability.
+
+2D.3 Windows-authored ordinary NTFS interoperability
+[x] Prepare legal synthetic current-Windows-authored disposable virtual NTFS media with recorded provenance/full hashes/layout/security/log metadata.
+    NOTE: Owner-local Author succeeded: new 128 MiB dynamic VHD, MBR,
+    NTFS 3.1, 512/512 sectors, 4096-byte clusters, basic protected ACLs.
+    Native clean/chkdsk exit zero. Source read-only retry passes after fixing
+    PS5 UTF-8 JSON decoding; full hash unchanged. Raw detached restart pages
+    are LFS 1.1 (correcting initial native-label report). $Deleted/$RmMetadata
+    are separate writer blockers. Native edited-output is NOT passed.
+[!] Exercise ordinary five-operation staged editing/history/Save As and native Windows output reopen/content/metadata/allocation checks; preserve immutable sources.
+    NOTE: Clean detached native source has LFS 1.1 but actual $TXF_DATA,
+    $RmMetadata/CLFS, $Deleted and named system streams exceed current writer
+    gates. Empty transaction directories/zero TOPS data are insufficient:
+    metadata-only recoverable state can live in transaction logs. No sufficient
+    offline quiescence/update predicate established; no metadata stripped.
+[ ] Use finite owner-launched native preparation/reopen steps only for explicit disposable virtual files; keep standard SSH account and no physical disks/elevation.
+
+2D.4 LFS 2.0 / cached-metadata safety
+[x] Investigate actual clean current-Windows logs/cache metadata and independent format/clean-state evidence before broadening writing.
+    NOTE: Actual mounted2.0/detached1.1 state distinction, complete native
+    metadata inventory and pinned modern-tail/checkpoint/public TxF research
+    recorded in dependency/platform docs. No safe acceptance rule established.
+[!] Implement/qualify only a bounded demonstrably safe clean-volume subset if feasible, retaining allocation/security/metadata checks and unchanged log bytes.
+    NOTE: Neither modern-log/cache absence nor native TxF/CLFS persistent
+    no-recovery/update semantics can be inferred from cleanliness/empty dirs.
+    Concrete proof obligations are in docs/dependency-evaluation.md.
+    Strict defaults remain; owner review required, no requirement waived.
+[x] Regress dirty/ambiguous/recovery-needed/unsupported cases, cancellation, malformed bounds and source integrity; refuse rather than replay/reset/normalize.
+    NOTE: Initial current targeted run: NtfsWriteValidationTests 55/55,
+    including six new LFS 2.0 clean/closed/mixed-restart cases proving raw
+    rejection, service stage/Save As/commit denial and unchanged full source
+    hashes. This does not qualify LFS 2.0 writing. Pinned ntfs-3g explicitly
+    refuses 2.0 for cached-metadata risk even after clean-log checks; independent
+    modern-tail/checkpoint/cache-absence proof remains needed. See dependency
+    investigation. Managed source-repair provenance independently verifies.
+    NOTE: Do not simply remove validator gates. If safe required delivery is
+    infeasible, report the concrete blocker and obtain an owner decision.
+
+2D.5 Ordinary-writer row closure and retained-writer regression
+[!] Qualify retained required ordinary-NTFS raw/fixed-dynamic VHD/fixed-dynamic VHDX filesystem-only/MBR/GPT and supported-sector rows with Windows-media/log evidence.
+    NOTE: Native-source preparation/read checks do not close edited-output
+    rows. 2D.3/2D.4 transaction/log blockers prevent this closure; existing
+    qualified synthetic/native-Linux rows remain available, not demoted.
+[x] Preserve all existing qualified FAT/NTFS operations, metadata/allocation/security/output checks, source hashes and mixed-volume isolation.
+    NOTE: Initial Windows sharing/log/tooling failures are resolved under2D.10.
+    Final Linux1178/one skip, Windows177Services/168writer+9growth and186exact
+    native-verified outputs preserve existing qualified generated rows.
+    Native Windows-authored TxF/LFS qualification remains blocked separately.
+[x] Keep new legacy/attribute-list writer/Save As/direct-commit expansion under Phase 3 3.0/3.7, not implied by reader success or 2D ordinary-write qualification.
+
+2D.6 Reproducible bounded reader rows
+[x] Record exact synthetic/observed NTFS 1.2/3.0/3.1 layouts/features/hashes and ordinary resident/nonresident/Unicode/timestamp/security metadata evidence.
+[x] Exercise browse/preview/hex/search/extraction/content/source-integrity per claimed bounded row, with independent comparisons where available.
+[x] Regress list/extension/VCN/reference/index/resource/error/cancellation bounds and per-volume/composed noneditable caps without widening unsupported semantics.
+    NOTE: 66 focused passes each on Linux x64 and Windows x64; nine workflow
+    rows plus I/O/cancellation cases. Linux native ntfscat hashes agree.
+    Exact layout/security/content/seed/actual source hashes in docs/fixtures.md
+    and artifacts/phase2d-reader*. No authentic historical-media qualification.
+
+2D.7 Local-only Tower closure
+[x] Record complete before/after source SHA-256 and bounded original-rejection/current-reader outcomes without modifying/copying the image.
+[x] Perform representative meaningful content/extraction comparisons under the approved <=64 MiB temporary-output policy and clean up selected outputs.
+[x] Retain the diagnosed native readall-size limit, exact enumeration filters and remaining limitations; do not substitute enumeration for content or claim exhaustive health.
+    NOTE: Final source SHA-256
+    D470478B0CC75D4F3A07D01A0548CDD58BCDB5E7B03A2C065D7994F45CF75DD7;
+    identity/size/mtime unchanged, 1235021 extracted bytes match production/
+    native hashes, private outputs removed. artifacts/phase2d-tower-final-result.json.
+
+2D.8 Consolidated platform/build evidence
+[x] 2D.8a Run representative current Linux x64 reader/retained staged workflows.
+    NOTE: Focused reader 66/66 plus full verify1136/one skip retain actual
+    Services staging/Save As/commit regression workflows on generated media;
+    local-only Tower shared reader/content/extraction also passes.
+    NOTE: Final corrective-source scripts/verify.sh passes1178/oneWindows-only
+    skip (1179total), including892Storage+177Services+68UI+27dependency+14foundation.
+[!] 2D.8b Run actual Windows x64 reference/reader/ordinary-writer workflows; distinguish command-line/native checks from interactive GUI evidence.
+    NOTE: Focused codec271/271 and reader66/66 pass; source native checks pass.
+    Initial broader Windows storage selection400 pass/57 fail, Services153 pass/3 fail,
+    zero skips: 52 missing-tool, 3 shared-log contention, 4 direct-commit
+    sharing, 1 preference-exception mismatch. Isolated reader17/17+14/14 pass;
+    isolated commit/preferences failed. Exact TRX/commands/classification
+    in artifacts/windows-phase2d/windows-qualification-summary.json.
+    No native edited-output, GUI or blanket Windows qualification follows.
+    NOTE: Corrective2D.10 final source passes Windows177Services,392focused,
+    12guards,168writer+9growth;186exactoutputs pass876Linuxnative commands.
+    Generated/Linux-authored rows now qualify; native Windows-authored TxF/LFS
+    and GUI evidence remain absent, so this parent gate stays blocked.
+[!] 2D.8c Obtain current reproducible Linux ARM64 reader/staged-workflow evidence.
+    NOTE: Owner has no current access; machine is off-network. Owner reports
+    latest build works, without exact build/workflow results. Proceeding with
+    available platforms was approved, but this gate remains blocked/unwaived.
+[x] 2D.8d Verify all six self-contained cross-publishes/local Linux AppImage on final source; macOS remains unsupported, untested, build-only, never physically scheduled.
+    NOTE: scripts/publish.sh all passes on current application source, including
+    local Linux AppImage and legal notices. Initial: artifacts/phase2d-publish.log.
+    Final corrective application source: artifacts/phase2d-corrective-publish.log.
+    NOTE: Broader distro/backend/Pi 5 performance and unavailable Windows
+    ARM64 hardware remain separately visible platform limitations, not implied
+    passes or authorization for Phase 5.
+
+2D.9 Verification, documentation and owner stop
+[x] Run targeted safety/content/workflow regressions then appropriate complete repository verification; record exact pass/skip counts and chronology.
+    NOTE: Safety55/55, reader66/66; full1136 passes/one Windows-only skip on
+    Linux. The actual Windows codec/reference271/271 passes separately.
+    Native harness regressions are separate PowerShell checks, not .NET counts.
+[x] Verify independent outputs, legal fixture/source provenance, unchanged protected media, technical-spec copy equality and truthful per-task closure.
+    NOTE: Verified reader/Tower/native-source outputs only; no claim for absent
+    native edited outputs or aborted Windows commit integrity assertions.
+    No owner media packaged/copied/changed; protected selected outputs cleaned.
+[x] Reconcile checklist/support/staged/dependency/fixture/platform/architecture/README/agent guidance against actual final evidence and concrete blockers.
+[x] Prepare owner review summary identifying genuinely closed 2B/2C tasks, retained blockers and physical limitations; STOP, no remaining Phase 3 work or publication.
+    NOTE: Owner chose this bounded closeout after the focused TxF/LFS
+    investigation. Phase remains incomplete/blocked, not approved complete.
+
+2D.10 Owner-resumed Windows runtime corrective pass
+    NOTE: Owner accepted the recommended runtime repairs and portable generated-
+    media verification after the bounded review stop. Fresh read-only preflight
+    found existing standard-user/tooling/generated-media permissions sufficient;
+    no new owner-media access, elevation or remaining Phase 3 features authorized.
+    Historical results above remain evidence of their original source snapshots.
+[x] 2D.10a Repair source-handle/lock/finalize/session lifecycle without weakening exclusive-writer, baseline, backup, allocation/security/metadata or output checks.
+    NOTE: Frozen-source Windows32focused/177Services/168matrix+9growth pass.
+    Source reader suspended before locking; hash-checked backup validation,
+    descriptor-owned Linux locks, held-lock Windows single atomic rename,
+    pending-state preservation, refreshed sessions and18measured growth
+    transitions retain existing qualification, never widen writer gates.
+[x] 2D.10b Verify concurrent multi-instance/process log append/rotation and explicit I/O failure reporting.
+    NOTE: Linux and actual Windows focused corrective suites pass the shared
+    path, independent-process/parallel-instance, rotation and explicit I/O
+    regressions. Final broader verification remains under 2D.10e.
+    NOTE: Additional actual Linux independent-session regression exposed
+    session-local mutex scope. Global namespace now passes32/32 focused Linux
+    tests, including a real before/after failure. Frozen-source Windows32focused/
+    177Services and repeated handoff pass; no per-session logging fallback.
+[x] 2D.10c Verify portable preference failure semantics, retained destination and temporary-file cleanup; do not hide save errors.
+    NOTE: Actual Windows12/12 preferences pass within final focused32/32. Preserve
+    IOException/UnauthorizedAccessException OS distinctions, unchanged directory/
+    locked-file destination bytes and no replacement residue; no hidden fallback.
+[x] 2D.10d Execute managed writer rows on Windows using verified generated inputs and independent Linux checks of the exact resulting bytes; missing checks remain explicit, never silently skipped.
+    NOTE: Linux84prep; Windows168matrix+9growth;186exactoutputs/876mandatory
+    nativecommands pass,84inputs unchanged. Final source290hashes match;
+    archive-backed270media files fullyverified before uncompressed cleanup.
+    artifacts/writer-handoff-global-final-run/final-closeout.json.
+[x] 2D.10e Run targeted Linux/actual Windows regressions, applicable full verification and refreshed publishes; reconcile evidence and stop for owner review.
+    NOTE: Final Linux1178passes/oneWindows-only skip; zero buildwarnings/errors;
+    format/resources/AppRun/fivecopy checks pass. Allsix self-containedpublishes/
+    localAppImage pass. Windows177Services+392focused+12guards+168writer+9growth
+    pass separately,186nativeverifiedoutputs; sourcefrozen. Final evidence:
+    artifacts/phase2d-corrective-verify.log, phase2d-corrective-publish.log and
+    artifacts/writer-handoff-global-final-run/final-closeout.json.
+    Runtime/verification corrective batch is complete; STOP for owner review,
+    not approval of the incomplete Phase2D or remainingPhase3.
+    NOTE: Native Windows-authored TxF/CLFS, LFS 2.0/cache safety and unavailable
+    ARM64 remain required/incomplete. These repairs do not complete Phase 2D.
+    NOTE: Owner subsequently authorized source commit/push on2026-10-17 only,
+    explicitly no release. No tags, phase advancement or gate waiver follows.
+
+PHASE 2D EXIT CRITERIA
+[!] 2D.E1 Retained ordinary-NTFS Windows reference/media and bounded clean modern-log safety requirements genuinely pass; no unqualified replay/reset or gate waiver.
+[x] 2D.E2 Bounded reader rows and Tower source/content/extraction checks have reproducible evidence with exact provenance/exclusions.
+[x] 2D.E3 Existing qualified writes remain intact; new legacy/attribute-list volumes stay noneditable and unsupported inputs fail safely.
+    NOTE: Final Linux1178/one skip and actualWindows generatedmatrix/Services/
+    reader/safety passes retain existingFAT/NTFSwrites and legacy/list refusals.
+    All186 exactWindowsoutputs pass876independentnative commands. Runtime
+    defects are fixed, not waived. Scope is qualifiedLinux/Windowsx64 rows;
+    nativeWindows-authored/TxF/LFS/ARM64 parentgates remain separately blocked.
+    No writeracceptance/imported-source broadening or protectedmedia changes.
+[!] 2D.E4 All retained 2B/2C closure gates, verification/docs and owner review are resolved, or concrete blockers remain explicitly incomplete.
+    NOTE: TxF/LFS/current-Windows-authored writing and
+    ARM64 2D.8c prevent a full completion claim. Owner chose bounded verified
+    closeout/STOP for review after the focused safety investigation; these
+    requirements remain incomplete, not waived/deferred out of 1.0.
+    Reassignment, cross-publish or an unspecified runtime report is not a pass.
+    NOTE: Retained runtime/tooling failures are resolved under verified2D.10;
+    they are not removed as irrelevant, nor a waiver of the remaining gates.
+
+
+============================================================
 PHASE 3 - SAFE DIRECT COMMIT
 ============================================================
 
 GOAL:
 Commit staged changes directly to tested mutable images with locking, recovery, validation, and external-change protection.
+
+    NOTE: The detailed implemented-backend descriptions below retain the
+    October16 historical record. Verified2D.10 supersedes its source-lock/
+    finalize/session details with descriptor-owned Linux locks, held-lock
+    Windows atomic rename and refreshed workspace state. See current
+    docs/architecture.md; remaining Phase3 work stays on hold.
 
     NOTE: Phase 2B and Phase 2C must pass owner review before Phase 3 begins;
     incomplete gates require explicit owner direction, not silent waiver.

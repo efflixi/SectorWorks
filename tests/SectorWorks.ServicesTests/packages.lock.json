@@ -170,6 +170,12 @@
           "SectorWorks.Core": "[1.0.0, )"
         }
       },
+      "sectorworks.runtimeprobe": {
+        "type": "Project",
+        "dependencies": {
+          "SectorWorks.Services": "[1.0.0, )"
+        }
+      },
       "sectorworks.services": {
         "type": "Project",
         "dependencies": {

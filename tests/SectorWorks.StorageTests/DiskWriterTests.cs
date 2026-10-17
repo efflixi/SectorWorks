@@ -408,6 +408,8 @@ internal static class DiskWriterFixtures
 {
     internal static string Create(WorkDirectory work, string container, string layout, string fat, bool twoFatVolumes = false, int physical = 512, bool withLongNames = false, bool readOnlyNtfs = false)
     {
+        string row = PortableWriterHandoff.Row(container, layout, fat, physical, withLongNames);
+        if (!twoFatVolumes && !readOnlyNtfs && PortableWriterHandoff.Import(work, row) is string imported) { return imported; }
         string volume = work.Golden(fat + ".img");
         if (fat != "ntfs") { PrepareFat(volume, fat == "fat32"); }
         if (withLongNames)
@@ -422,13 +424,18 @@ internal static class DiskWriterFixtures
         string raw = work.PathFor("layout.raw");
         if (layout == "filesystem") { File.Copy(volume, raw); }
         else { Partition(volume, raw, layout, fat, twoFatVolumes, readOnlyNtfs ? work.Golden("ntfs.img") : null); }
-        if (container == "raw") { return raw; }
+        if (container == "raw")
+        {
+            if (!twoFatVolumes && !readOnlyNtfs) { PortableWriterHandoff.Export(row, raw); }
+            return raw;
+        }
         string result = work.PathFor("source." + (container.StartsWith("vhdx", StringComparison.Ordinal) ? "vhdx" : "vhd"));
         bool vhdx = container.StartsWith("vhdx", StringComparison.Ordinal);
         Run("qemu-img", "convert", "-q", "-f", "raw", "-O", vhdx ? "vhdx" : "vpc", "-o",
             "subformat=" + (container.EndsWith("fixed", StringComparison.Ordinal) ? "fixed" : "dynamic") + (vhdx ? "" : ",force_size=on"),
             raw, result);
         if (vhdx && physical != 512) { SetVhdxMetadata(result, new("cda348c7-445d-4471-9cc9-e9885251c556"), (uint)physical); }
+        if (!twoFatVolumes && !readOnlyNtfs) { PortableWriterHandoff.Export(row, result); }
         return result;
     }
 

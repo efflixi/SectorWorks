@@ -1,5 +1,366 @@
 # Build and physical-platform status
 
+## Final Global-session corrective snapshot
+
+The owner-resumed 2D.10 runtime/verification pass is qualified on its frozen
+source, **not a completed Phase 2D**. It repairs source reader/lock/atomic-finalize/
+session lifecycle, system-global cross-session logging and preference error/
+cleanup assertions without changing writer acceptance gates.
+
+| Actual selection | Result |
+| --- | --- |
+| Linux writer-input preparation | 84/84 passed |
+| Linux focused runtime, including independent-session before/after regression | 32/32 passed |
+| Final Linux complete solution | 1178 passed, one Windows-only skip; 1179 total |
+| Windows x64 focused runtime | 32/32 passed |
+| Windows x64 full Services project | 177/177 passed |
+| Windows x64 concurrent reader/version/attribute-list/security/safety selection | 392/392 passed |
+| Windows x64 handoff guard tests | 12/12 passed |
+| Windows x64 existing Save As/direct-commit matrix | 168/168 passed |
+| Windows x64 real two-commit dynamic-container growth | 9/9 passed; 18 measured growth transitions |
+| Independent Linux checks of exact Windows outputs | 186/186 outputs; 876/876 native commands exit zero |
+| Final self-contained publishes/local Linux AppImage | All six/local AppImage passed |
+
+`scripts/verify.sh` completed on this frozen source with zero build warnings/
+errors: Storage **892 passed/one skip**, Services **177**, UI **68**, dependency
+**27**, foundation **14**. The skip is the Windows BCL reference, executed on
+actual Windows in the separately passing codec/security selection. Formatting,
+headless UI resources, AppRun contracts and all five reference-copy comparisons
+passed. Log: `artifacts/phase2d-corrective-verify.log`.
+
+These are separate selections, not counts to add into a claimed Windows solution
+run. Windows execution is standard-user CLI on actual Windows 11 Home x64, SDK
+10.0.402/runtime 10.0.13, no administrator/native mount or new global install.
+The full writer matrix retains 84 existing legal Linux-authored/generated rows;
+all 84 inputs remain unchanged on both hosts. Nine FAT32 dynamic-VHD/VHDX cases
+add 20 MiB + 17 bytes twice and prove physical growth after each real commit,
+full content hashes, refreshed history/baseline and independent allocation checks.
+They do not claim NTFS-specific physical-growth or Windows-native authoring.
+
+Reproducible evidence:
+- `artifacts/writer-handoff-global-final-run/final-summary.json`:
+  per-selection TRX/hash, source/input/output identity and exact native commands.
+- `artifacts/writer-handoff-global-final-run/final-closeout.json`:
+  all **290** frozen source/config/test/script hashes still match.
+- Catalog SHA256:
+  `873C84E162D2B361FA610D3A1B0FBB45B02FA09F413F156DD6873D93D90E1E31`.
+- Qualified byte-exact media archive: **36,939,989 bytes**, SHA256
+  `BB50936B998E742931202949FE3D51BF5FFCA42B889689474558B3B0D2849C78`.
+  All **568 members**, including **270 media files**, were fully hash-verified
+  before deleting the enumerated matching uncompressed generated files and
+  Windows duplicates. Historical evidence/archive remains separate.
+  [Restore instructions](windows-writer-handoff.md#final-global-session-corrected-archive)
+  preserve exact bytes without retaining approximately 24.44 GiB uncompressed.
+- `artifacts/phase2d-corrective-publish.log`: current all-six/AppImage evidence;
+  physical compatibility remains separate.
+
+The original 400/57 and 153/3 Windows failures, intermediate atomic replacement
+failures, prior successful snapshot and cancelled/superseded Linux runs below
+remain historical evidence, never relabeled as this source. Native Linux-only
+authoring tests remain required Linux coverage, not silently passed Windows
+cases or absent checks. No owner Tower/ISO/PMFX/native-R2 media was accessed in
+this corrective pass; no owner original was copied, modified or packaged.
+
+**Retained blockers:** actual Windows-authored NTFS edit/native reopen with
+TxF/CLFS metadata, a demonstrably safe LFS 2.0/cache subset, unavailable Linux
+ARM64 evidence, and separately retained GUI/platform/review gates. Authentic
+legacy authoring stays post-1.0 P1.NTFS; new legacy/attribute-list writing and
+remaining Phase 3 features remain held. macOS remains unsupported/build-only,
+both cross-publishes retained with no physical checks scheduled.
+At the verification stop, no commit/push/tag/release/schedule had been authorized
+or performed. The owner subsequently authorized source commit/push only on
+2026-10-17, explicitly without a release. No tag/release/schedule or phase
+advancement is authorized by that instruction.
+The runtime/verification corrective batch is complete and stopped for owner
+review. The listed relevant blockers remain required and incomplete; this is
+not approval to finish Phase 3 or declare Phase 2D complete.
+
+## Phase 2D preflight and closeout, 2026-10-17
+
+Owner authorized a bounded 2D closeout of retained 2B/2C tasks after a read-only
+prerequisite gate. Mandatory instructions/specification/checklist/current docs
+and relevant source/retained logs were inspected before changes/tests/probes.
+Technical-spec copies matched. Retained logs confirm the historical 1001-pass/
+one-skip full 2C run and later 49-pass focused run, not a new full run.
+Current source still skips the BCL reference off Windows and refuses LFS 2.0.
+October 16 Phase 3 backend authorization/delivery is preserved; stale earlier
+"Phase 3 unauthorized/unimplemented" language refers only to its dated state.
+2D precedes remaining Phase 3 work; no later-phase/publication authority.
+
+Preflight resolved here:
+- Strict-key/no-PTY/publickey-only/BatchMode/strict-host-checking Windows SSH
+  now succeeds as the expected standard account. Initial port-22 timeouts were
+  resolved when the owner changed the laptop's active LAN profile from Public
+  to Private; no firewall bypass or agent-side machine configuration occurred.
+- Read-only Windows inventory: 64-bit OS/process, no administrator token,
+  dotnet/Git absent, approximately 131 GiB free on the profile volume.
+  Built-in diskpart/Mount-DiskImage/Dismount-DiskImage/Format-Volume exist;
+  Hyper-V New-VHD/Get-VHD do not. Availability is not executed media evidence.
+- Owner authorized user-local pinned tooling/project transfer and disposable
+  generated test media. Native privileged preparation/reopen will use narrowly
+  bounded finite scripts launched locally by the owner, never an elevated agent
+  account, privileged command broker, real disks, service or schedule.
+- Tower location was identified from directory metadata only (one matching
+  8422654464-byte image), not by opening image bytes during preflight. Owner
+  authorized in-place Linux full before/after SHA-256, bounded workflows and
+  representative selected temporary extraction <=64 MiB outside synchronized/
+  repository storage, with cleanup. Do not copy/mount/modify/transfer/distribute
+  the image. Connection inventory and owner paths remain local-only.
+- ARM64 machine is unavailable/off-network. Owner reports latest build works,
+  without exact build/per-workflow results. Owner approved available-platform
+  work while keeping 2D.8c blocked/unwaived. This is not new physical evidence.
+
+No new application build/test, media qualification or GUI evidence is claimed
+by preflight. Subsequent executed subitems are recorded below. The
+[closure ledger](support-matrix.md#phase-2d-retained-closure-ledger-2026-10-17)
+maps every retained incomplete 2B/2C gate without marking reassignment passed.
+macOS remains unsupported/build-only; both cross-publishes are retained, no
+physical checks scheduled. Authentic historical authoring remains P1.NTFS;
+bootstrap lists unsupported; new legacy/attribute-list volumes noneditable.
+
+Initial 2D safety execution: `NtfsWriteValidationTests` **55 passed, zero
+skipped/failed**, including six new modern-log clean/closed/mixed-page cases.
+Each retains readable media while refusing raw writer qualification and service
+staging/Save As/commit, checks complete source SHA-256 and releases source handles.
+TRX: `artifacts/phase2d-tests/phase2d-log-safety.trx`. This is targeted evidence,
+not new full-suite or LFS 2.0 write qualification. The diagnostic now explains
+that a clean bit cannot establish release of Windows cached metadata.
+`record-repairs.py --verify` independently passes with imported source unchanged.
+
+### Executed Windows reference and bounded reader evidence
+
+Actual Windows x64 command-line execution uses a user-local official SDK
+10.0.402 / runtime 10.0.13, with the SDK archive SHA-512 checked against official
+release metadata. Windows reports OS build 10.0.26200. The standard SSH account
+remains nonadministrator; private connection/key inventory is not repository data.
+
+- `PortableNtfsSecurityTests`: **271 passed, zero failed/skipped**, including
+  the actual Windows BCL reference. This closes the focused codec comparison,
+  not complete inheritance, native filesystem editing or GUI qualification.
+- The same bounded reader selection passes **66/66 on Windows**, zero
+  failed/skipped. Linux-only native `ntfscat` comparisons are not claimed on
+  Windows. Logs/TRX are retained under `artifacts/windows-phase2d/`.
+- Linux x64 reader selection: **66 passed, zero failed/skipped** (the retained
+  49 plus 17 new qualification cases). Nine workflow rows comprise three
+  ordinary synthetic versions and six NTFS 3.1 attribute-list variants, not a
+  version/feature cross-product. Every row checks browse/preview/paged hex/
+  search/persisted extraction, independently expected bytes, complete unchanged
+  source hashes and editing restrictions. Native `ntfscat` 2022.10.3 hashes
+  agree on this host. Instrumented I/O/cancellation/error bounds also pass.
+  Exact serialized SI/security/layout observations, fixture hashes and
+  reproducible commands are in [fixtures](fixtures.md#phase-2d-reproducible-bounded-reader-rows-2026-10-17).
+  Evidence: `artifacts/phase2d-reader.log`,
+  `artifacts/phase2d-reader-tests/phase2d-reader.trx` and
+  `artifacts/phase2d-reader-evidence.json`.
+
+These results are bounded synthetic qualification, not authentic NT4/2000/XP
+authoring or full physical-platform certification. Bootstrap lists remain
+unsupported; new legacy/attribute-list volumes remain noneditable.
+
+### Completed local-only Tower source/content checks
+
+The approved in-place Linux probe completed full before/after SHA-256 with
+unchanged file identity/size/mtime:
+`D470478B0CC75D4F3A07D01A0548CDD58BCDB5E7B03A2C065D7994F45CF75DD7`.
+It separately reproduces the original strict attribute-list rejection and
+successful current bounded reader. Current enumeration is **904 child
+directories / 905 including root, 16199 files**. Filtered/native root counts
+are **10/24**, system32 **1844/1851**; these are different enumeration contracts,
+not silent filter changes or missing-file certification.
+
+Selected resident text and two nonresident DLL streams total **1235021 bytes**.
+Production-reader, native `ntfscat` and persisted-extraction SHA-256 agree.
+Shared read-only browse/preview/hex/search/extraction succeed; writing remains
+disabled. Private extracted content and private command output were cleaned
+up outside repository/synchronized storage. The original image was never
+copied, mounted, modified, transferred or distributed. Safe metadata/hash
+result: `artifacts/phase2d-tower-final-result.json`.
+
+This closes the bounded source-integrity/selected-content requirement, not
+exhaustive volume health, historical-OS interoperability or write safety.
+The diagnosed 65536-byte native readall limit versus the 344064-byte index
+remains a tool limit, not corruption evidence.
+
+### Windows-native preparation and retained modern-log blocker
+
+The owner locally authored a new disposable 128 MiB dynamic VHD using the
+finite allowlisted native script. It contains NTFS 3.1, 512/512
+sectors, 4096-byte clusters, 1024-byte MFT records and one MBR partition
+(offset 65536, length 133103616), with seven synthetic entries and bounded
+protected basic ACLs. Native dirty query and read-only `chkdsk` exit zero;
+the detached full image hash matches recorded provenance.
+
+An initial harness process-exit collection bug failed after creating/attaching
+only its disposable VHD. Actual Windows exit-0/exit-7/timeout regressions now
+pass. The owner's exact-image recovery detached that first VHD and retained
+all evidence; the successful author retry uses a separate Native-R2 root.
+The subsequent read-only source reopen reported a namespace mismatch: Windows
+PowerShell 5.1 decoded UTF-8 JSON as ANSI, corrupting the Unicode comparison
+key. Explicit UTF-8 decoding and its Windows regression correct this.
+All seven captured entries agree including hashes/timestamps/ACLs/attributes;
+the bounded `ReopenSourceRetry` passes native checks with unchanged image hash.
+The failed evidence is retained. This is source-read evidence, not edited-output
+interoperability.
+
+Correction to the initial log-version interpretation: `fsutil` reported
+**LFS 2.0 while writable-attached before dismount**, then **1.1 on read-only
+reopen**. Bounded raw decoding of both detached 4096-byte restart pages observes
+**LFS 1.1**. Pre-dismount raw pages were not captured, so the exact transition
+instant remains inferred, not proven; do not classify the label as mere driver
+support or claim Windows Home cannot use 2.0. Both
+fixups validate, flags are `0x2`, and the NTFS client's current/restart LSN is
+1590293, oldest LSN 1590280. Log SHA-256:
+`ae6199c5120ed4b30f95ccdfbb55a5872a94c24a66098e3c1f39f7010cf19b77`.
+Actual native `$Extend/$Deleted` and transaction-resource metadata
+(`$RmMetadata`, `$Txf`, `$TxfLog`) are independent strict-writer blockers under
+investigation. A complete 38-record inventory includes root/MFT31 `$TXF_DATA`,
+`$Tops:$T`, `$Repair:$Config` and initialized nonzero CLFS logs (65536-byte base,
+two 2 MiB containers). Empty `$Deleted`/`$Txf` directories do not prove resource
+manager inactivity. Eight native stream hashes independently match bounded
+decoding, including log/security/transaction streams. Evidence:
+`artifacts/windows-phase2d/native-full-metadata-inventory.json` and
+`artifacts/windows-phase2d/native-observation-summary.json`.
+No metadata has been stripped to force acceptance.
+
+Crucially, native cleanliness is **not** proof that Windows cached metadata
+cannot be stale on arbitrary LFS 2.0 inputs. No demonstrably safe LFS 2.0
+writing subset has yet been established; current writer refusal remains intact.
+No Windows-authored
+five-operation Save As/native-output reopen, modern-log writing or required
+Windows-derived stack matrix is claimed. These remain concrete 2D.3-2D.5
+blockers, separately from the unavailable ARM64 gate.
+
+### Complete local verification and six-target packaging
+
+`scripts/verify.sh` passes on current application source: **1136 passed, one
+Windows-only BCL skip on Linux, 1137 total**. Breakdown: 871 storage passes/
+one skip, 156 Services, 68 UI, 27 dependency and 14 foundation. Locked restore,
+Release build (**zero warnings/errors**), formatting, UI resources, AppRun
+contracts and all five authoritative reference-copy comparisons pass.
+Log: `artifacts/phase2d-verify.log`. The actual Windows codec/reference execution
+above resolves that platform-specific test separately; do not rewrite the
+Linux skip as a pass or add targeted counts to the full-suite total.
+
+`scripts/publish.sh all` also passes: all six self-contained RIDs, new local
+Linux x64 AppImage and legal notices retained. Log:
+`artifacts/phase2d-publish.log`. Subsequent harness/documentation changes are
+outside application publish inputs. No versioned release assets, GitHub
+publication or physical compatibility claims follow. ARM64 remains blocked,
+Windows-native edited outputs remain unqualified, and macOS remains an
+unsupported build-only target with both cross-publishes retained.
+
+### Broader Windows runtime execution: failures retained, not a platform pass
+
+A subsequent actual Windows standard-user selection ran existing generated/
+golden-derived tests, not the Windows-authored source: **storage 400 passed /
+57 failed (457 total)** and **Services 153 passed / 3 failed (156 total)**,
+zero skips. Exact finite commands, per-class counters, TRX names and tool
+inventory: `artifacts/windows-phase2d/windows-qualification-summary.json`.
+These are separate selections, not a complete Windows solution run or counts
+to add to the Linux full-suite result.
+
+The 60 failures classify as:
+- **52 missing independent-tool failures:** `qemu-img` and NTFS authoring/
+  checking tools are absent on Windows; the dependent matrix rows are not
+  qualified or skipped-as-success.
+- **Three application log-contention failures:** parallel service instances
+  append to shared `explorer.jsonl` through an instance-local lock in
+  `ExplorerLog`. This is not the SSH/native harness.
+- **Four direct-commit sharing failures:** the managed-NTFS Services case and
+  all three raw-layout direct-commit cases cannot obtain read/write source
+  locking while `FileBlockDevice` retains `FileShare.Read`. The Services
+  failure reproduces in isolation. Failure is before commit mutation, but
+  tests abort before final hash assertions; unchanged source hashes on these
+  failed tests were **not independently established**.
+- **One preference exception mismatch:** isolated
+  `ReplacementFailureIsReportedAndReplacementFileIsCleaned` expects
+  `IOException`, receives `UnauthorizedAccessException`; its cleanup assertion
+  is not reached.
+
+Safety/refusal **55/55** and codec **271/271** pass in this broader selection.
+Its reader failures are the shared logger contention; isolated current reader
+classes pass **17/17** and **14/14**, and the earlier complete focused **66/66**
+Windows reader run remains genuine. Do not replace the broader failure result
+with those isolated passes or infer concurrent Windows reader robustness.
+
+These newly exposed retained runtime defects were not caused by changes to
+those paths in 2D and were not fixed during the owner-selected closeout.
+Windows direct-commit, concurrent service logging and preference failure/
+cleanup behavior remain concrete verification blockers, alongside native
+TxF/CLFS and LFS 2.0 safety, missing native tools and unavailable ARM64.
+Historical Linux/backend evidence is retained, not generalized to Windows.
+
+Owner selected **finish the verified bounded closeout and STOP for review**
+after the deeper transaction-safety investigation found no defensible offline
+quiescence/update rule. Required Windows-writing/modern-log tasks remain in
+1.0 and incomplete; they are not waived or silently moved to another phase.
+No further remote/native probes, implementation, publication or remaining
+Phase 3 work follows this stop.
+
+### Owner-resumed Windows runtime corrective pass
+
+After reviewing those retained failures, the owner explicitly accepted the
+recommended runtime repairs and portable verification work. A fresh read-only
+preflight found the existing standard-user Windows/tooling/generated-media
+permissions sufficient; no new owner-media access or privilege was needed.
+Checklist 2D.10 records this bounded resumption. The preceding failed Windows
+runs and completed Linux/publish runs remain historical, not rerun results.
+
+The corrective pass repairs commit source-handle ownership and locking, shared
+log append/rotation, and verifies the real preference save-error/cleanup
+contract. Managed Windows writer workflows must be distinguished from Linux
+native-tool authoring/checking, with independently verified hashes linking the
+same generated inputs and resulting outputs. No check is silently discarded.
+TxF/CLFS, modern-log/cache-safety and unavailable ARM64 requirements remain
+required and incomplete. Remaining Phase 3 features, privileged native steps,
+owner-media operations and publication are not resumed by this authorization.
+
+The first corrective Windows rerun passed **392/392** concurrent reader/
+version/list/security/safety cases and **161/174** Services cases. Its 13
+failures reached the next previously unexecuted commit boundary:
+`File.Move(overwrite)` returns Win32 5 while the destination's write-excluding
+handle remains open. These are retained in
+`artifacts/writer-handoff-final-transfer/windows-current-attempt-summary.json`,
+not replaced by isolated passing results. Logging and preference regressions
+passed in that run.
+
+Six disposable-text BCL characterizations confirmed that `File.Move` fails
+with the held handle, while `File.Replace` succeeds. `File.Replace` was not
+adopted: Microsoft's [documented 1176/1177 partial-failure states and stream/
+attribute merging](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-replacefilew)
+do not match this pipeline's single namespace-finalize contract.
+The bounded Windows helper instead uses one
+[`FileRenameInfoEx` replace/POSIX operation](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information),
+retaining the source write lock and old-handle identity throughout. Ordinary
+and Unicode/space native controls pass; deny-delete/read-only controls refuse
+with old source/stage intact. The buffer includes a trailing UTF-16 NUL (not
+counted in filename length); initial scratch-only missing-terminator evidence
+is preserved, not a product pass. The production helper included that terminator
+from its first implementation and preserves exact UTF-16 pathname code units.
+
+Actual Windows focused corrective execution then passed **31/31**, including
+the production atomic helper, old-handle identity, invalid staging/directory
+refusals, complete commit lifecycle, concurrent logging and preference cleanup.
+Final full Windows/matrix/native-return and Linux verification remain separate
+until their exact manifests and results are recorded. The earlier Linux
+corrective full run was cancelled as superseded after its 174 Services cases
+passed; its storage suite was incomplete, so it is not a full-pass snapshot.
+All six final-source self-contained publishes and the local Linux AppImage
+have been refreshed successfully (`artifacts/phase2d-corrective-publish.log`);
+this is not physical compatibility or publication.
+
+An additional Linux isolation check then found that an unprefixed .NET named
+mutex is session-local. A writer launched in a different session could bypass
+the log gate even though same-session workers passed. The corrected logger uses
+`Global\` on every OS (the computed Windows name is unchanged). The actual log
+regression fails against the old prefix and passes after correction, within
+**32/32** focused Linux runtime cases. Isolation is established before CLR startup
+with Linux `setsid --wait`: calling `setsid` from managed `Main` produced an
+invalid negative control because the runtime retained its initial namespace.
+Evidence: `artifacts/phase2d-corrective-tests/phase2d-cross-session-before-fix.trx`
+and `phase2d-final-session-runtime.trx`. Full current-source qualification is
+repeated rather than relabeling prior writer/native results as this snapshot.
+
 ## PMFX feasibility evidence and Phase 7 planning, 2026-10-17
 
 Owner approved planning read-only DiskGenius PMFX browsing/extraction under
