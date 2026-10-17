@@ -124,6 +124,32 @@ this decision and has not been investigated further.
 
 ## Evidence and future work
 
+### Phase 7 PMFX read-only delivery plan
+
+Owner-approved roadmap addition **2026-10-17**, checklist **7.11.1-7.11.8**.
+This is a required read-only addition, **not an implemented reader** or
+authorization to start Phase 7. It follows the 1.0 read-only/blocker-review
+policy below. See [research and qualification steps](pmfx-read-only-plan.md)
+for observed fields, strict decoder completion, bounds, licensing and fixtures.
+Phase 7 must implement and qualify direct PMFX opening, browsing and extraction
+inside SectorWorks before completion. Research/detection/external raw conversion
+or a future implementation plan is insufficient; unresolved required-reader
+blockers keep the phase incomplete unless the owner explicitly changes scope.
+
+| Planned stack/subset | Current evidence | Required qualification | Editing/save modes |
+| --- | --- | --- | --- |
+| PMFX, observed 512-byte-sector/1 MiB-block/single-table subset, settings 1/9, zlib/verbatim/sparse/single-fragment chains -> primary MBR -> FAT16/FAT32 | Scratch payload scan of ten images; five FAT16/five FAT32; initial small raw derivative passed existing services/native content comparison | Independent DiskGenius restore/fixture comparisons, production handler/device, normal browse/preview/hex/search/extraction, malformed/resource/lifecycle/source-integrity tests | Disabled even for otherwise writable FAT |
+| PMFX -> supported NTFS subset | No NTFS PMFX in the corpus | Legal independently authored reference, normal reader workflows and existing NTFS version/feature restrictions | Disabled; no NTFS writer qualification follows |
+| Other PMFX tables/chains/geometry/codecs/encryption/parent/incremental/split layouts | Unknown/unqualified | Separate evaluation and exact rejection reasons until independently qualified | Outside requested scope |
+
+All present payloads were processed in memory, but the ten-image pass did not
+qualify full filesystem contents, health or bootability. Sparse-zero/verbatim
+semantics still need vendor-reference comparisons. Unchanged before/after
+source hashes establish preservation during research, not product safety.
+PMFX staging, modified Save As, commit, rebuild, creation/formatting and image
+conversion/export are outside this addition, with no future writer promise.
+File extraction is required; image conversion is not implied.
+
 ### Phase 2C NTFS reader qualification plan
 
 Owner authorization **2026-10-15** adds Phase 2C before Phase 3 and approves the

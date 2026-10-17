@@ -96,6 +96,20 @@ Core disk, optical and retro write milestones below are unchanged.
 
 ### Planned editing coverage
 
+**PMFX roadmap addition (2026-10-17):** DiskGenius PMFX read-only browsing and
+file/directory extraction are required in Phase 7, item **7.11**, for work/home
+interoperability. This is planned, **not implemented**; local FAT16/FAT32
+container research is not qualified product support and found no NTFS PMFX.
+The container will cap otherwise writable filesystems to read-only. PMFX
+writing, modified Save As, commit, rebuild and image conversion/export are not
+part of this addition; no writer milestone is promised. See the
+[research evidence and implementation/qualification plan](docs/pmfx-read-only-plan.md).
+This roadmap approval does not authorize starting Phase 7.
+**Phase 7 must deliver the reader inside SectorWorks before it is complete:**
+PMFX in the declared qualified subset must open directly for browsing and
+extraction. Research, detection-only, external raw conversion or a future
+implementation plan does not satisfy that completion gate.
+
 The owner approved the editing-roadmap correction on 2026-10-15:
 **Phase 2B and the subsequently authorized Phase 2C precede Phase 3**.
 Phase 2B explicitly schedules staged editing and
@@ -296,6 +310,7 @@ remain authoritative and documentation copies must remain synchronized.
 
 - [Architecture/MVVM](docs/architecture.md)
 - [Dependency evaluation](docs/dependency-evaluation.md)
+- [Phase 7 PMFX read-only research and delivery plan](docs/pmfx-read-only-plan.md)
 - [Fixture provenance and verification](docs/fixtures.md)
 - [Build and physical-platform status](docs/platform-status.md)
 - [Windows 11 Home OpenSSH setup and unattended login](docs/windows11-openssh-setup.txt)

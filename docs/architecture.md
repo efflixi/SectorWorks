@@ -167,6 +167,20 @@ Storage remain UI-independent, and UI still has no direct Storage reference.
 
 ## Explorer and storage boundaries
 
+Planned Phase 7 **7.11** adds a distinct PMFX read-only container handler and
+bounded random-access block device ahead of the existing partition/filesystem
+layers and shared explorer operations. Owner approval on 2026-10-17 is for
+roadmap/documentation only. No PMFX production types or dependencies exist yet.
+Phase 7 must deliver direct PMFX opening/browsing/extraction inside SectorWorks;
+an external converter or future implementation plan cannot satisfy completion.
+Keep decoding, table/fragment validation and cache ownership in Storage, behind
+existing contracts; do not leak format/library types to Services/UI, mount
+through the host, or expand a raw temporary image for normal access.
+Container read-only caps must deny staging/modified Save As/commit/rebuild even
+for otherwise writable FAT/NTFS. Recognized unsupported PMFX must not fall
+through to Raw. See the [research and qualification plan](pmfx-read-only-plan.md)
+for decoder-completion, independent-reference and lifecycle/resource gates.
+
 `IImageOpener` creates an `IImageSession` with a bounded virtual device, partition
 metadata and independent read-only filesystem volumes. `IReadOnlyFileSystem`
 returns standardized entries and ordinary .NET streams, never DiscUtils types.

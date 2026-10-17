@@ -9,6 +9,26 @@ Do not substitute these direct-library experiments for product verification.
 
 ## Decision and provenance
 
+### Planned Phase 7 PMFX dependency evaluation, 2026-10-17
+
+The owner added PMFX read-only browsing/extraction under checklist **7.11**,
+not implementation now. DiscUtils 0.16.13 has no PMFX handler; retain it for
+existing filesystem access behind a separate read-only container/device.
+The reader must be implemented and qualified inside SectorWorks during Phase 7
+before that phase can be complete; dependency evaluation alone is not delivery.
+No dependency/source import is selected or authorized by this planning update.
+The [PMFX research and delivery plan](pmfx-read-only-plan.md) records pinned
+public references, GPL/AGPL provenance cautions, observed layout/codec differences,
+remaining unknowns and independent-fixture requirements. Prefer managed code;
+review every imported file and decoder license before integration.
+
+Crucially, .NET 10 `ZLibStream` output-length-plus-EOF checks accepted missing
+checksum bytes and trailing compressed input in local probes. Genuine member
+completion, checksum and exact compressed-input consumption require a separately
+qualified integration with negative tests before enabling PMFX. Valid payload
+decoding is not filesystem or vendor-restore qualification. The research found
+FAT16/FAT32, not NTFS PMFX; existing NTFS restrictions remain unchanged.
+
 **Owner decision, 2026-10-13: keep DiscUtils 0.16.13 for continued development.**
 The owner accepts the known maintenance risk and possible future replacement/
 rework. Re-evaluate the dependency in the checklist's release-quality section

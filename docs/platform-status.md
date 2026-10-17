@@ -1,5 +1,34 @@
 # Build and physical-platform status
 
+## PMFX feasibility evidence and Phase 7 planning, 2026-10-17
+
+Owner approved planning read-only DiskGenius PMFX browsing/extraction under
+checklist **7.11**, not starting Phase 7. The
+[durable research and qualification plan](pmfx-read-only-plan.md) records
+observed metadata, bounded decoding, independent-reference gaps and licensing.
+No production reader, fixture import, dependency change or new platform
+compatibility follows.
+Phase 7 must actually implement and qualify direct PMFX opening, browsing and
+extraction inside SectorWorks before completion; this research entry and a
+future implementation plan do not satisfy that gate.
+
+Scratch-only Linux research reconstructed one expressly authorized small
+FAT16 derivative: existing services and independent mtools compared all
+400 ordinary files successfully. Temporary owner-data outputs were removed.
+The follow-up examined ten originals in place, without copies/raw expansion/
+extracted contents: 77,431 complete checksum-valid zlib payloads, 2,336
+verbatim-sized payloads and twelve reassembled single-fragment chains; 36,632
+absent entries were interpreted as zeros without vendor-restore qualification.
+Bounded metadata showed five FAT16/five FAT32, no NTFS. Full SHA-256/size/
+identity/mtime baselines matched after all ten probes. The in-place pass did
+not recursively qualify filesystem contents/health or bootability.
+
+The strict .NET decoder integration, independent DiskGenius-generated references,
+production workflows, read-only enforcement and physical Windows/Linux/ARM64
+qualification remain pending. macOS stays unsupported/build-only with both
+cross-publishes retained and no physical tests scheduled. No new build/test/
+publish run or repository code change occurred in this documentation task.
+
 ## macOS support policy change: unsupported, build-only target, 2026-10-16
 
 Owner decision: the owner has no reliable way to test macOS and will not

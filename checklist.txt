@@ -71,6 +71,15 @@ CAPABILITY DELIVERY COVERAGE
     compositionally: a read-only container caps FAT/NTFS too; a read-only
     filesystem stays read-only inside raw/VHD/VHDX. Internal parsers, not the
     host OS's native mount support, determine access on every platform.
+    Owner decision, 2026-10-17: add DiskGenius PMFX read-only browsing/
+    extraction to Phase 7 item 7.11 for work/home interoperability. Apply the
+    same composed read-only boundary and reader qualification requirements.
+    PMFX writing/rebuild is outside the requested scope; no future writer
+    milestone is promised. This authorizes roadmap/documentation changes,
+    not Phase 7 implementation. Research is not a qualified product reader.
+    Phase 7 itself MUST implement and qualify the PMFX reader inside
+    SectorWorks; a plan, detection-only result or external raw conversion
+    cannot satisfy Phase 7 completion.
 
 
 ============================================================
@@ -1559,6 +1568,8 @@ Expand only when implementation quality, portability, preservation guarantees, a
 [ ] Apply the owner-approved 1.0 read-only boundary above to VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS; no future writer milestone is required or promised.
 [ ] Evaluate feasible reader subsets for each named addition; document exact unsupported variants and concrete feasibility blockers for owner review without equating detection with browsing/extraction.
 [ ] Verify platform parser capability from evidence, independently of native host mounting support.
+    NOTE: PMFX is an additional owner-approved read-only target under 7.11;
+    the same common evaluation and 1.0 reader/blocker review rules apply.
 
 7.2 VMDK
 [ ] Evaluate common variants and declare initial subset.
@@ -1632,6 +1643,35 @@ Expand only when implementation quality, portability, preservation guarantees, a
     NOTE: Structured track/sector images and flux captures require their own
     evaluation/fixtures; raw 360K/720K IMG support does not imply those formats.
 
+7.11 DiskGenius PMFX read-only browsing and extraction
+    NOTE: Owner approved adding this requirement to Phase 7 on 2026-10-17
+    for DiskGenius work/home interoperability, not implementation now.
+    Local research decoded one FAT16 derivative through existing services;
+    the ten-image in-place survey found five FAT16/five FAT32 and no NTFS.
+    All present payloads were processed in bounded memory; source hashes
+    matched before/after. This is feasibility evidence, not product support.
+    Research, observed layout, codec pitfalls and qualification plan:
+    docs/pmfx-read-only-plan.md. All delivery tasks below remain pending.
+    REQUIRED DELIVERY: Phase 7 is not complete until the declared PMFX
+    subset opens directly inside SectorWorks and supports browsing and
+    extraction. A reader blocker leaves Phase 7 incomplete; reporting it
+    or writing a future implementation plan does not close this requirement.
+[ ] 7.11.1 Complete 7.1 evaluation; review the pinned public references, licensing/provenance and managed decoder options before choosing an implementation or importing code.
+[ ] 7.11.2 Declare exact container/layout/filesystem/feature rows, accepted header fields and numeric resource limits; target the observed 512-byte-sector/1 MiB-block/single-table subset, including both observed setting values, zlib/verbatim blocks, sparse entries and bounded single-fragment chains.
+[ ] Independently compare sparse-zero, verbatim, chained and final-block semantics against DiskGenius restores of legal generated data; do not promote inferred reconstruction to a format specification.
+[ ] 7.11.3 Implement a distinct PMFX read-only container handler and bounded random-access block device feeding existing partition/filesystem readers, without host mounting, whole-image memory loading, automatic raw expansion or codec guessing.
+[ ] Reject recognized unsupported/malformed PMFX explicitly rather than falling back to raw; validate checked geometry/count/address arithmetic, table/payload/fragment bounds and overlaps, chain budgets and logical EOF.
+[ ] 7.11.4 Resolve complete zlib-member validation in the chosen .NET integration: exact output size, real stream termination, checksum and exact compressed-input consumption; regress missing/truncated trailers, bad checksums, trailing bytes and over-expansion.
+[ ] Bound physical reads, metadata work, stored/decoded block sizes, chain traversal, cache memory and total operation work; test cancellation, source mutation, concurrent reads and disposal without raising existing filesystem budgets.
+[ ] 7.11.5 Add legal repeatable independently authored/generated fixtures for both setting values, zlib/verbatim, sparse and chained cases, final partial blocks, FAT16/FAT32 content and long names; owner images/content are never fixtures or release inputs.
+[ ] Obtain a legal NTFS PMFX reference and qualify supported NTFS composition separately; no NTFS PMFX was found in research and PMFX decoding must not broaden existing NTFS feature support.
+[ ] Add malformed/truncated/header/table/fragment/overlap/overflow/decompression-bomb and unsupported-variant regressions; reject multi-fragment chains, multiple tables, other geometries/codecs, encryption and parent/incremental/split variants unless separately understood and qualified.
+[ ] 7.11.6 Wire normal format selection, file filters, properties and capability reasons; show physical versus logical size accurately and exercise shared browse/preview/hex/search/single-file/recursive extraction with independent content comparisons.
+[ ] Deny staging, metadata edits, modified Save As, direct commit, rebuild, creation/formatting and image conversion/export at storage, service and UI boundaries even when contained FAT/NTFS is otherwise writable; file extraction remains permitted.
+[ ] 7.11.7 Measure large/sparse random access, opening work, cache/peak memory, cancellation and UI responsiveness; record full source hashes before/after qualification probes and use owner media in place only with specific permission.
+[ ] Verify all six cross-publishes and representative available Windows/Linux x64/ARM64 reader workflows; macOS remains unsupported/build-only with no physical verification scheduled or claimed.
+[ ] 7.11.8 Publish exact tested rows, legal fixture/decoder provenance, limits and remaining blockers; complete the Phase 7 verification/review gate without claiming health, bootability, vendor-restore fidelity or blanket PMFX/NTFS support from signatures or payload checks.
+
 ----------------------------------------
 PHASE 7 VERIFICATION AND USER REVIEW GATE
 ----------------------------------------
@@ -1640,6 +1680,8 @@ PHASE 7 VERIFICATION AND USER REVIEW GATE
 [ ] Run tests for every newly advertised format/filesystem.
 [ ] Run available cross-target checks.
 [ ] Review physical-validation status for dependencies/features that require it.
+[ ] Review 7.11 PMFX codec-completion, independent reconstruction/content, source-integrity, composed read-only and unsupported-variant evidence separately from feasibility research.
+[ ] Demonstrate direct opening of legal PMFX fixtures in the normal SectorWorks application, browsing and single/recursive extraction with independent content comparisons; do not substitute a decoded raw derivative or future implementation plan.
 [ ] Update checklist honestly.
 [ ] Review exit criteria.
 [ ] Prepare user review summary.
@@ -1653,6 +1695,7 @@ PHASE 7 EXIT CRITERIA
 [ ] No new format weakens data-integrity rules.
 [ ] Feasible named 1.0 read-only additions have qualified browsing/extraction subsets, or exact reader blockers remain visible for owner review; no writer milestone is required for these intentionally read-only additions.
 [ ] Required 7.10 360K/720K staged/Save As/direct-commit tasks are verified or have explicit owner-approved scope decisions and named follow-up milestones.
+[ ] Required 7.11 PMFX rows open directly inside SectorWorks with qualified browsing/extraction and enforced write denial. Unresolved reader blockers keep Phase 7 incomplete unless the owner explicitly changes this requirement; research, detection or a future plan is insufficient. No PMFX writer is required or promised.
 
 
 ============================================================

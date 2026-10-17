@@ -220,6 +220,7 @@ Later / Advanced Formats:
 - VDI
 - QCOW2
 - DMG
+- DiskGenius PMFX (Phase 7 read-only browsing/extraction; see section 6.2.2)
 - Expanded retro-floppy compatibility, prioritizing 360K and 720K media
 - Other common disk, floppy, optical, or virtual-machine image formats
 
@@ -237,6 +238,21 @@ Capacity describes raw sector data, not a separate filesystem or a guarantee tha
 Retain the Phase 1 read-only 720K compatibility already demonstrated by the supplied Compaq diagnostic disk and synthetic legacy FAT12 fixtures. This includes a narrowly validated early-DOS BIOS parameter block (BPB) path without the conventional 0x55AA trailer; it is not blanket support for all historical variants.
 
 Broader 360K/720K compatibility and its qualification belong to Phase 7 - Additional Formats and Filesystems. Work includes representative fixtures, early-DOS BPB variations, geometry/media-descriptor validation, legacy volume labels, safe handling of missing or inconsistent metadata, and independently checked browsing/extraction. Write/create/conversion and bootability or exact-layout preservation remain separate capabilities requiring their own tests and the applicable staged-write/commit safeguards. Track/sector-structured and flux captures require separate format evaluation; raw IMG support does not imply support for them.
+
+
+6.2.2 DISKGENIUS PMFX READ-ONLY DELIVERY
+
+Owner-approved roadmap addition, October 17, 2026: PMFX is a Phase 7 read-only browsing/extraction requirement for DiskGenius work/home interoperability, tracked in checklist item 7.11. This approves documentation/planning only, not Phase 7 implementation or a completed reader.
+
+Required Phase 7 outcome: PMFX images in the declared qualified subset must open directly inside SectorWorks for browsing and extraction before Phase 7 is complete. Phase 7 includes implementing and qualifying that reader, not merely evaluating feasibility or producing a future implementation plan. Detection-only or externally converting PMFX to raw does not satisfy delivery. Unresolved reader blockers keep Phase 7 incomplete unless the owner explicitly changes the requirement. The restriction on implementation authority above applies to this documentation task today, not to the work required when Phase 7 is authorized.
+
+Implement a distinct bounded read-only container handler feeding the existing virtual-block-device, partition and filesystem layers without host mounting or automatic raw expansion. Initial qualification targets the observed 512-byte sectors, 1 MiB blocks and single-table layout, both observed header setting values, zlib/verbatim blocks, sparse mappings and bounded single-fragment chained payloads. These are research observations, not an authoritative format specification. Independent legal fixtures and DiskGenius restore comparisons must qualify reconstruction semantics and shared browse/preview/hex/search/extraction.
+
+Validate checked geometry, table/payload/fragment bounds and overlaps, exact compressed-member completion/checksum/input consumption, output size and final logical-block clipping. Bound metadata work, I/O, decompression, chains, cache and operation time/work; retain cancellation and source-change detection. Report unsupported PMFX explicitly instead of raw fallback or codec guessing. Multi-fragment chains, multiple tables, other geometries/codecs, encryption and incremental/parent/split semantics remain unsupported until separately understood and qualified.
+
+The local corpus exposed FAT16/FAT32, not NTFS. Obtain legal NTFS PMFX coverage separately and retain every existing filesystem restriction; container decoding does not establish filesystem health, bootability or blanket PMFX support. No owner media/content may become a fixture or release payload. Public-source licensing/provenance and the chosen managed decoder require review before integration. Research and reproducible qualification requirements are recorded in docs/pmfx-read-only-plan.md.
+
+Apply the read-only cap compositionally, including otherwise writable FAT/NTFS. PMFX modification/staging, metadata edits, modified-image Save As, source commit, rebuild, creation/formatting and image conversion/export are outside this addition; file extraction is required. No future PMFX writer milestone/date is required or promised. Keep concrete reader blockers incomplete for explicit owner review rather than silently dropping required read support. Existing disk/optical/retro writing requirements are unchanged.
 
 
 6.3 PARTITION TABLE GOALS
@@ -326,6 +342,8 @@ All operations must be subject to the capabilities of the current image session.
 Owner-approved roadmap clarification, October 15, 2026:
 
 The current roadmap targets release 1.0. VMDK, VDI, QCOW2, DMG, ext2/ext3/ext4, exFAT, HFS+ and APFS target qualified read-only subsets for 1.0 where feasible. Modification, staged writing, Save As of modified images, direct commit, rebuild, creation and formatting for these additions are outside 1.0 requirements, not unassigned release-blocking writer gaps. No post-1.0 writer delivery date or milestone is promised.
+
+Owner-approved addition, October 17, 2026: PMFX joins the Phase 7 read-only requirements under checklist 7.11 and section 6.2.2, with the same composed read-only boundary and explicit reader/blocker review. This is planning authority only, not implementation authorization.
 
 Phase 7 still requires reader evaluation, legal fixtures and tests for exact supported variants/features. Detection-only is not browsing/extraction. Document concrete limitations and feasibility blockers for owner review; do not silently remove a reader requirement if infeasible or infer blanket read support from this goal. Core access uses internal parsers, never host mounting: native Windows/Linux/macOS mounting support does not determine application parser capability. Track platform limitations from executed evidence.
 
@@ -1057,6 +1075,7 @@ Phase 7 - Additional Formats and Filesystems
 - Add formats incrementally according to testability and user value.
 - Explicitly qualify conventional 360K/720K staged editing, Save As and safe direct commit; track creation/conversion separately.
 - Qualify feasible read-only subsets of VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS for 1.0; document concrete reader blockers for owner review without promising later writers.
+- Implement and qualify bounded DiskGenius PMFX read-only browsing/extraction under checklist 7.11 and section 6.2.2, reusing existing filesystem readers and denying writing/rebuild; roadmap approval on October 17, 2026 does not authorize implementation.
 
 Post-1.0 Update - Authentic Legacy NTFS Qualification
 - Owner-approved deferral on October 15, 2026; no update version/date or implementation authorization is implied.
