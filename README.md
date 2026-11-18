@@ -1,6 +1,6 @@
 # SectorWorks
 
-[v0.5.2-disc-layout development prerelease: packages, verification and limits](docs/prerelease-v0.5.2.md).
+[v0.5.3-windows-launch development prerelease: packages, verification and limits](docs/prerelease-v0.5.3.md).
 
 ## Phase 5 — BIN/CUE and CD audio
 
@@ -436,6 +436,10 @@ Publish produces self-contained, untrimmed, non-AOT outputs in
 `linux-x64`, `linux-arm64`, `win-x64` and `win-arm64`.
 Native desktop libraries are still required; self-contained does not mean a
 statically linked GUI. Cross-publish is **not** physical platform validation.
+
+On Windows, launch `SectorWorks.UI.exe` directly; the desktop app does not
+need a console. For the developer resource check from a terminal, use
+`dotnet exec path\to\SectorWorks.UI.dll --verify-ui` with .NET available.
 
 
 The browser defaults to alphabetical folders first, then alphabetical files.
