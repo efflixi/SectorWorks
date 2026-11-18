@@ -2075,6 +2075,10 @@ Support CUE/disc structures, data and mixed-mode tracks, direct CD-DA playback, 
 [x] Keep playing track highlighted.
 [x] Stop/rebind safely on close/source loss.
 [x] Ensure keyboard accessibility.
+[x] Export selected or all supported CD audio tracks to lossless PCM WAV.
+    NOTE: Data-first mixed-mode verified on Linux and standard-user Windows x64.
+    Focused tests and package evidence: docs/prerelease-v0.5.1.md.
+    Gaps, PRE/4CH, physical discs and Phase 6 are outside this update.
 
 5.8 BIN/CUE rebuild/capabilities
 [x] Detect whether track order/indexes/gaps/mode/audio/subchannels/bootability can be preserved.

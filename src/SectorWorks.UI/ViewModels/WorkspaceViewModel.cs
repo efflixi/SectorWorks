@@ -153,6 +153,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(CanExtract));
         ExtractCommand.NotifyCanExecuteChanged();
+        ExportCdAudioCommand.NotifyCanExecuteChanged();
         NotifyEditingCommands();
     }
 

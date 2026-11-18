@@ -159,6 +159,7 @@
                   <Button Content="Pause" Command="{Binding PauseCdCommand}" />
                   <Button Content="Stop" Command="{Binding StopCdCommand}" />
                   <Button Content="Next" Command="{Binding NextCdCommand}" AutomationProperties.Name="Next audio track" />
+                  <Button Content="Export Audio Tracks…" Command="{Binding ExportCdAudioCommand}" />
                 </WrapPanel>
                 <Grid ColumnDefinitions="Auto,125,*" ColumnSpacing="8">
                   <TextBlock Text="Volume" VerticalAlignment="Center" />
@@ -171,8 +172,12 @@
           </TabItem>
           <TabItem Header="Track Information" IsEnabled="{Binding HasCdTracks}">
             <DockPanel>
-              <Button DockPanel.Dock="Bottom" Content="Open Selected Track" Margin="5"
-                      Command="{Binding OpenCdTrackCommand}" CommandParameter="{Binding #TrackGrid.SelectedItem}" />
+              <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal" ItemSpacing="5" Margin="5">
+                <Button Content="Open Selected Track" Command="{Binding OpenCdTrackCommand}"
+                        CommandParameter="{Binding #TrackGrid.SelectedItem}" />
+                <Button Content="Export Audio Tracks…" Command="{Binding ExportCdAudioCommand}"
+                        CommandParameter="{Binding #TrackGrid.SelectedItem}" />
+              </WrapPanel>
               <DataGrid x:Name="TrackGrid" ItemsSource="{Binding CdTracks}" IsReadOnly="True" AutoGenerateColumns="False"
                         AutomationProperties.Name="Disc tracks">
                 <DataGrid.Columns>

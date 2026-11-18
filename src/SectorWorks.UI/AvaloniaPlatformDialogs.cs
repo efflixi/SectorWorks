@@ -1,11 +1,12 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Platform.Storage;
+using SectorWorks.Core;
 using SectorWorks.Platform;
 
 namespace SectorWorks.UI;
 
-public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, IImageEditingDialogs
+public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, IImageEditingDialogs, ICdAudioExportDialogs
 {
     public async Task<IReadOnlyList<string>> PickImagesAsync(CancellationToken cancellationToken = default)
     {
@@ -25,17 +26,75 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
             ?? throw new NotSupportedException("Only local image paths are supported.")).ToArray();
     }
 
-    public async Task<string?> PickExtractionFolderAsync(CancellationToken cancellationToken = default)
+    public Task<string?> PickExtractionFolderAsync(CancellationToken cancellationToken = default) =>
+        PickFolderAsync("Extract to folder — existing files are never overwritten", cancellationToken);
+
+    public Task<string?> PickAudioExportFolderAsync(CancellationToken cancellationToken = default) =>
+        PickFolderAsync("Export WAV files to folder — existing files are never overwritten", cancellationToken);
+
+    private async Task<string?> PickFolderAsync(string title, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         IReadOnlyList<IStorageFolder> folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Extract to folder — existing files are never overwritten",
+            Title = title,
             AllowMultiple = false
         });
         cancellationToken.ThrowIfCancellationRequested();
         return folders.Count == 0 ? null : folders[0].TryGetLocalPath()
             ?? throw new NotSupportedException("Extraction requires a local destination folder.");
+    }
+
+    public async Task<IReadOnlyList<int>?> PickAudioTracksAsync(IReadOnlyList<CdTrack> audioTracks, int? selectedTrack,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var rows = new StackPanel { Spacing = 3 };
+        var choices = new List<(int Number, CheckBox Choice)>();
+        var selectAll = new Button { Content = "Select All" };
+        var deselectAll = new Button { Content = "Deselect All" };
+        var accept = new Button { Content = "Choose Folder…", IsDefault = true, IsEnabled = false };
+        var cancel = new Button { Content = "Cancel", IsCancel = true };
+        foreach (CdTrack track in audioTracks)
+        {
+            string label = $"Track {track.Number:D2}" + (track.Title.Length == 0 ? "" : $" — {track.Title}");
+            var choice = new CheckBox
+            {
+                Content = new TextBlock
+                {
+                    Text = track.Playback.Available ? label : $"{label} — {track.Playback.Reason}",
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                },
+                IsEnabled = track.Playback.Available,
+                IsChecked = track.Playback.Available && track.Number == selectedTrack,
+            };
+            if (choice.IsEnabled)
+            {
+                choices.Add((track.Number, choice));
+                choice.IsCheckedChanged += (_, _) => accept.IsEnabled = choices.Any(row => row.Choice.IsChecked == true);
+            }
+            rows.Children.Add(choice);
+        }
+        accept.IsEnabled = choices.Any(row => row.Choice.IsChecked == true);
+        selectAll.Click += (_, _) => { foreach (var row in choices) { row.Choice.IsChecked = true; } };
+        deselectAll.Click += (_, _) => { foreach (var row in choices) { row.Choice.IsChecked = false; } };
+        var dialog = CreateDialog("Export Audio Tracks", new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { selectAll, deselectAll } },
+                new ScrollViewer { MaxHeight = 300, Content = rows },
+                new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, accept } }
+            }
+        });
+        accept.Click += (_, _) => dialog.Close(choices.Where(row => row.Choice.IsChecked == true).Select(row => row.Number).ToArray());
+        cancel.Click += (_, _) => dialog.Close(null);
+        using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => dialog.Close(null)));
+        int[]? result = await dialog.ShowDialog<int[]?>(owner);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
     }
 
     public async Task<string?> PickImportFileAsync(CancellationToken cancellationToken = default)

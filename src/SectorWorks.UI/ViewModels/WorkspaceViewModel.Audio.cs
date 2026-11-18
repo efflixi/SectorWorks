@@ -37,6 +37,52 @@ public sealed partial class WorkspaceViewModel
     public bool CanSeekCd => explorer is ICdTrackSource && SelectedCdTrack?.Playback.Available == true;
     public bool CanPreviousCd => AdjacentAudio(-1) is not null;
     public bool CanNextCd => AdjacentAudio(1) is not null;
+    public bool CanExportCdAudio => !disposed && !IsBusy && explorer is ICdAudioExportService && dialogs is ICdAudioExportDialogs
+        && CdTracks.Any(track => track.IsAudio && track.Playback.Available);
+
+    [RelayCommand(CanExecute = nameof(CanExportCdAudio))]
+    private async Task ExportCdAudioAsync(CdTrack? track)
+    {
+        if (!CanExportCdAudio || explorer is not ICdAudioExportService export || dialogs is not ICdAudioExportDialogs picker)
+        { return; }
+
+        await RunOperationAsync(async token =>
+        {
+            IReadOnlyList<int>? selected = await picker.PickAudioTracksAsync(
+                CdTracks.Where(item => item.IsAudio).ToArray(), (track ?? SelectedCdTrack)?.Number, token);
+            if (selected is null || selected.Count == 0) { Status = "Audio export cancelled."; return; }
+            string? destination = await picker.PickAudioExportFolderAsync(token);
+            if (destination is null) { Status = "Audio export cancelled."; return; }
+
+            Status = $"Exporting {selected.Count:N0} audio track(s)…";
+            bool finished = false;
+            var progress = new Progress<OperationProgress>(p =>
+            {
+                if (!disposed && !finished && !token.IsCancellationRequested)
+                { Status = $"Exporting {p.Path} — {p.FilesCompleted:N0} of {selected.Count:N0} WAV files saved"; }
+            });
+            CdAudioExportResult result = await export.ExportCdAudioAsync(Info.Id, selected, destination, progress, token);
+            finished = true;
+            if (disposed) { return; }
+
+            string outcome = result.Cancelled ? "Audio export cancelled" : result.Failures.Count == 0
+                ? "Audio export complete" : "Audio export finished with errors";
+            Status = $"{outcome} — {result.Completed.Count:N0} of {selected.Count:N0} WAV files saved to {destination}.";
+            if (result.Cancelled || result.Failures.Count > 0)
+            {
+                var details = new List<string>();
+                if (result.Completed.Count > 0) { details.Add($"Saved: {string.Join(", ", result.Completed)}"); }
+                details.AddRange(result.Failures.Select(f => $"{f.Path}: {f.Error}"));
+                if (result.Cancelled)
+                {
+                    var notAttempted = selected.Order().Select(number => $"Track {number:D2}.wav")
+                        .Except(result.Completed).Except(result.Failures.Select(f => f.Path));
+                    details.Add($"Not exported: {string.Join(", ", notAttempted)}");
+                }
+                Error = string.Join("\n", details);
+            }
+        });
+    }
 
     private void AddDiscNodes(StructureNode root, CdDisc disc)
     {

@@ -5,7 +5,7 @@ using SectorWorks.Platform;
 
 namespace SectorWorks.Services;
 
-public sealed partial class ExplorerService : IExplorerService, IImageEditingService, IImageCommitService, ICdTrackSource
+public sealed partial class ExplorerService : IExplorerService, IImageEditingService, IImageCommitService, ICdTrackSource, ICdAudioExportService
 {
     private const int MaximumEntries = 100000;
     private const int MaximumResults = 10000;

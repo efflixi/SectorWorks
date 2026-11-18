@@ -15,6 +15,12 @@ or Linux ALSA). The workspace owns playback cancellation and never writes
 source audio, companion files or mixer settings. See the
 [Phase 5 report](phase5-bin-cue.md).
 
+`ICdAudioExportService` reads the same qualified program-area streams under
+the workspace lease, without opening an audio device. It writes PCM WAV files
+through the platform's link-safe extraction target, using a temporary sibling
+and no-replacement publication for each track. Audio export is independent of
+filesystem editing and optical rebuild.
+
 ## Phase 4 — independent optical rebuild boundary
 
 IImageRebuildSource supplies a bounded plan for a qualified standalone optical

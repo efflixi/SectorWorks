@@ -27,6 +27,22 @@ public static class AtomicOutputDirectory
     private static IOException Failure(string path) => new("Cannot atomically publish the new output folder: " + path,
         new Win32Exception(Marshal.GetLastPInvokeError()));
 
+    internal static void PublishFile(int directory, string temporary, string destination)
+    {
+        try
+        {
+            if (RenameNoReplace(directory, temporary, directory, destination, 1) != 0)
+            {
+                throw new IOException("Cannot publish extraction file (existing files are never overwritten): " + destination,
+                    new Win32Exception(Marshal.GetLastPInvokeError()));
+            }
+        }
+        catch (EntryPointNotFoundException error)
+        {
+            throw new IOException("The host cannot publish an extraction file without risking replacement.", error);
+        }
+    }
+
     [DllImport("libc", EntryPoint = "renameat2", SetLastError = true)]
     private static extern int RenameNoReplace(int oldDirectory, [MarshalAs(UnmanagedType.LPUTF8Str)] string oldPath,
         int newDirectory, [MarshalAs(UnmanagedType.LPUTF8Str)] string newPath, uint flags);

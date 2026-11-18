@@ -36,6 +36,14 @@ public interface ICdTrackSource
     Task<PreviewResult> ReadTrackHexAsync(Guid workspaceId, int trackNumber, long offset, CancellationToken cancellationToken = default);
 }
 
+public sealed record CdAudioExportResult(IReadOnlyList<string> Completed, IReadOnlyList<ExtractionFailure> Failures, bool Cancelled);
+
+public interface ICdAudioExportService
+{
+    Task<CdAudioExportResult> ExportCdAudioAsync(Guid workspaceId, IReadOnlyList<int> trackNumbers, string destination,
+        IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default);
+}
+
 /// <summary>Read-only member of a source volume that spans more than one host file.</summary>
 public sealed record ImageSetMember(string RelativeName, long Length, Func<Stream> OpenRead);
 

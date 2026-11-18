@@ -60,7 +60,18 @@ public sealed class SafeExtractionTarget : IDisposable
         }
     }
 
-    public ExtractionFile CreateFile(string relativePath)
+    public ExtractionFile CreateFile(string relativePath) => CreateFile(relativePath, null);
+
+    public ExtractionFile CreateAtomicFile(string name)
+    {
+        if (ValidateRelativePath(name).Length != 1)
+        {
+            throw new InvalidDataException("Atomic extraction requires one output filename.");
+        }
+        return CreateFile(".sectorworks-extract-" + Guid.NewGuid().ToString("N") + ".tmp", name);
+    }
+
+    private ExtractionFile CreateFile(string relativePath, string? publishAs)
     {
         string[] parts = ValidateRelativePath(relativePath);
         string[] parents = parts[..^1];
@@ -81,7 +92,8 @@ public sealed class SafeExtractionTarget : IDisposable
             {
                 RejectWindowsReparsePoint(file, path);
                 return new ExtractionFile(new FileStream(file, FileAccess.Write),
-                    () => File.Delete(path), directories);
+                    () => File.Delete(path), directories, publishAs is null ? null
+                        : () => File.Move(path, Path.Combine(directories.Path, publishAs), overwrite: false));
             }
             catch
             {
@@ -109,7 +121,8 @@ public sealed class SafeExtractionTarget : IDisposable
                     {
                         throw NativeError("Cannot remove incomplete extraction file", relativePath);
                     }
-                }, parent);
+                }, parent, publishAs is null ? null
+                    : () => AtomicOutputDirectory.PublishFile(parent.DangerousGetHandle().ToInt32(), name, publishAs));
         }
         catch
         {
@@ -378,15 +391,21 @@ public sealed class RecoveryFile(FileStream stream, Action? remove) : IDisposabl
     public void Dispose() => stream.Dispose();
 }
 
-public sealed class ExtractionFile(FileStream stream, Action removeIncomplete, IDisposable directoryLease) : IDisposable
+public sealed class ExtractionFile(FileStream stream, Action removeIncomplete, IDisposable directoryLease, Action? publish = null) : IDisposable
 {
     private bool complete;
     private bool disposed;
     public Stream Stream => stream;
 
-    public void Complete()
+    public void Complete(CancellationToken cancellationToken = default)
     {
         stream.Flush(flushToDisk: true);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (publish is not null)
+        {
+            stream.Dispose();
+            publish();
+        }
         complete = true;
     }
 

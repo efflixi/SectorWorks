@@ -1,6 +1,6 @@
 # SectorWorks
 
-[v0.5.0-phase5 development prerelease: packages, verification and limits](docs/prerelease-v0.5.0.md).
+[v0.5.1-wav-export development prerelease: packages, verification and limits](docs/prerelease-v0.5.1.md).
 
 ## Phase 5 — BIN/CUE and CD audio
 
@@ -9,6 +9,12 @@ CD audio directly from sectors. Qualified data tracks can use staged editing
 and rebuild to a new folder containing the CUE and its companions. The
 [Phase 5 report](docs/phase5-bin-cue.md) describes the supported layouts, output
 safety and playback requirements.
+
+To save CD audio, open **Track Information** or **Audio Player** and choose
+**Export Audio Tracks…**. Select tracks (or **Select All**) and choose a
+destination folder. SectorWorks writes one lossless WAV per selected audio
+track, even if the first track is data. It never modifies the image or
+overwrites existing files.
 
 ## Phase 4 — optical rebuild
 

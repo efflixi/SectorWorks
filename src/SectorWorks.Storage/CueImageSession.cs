@@ -92,11 +92,14 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
                             || w.StartsWith("Read-only optical layout", StringComparison.Ordinal));
                     }
 
-                    bool playable = track.Mode == CdTrackMode.Audio && !track.Flags.Contains("PRE") && !track.Flags.Contains("4CH");
+                    string? audioRestriction = track.Mode != CdTrackMode.Audio ? "This is a data track."
+                        : track.Flags.Contains("4CH") ? "Four-channel CD audio is not supported."
+                        : track.Flags.Contains("PRE") ? "CD audio marked for pre-emphasis is not supported."
+                        : null;
                     var info = new CdTrack(track.Number, track.Mode, track.Title, track.Performer, source.Name,
                         sectorSize, lba, count, start - partitionStart, track.Pregap ?? 0, track.Postgap ?? 0,
-                        track.Indexes.AsReadOnly(), volumeId, new(playable, playable ? "44.1 kHz, 16-bit stereo CD audio."
-                            : "This track is data or has unsupported audio flags."), source.BigEndian);
+                        track.Indexes.AsReadOnly(), volumeId, new(audioRestriction is null,
+                            audioRestriction ?? "44.1 kHz, 16-bit stereo CD audio."), source.BigEndian);
                     bool raw = track.Mode is CdTrackMode.Mode1Raw or CdTrackMode.Mode2Raw;
                     Capability editing = new(false, "Rebuild requires a qualified non-boot ISO filesystem in the data track.");
                     if (!info.IsAudio && !hasSidecar && !sheet.HasOpaqueRemarks)
