@@ -1,6 +1,97 @@
-# Staged editing and Save As: Phase 2 and partial Phase 2B
+# Staged editing, Save As and safe direct commit
 
-## Phase 2D bounded closeout, 2026-10-17
+## Accepted 1.0 scope — November 17, 2026
+
+**Phase 2 / 2B / 2C / 2D and Phase 3: COMPLETE / OWNER ACCEPTED UNDER THE
+REVISED 1.0 SCOPE.** The [owner-approved assignment](sectorworks_1_0_scope_change_and_phase_closeout_sol_prompt.txt)
+and [closeout audit](1.0-scope-closeout.md) supersede older blocked/pending
+summaries below; dated source/test/cleanup findings retain their original scope.
+
+All qualified FAT/NTFS functionality is retained, including structural legacy/list
+rows and native passive NTFS3.1: 512-byte sectors, 4096-byte clusters/index blocks,
+1024-byte MFT records, exactly `0x1400` flags, paired clean LFS1.1 pages and the
+exact empty repair/deleted-state predicate. Full record/allocation/security-
+reference preservation and every existing admission check remain intact.
+Default TxF-enabled/transaction-bearing and other unqualified states stay
+**read-only**, not unrestricted modern Windows writing.
+
+**DEFERRED POST-1.0:** [P1.NTFS.MODERN.1–.6](../checklist.txt) cover default
+TxF/CLFS/KTM checkpoint/active/prepared/in-doubt, TOPS/`$TXF_DATA`, unsupported
+repair/deleted, coherent detached LFS2/cache qualification and dependent writer
+rows. These are unresolved, not passed or impossible. Existing **P1.NTFS.1–.6**
+authentic historical qualification is preserved. Physical ARM64 is **NOT VERIFIED
+— DEFERRED POST-1.0 BY OWNER**, separately **P1.ARM64.LINUX** and
+**P1.ARM64.WINDOWS**; owner has hardware for later testing. Neither deferral gates
+1.0/phases; four-target builds/packages remain, cross-publish is not runtime proof,
+and macOS remains outside scope. Unrelated later-phase requirements stay open.
+
+No product code or test result is changed by this documentation closeout.
+[Existing exact-source evidence/packages](../artifacts/focused-ntfs-20261117/evidence-index.json)
+remain immutable; see the new [closeout index](../artifacts/scope-closeout-20261117/evidence-index.json).
+**STOP: Phase 4 is next available for owner authorization, not started or
+authorized here.** No new native/ARM64 experiment, external push, tag or release.
+
+
+
+## November17 focused native NTFS correction
+
+The [focused diagnosis](focused-ntfs-diagnosis.md) supersedes historical blanket
+repair/deleted exclusions for one precisely bounded NTFS3.1 state: TxF and repair
+logging disabled (`0x1400`), clean LFS1.1, empty repair/deleted structures, and
+unchanged complete passive metadata records/allocation bytes. Portable five-
+operation staged editing, Save As and commit now work on that state. Native
+read-only/writable oracles and standard-user Windows GUI outputs pass; exact
+container/layout evidence is in the focused ledger. No Windows mounting,
+formatting, replay or repair is an application prerequisite. Default TxF-bearing
+and coherent LFS2 images remain outside write qualification. Physical ARM64 is
+**NOT VERIFIED — NONBLOCKING BY OWNER DECISION**; no physical pass is inferred.
+
+
+## Current Phase 3 workflow and recovery (2026-11-16)
+
+Resumed current R4b Windows GUI Save As and committed images pass56independent
+NTFS commands; original file contents/native metadata, log and boot sectors are
+preserved. Actual restarted recovery retains changed-source refusal. Subsequent
+hash/archive-guarded test cleanup never restores source bytes. No writer or
+recovery predicate changed; native transaction/repair/LFS2 gates remain blocked.
+
+The owner [authorized continuous 2D/3 work](sectorworks_phase_2d_and_phase_3_autonomous_sol_prompt.txt),
+superseding the older intervening review holds below. Current bounded legacy/list
+writer rows, exact evidence and retained blockers are in the
+[review](phase2d-phase3-review.md). Earlier dated envelopes remain historical.
+
+Use Image → Commit Changes to Source, the Commit toolbar button or Ctrl+S for
+source replacement; Ctrl+Shift+S creates a separate validated image. Save As
+retains pending changes and source bytes. Commit confirmation explains source
+locking, durable backup/journal, copied staging, independent output checks,
+atomic replacement and history refresh. Cancellation is honored before final
+replacement; once replacement starts it must finish. Failures retain pending
+state where the session remains available; failed reopen disables editing and
+allows confirmed close. A failed action must not promise that replacement never
+happened. Unsupported sibling volumes cannot acquire staged operations.
+
+Modify, Save As and Commit decisions are independent. Unknown/custom writers
+default commit to denied. Host read-only/link restrictions can disable commit
+while validated Save As remains available. Newly qualified legacy/list writing
+does not enable transaction-bearing, dirty, ambiguous or LFS 2.0/cache layouts.
+
+On startup, recovery checks at most 256 pointers in the private application-data
+`SectorWorks/CommitRecovery` directory. Tools → Interrupted Commit Recovery can
+reopen it after workspaces close. Journals are untrusted, bounded to 32 KiB and
+restricted to exact transaction IDs and sibling paths. The active ordered plan
+is recorded as a count/digest and at most eight audit previews with captured
+payload hashes; original import-host paths are omitted. It is not a replay plan.
+
+The default is to keep artifacts. Verified cleanup never writes/restores source
+bytes; before-finalize records require the source and retained backup to match
+the baseline. A stale stage can survive successful replacement, so mismatches
+remain for inspection. A missing-journal registration can be removed only under
+the source lock, and removes its pointer alone. Linked, malformed, changed or
+inaccessible records remain visible as warnings/errors. Unregistered partial
+journal `.write-*` files are retained, not blindly scanned/deleted. Actual process
+termination/restart evidence is distinct from power-loss guarantees.
+
+## Historical Phase 2D bounded closeout, 2026-10-17
 
 Owner authorized closing retained ordinary-NTFS Windows codec/media and LFS
 2.0/cached-metadata safety requirements under checklist 2D.2-2D.5, with reader
@@ -49,7 +140,7 @@ This closes retained runtime defects on qualified generated rows, not the
 Windows-authored-media or transaction/modern-log writer requirements.
 See [final corrective evidence](platform-status.md#final-global-session-corrective-snapshot).
 Final Linux complete verification passes **1178/one Windows-only skip**
-(1179 total), and all six current-source publishes/local AppImage pass.
+(1179 total), and all then-configured current-source publishes/local AppImage pass.
 The corrective batch stops for owner review; remaining Phase 2D/Phase 3 gates
 are not closed by these runtime results.
 TxF/CLFS, LFS 2.0/cache-safety and unavailable ARM64 are not waived or resolved.
@@ -74,14 +165,6 @@ Bootability and exact-layout preservation are not advertised. Do not use
 valuable bootable originals as write-test media. Tests use generated fixtures
 or disposable copies, never the owner's diagnostic image or binary sample.
 
-macOS is an unsupported, build-only target (owner decision, 2026-10-16): the
-owner has no reliable macOS test environment and macOS verification is not
-pursued. Cross-compiled osx-x64/osx-arm64 builds continue to be produced and
-distributed, but no physical runtime testing, verification, or compatibility
-support is performed or claimed; macOS is not dropped as a build target. This
-supersedes the prior "intended supported target, deferred" framing. Six-target
-cross-publishing is build evidence only, not physical compatibility evidence.
-See [platform status](platform-status.md).
 
 ## Review boundary
 
@@ -91,8 +174,9 @@ The separately authorized Phase 3 backend adds direct commit/recovery journaling
 for qualified rows; its Windows source-locking/atomic-finalize lifecycle is now
 verified on the retained generated matrix. Windows-authored transaction/log
 qualification is still unresolved.
-Startup recovery/UI integration and ISO rebuilding remain outside this 2D
-closeout, as do new legacy/attribute-list writer capabilities.
+The historical2D closeout excluded startup/UI and new legacy/list writes. The
+November16 assignment now implements those bounded Phase3 workflows as described
+at the top of this guide; ISO rebuilding remains outside scope.
 
 ### Phase 2C reader-only expansion and Phase 3 writer prerequisites
 
@@ -105,25 +189,24 @@ All new checklist **2C.1-2C.7**, **2C.V1-2C.V8** and **2C.E1-2C.E6** items began
 pending; implemented bounded reader tests/enumeration are now recorded separately in
 [platform evidence](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
 not full phase or writer qualification.
-The reader's current **49/49 focused tests (35 attribute-list + 14 version/layout/service)**
+The historical Phase 2C **49/49 focused tests (35 attribute-list + 14 version/layout/service)**
 include read workflows/source hashes, denial of staging/Save As for new variants,
 named-list guard, modern/legacy extension identity, empty nonresident
 index bitmap and GPT mixed-volume
 isolation: qualified FAT Save As preserves the read-only attribute-list NTFS
 partition byte hash without granting NTFS editing. Full verification passed
 1001 tests/one Windows-only skip, 1002 total; four later cases were added after
-that run's build. Current inventory 1006 including the skip is not a claimed
+that run's build. That snapshot's inventory of 1006 including the skip is not a claimed
 full 1005-pass run.
-Final repeat all-six self-contained publish/local Linux AppImage passes on
-latest source, as does the bounded owner read-only probe. Legal notices are retained;
+Final repeat all then-configured self-contained publish/local Linux AppImage passes on
+that final Phase 2C source, as does the bounded owner read-only probe. Legal notices are retained;
 no versioned release/GitHub publication changed. Cross-builds are not physical
 compatibility. Remaining Phase 2C verification/review gates stay open; authentic
 NT4/Windows 2000/XP-created-media qualification and dependent checks are
 owner-deferred to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
 [checklist](../checklist.txt), not passed or 1.0-blocking. VM-authored disks suffice,
 without vintage hardware. Automated tests, bounds, Tower source integrity and
-general platform checks remain required; macOS is excluded from general
-platform checks as a standing unsupported, build-only target (2026-10-16).
+general platform checks remain required.
 Stop for owner review.
 These selections are not additive. Signed reader packages and
 strict `NtfsValidation.Validate` writer defaults remain unchanged; the writer
@@ -142,11 +225,14 @@ security/metadata preservation, source hashes and failure/independent-tool
 evidence. Only then may the corresponding **3.7** direct-commit row be qualified.
 Historical-OS-authored writer-media interoperability moves only to post-1.0
 **P1.NTFS.5**; independent writer/failure qualification remains required for 1.0.
-Phase 3 remains unauthorized; reader success must not enable writes.
+Reader success must not enable writes. The October 16 Phase 3 backend increment
+is separately authorized and retained. The November16 assignment now qualifies
+the bounded structural3.0/3.7 expansion independently of reader acceptance.
 
-The required actual Windows-authored NTFS/security-reference and LFS 2.0/
-cached-metadata write gates stay incomplete in **2B.6**. They are neither moved
-into Phase 2C nor demoted to read-only 1.0 scope.
+The required Windows-authored edited-output/TxF/CLFS and LFS 2.0/cached-metadata
+write gates stay incomplete in **2B.6**. They are neither moved into Phase 2C
+nor demoted to read-only 1.0 scope. The Windows codec reference is separately
+complete under **2D.2**; bounded reader/Tower closure is recorded above.
 The approximately 8.42 GB raw Tower NTFS 3.0 owner image remains outside the
 repository and must not be copied, modified or distributed. Initial diagnosis
 is a live directory attribute list at MFT 26 referencing indexing extension
@@ -178,8 +264,8 @@ qualifies its new-target staged/Save As/write prerequisites, then direct commit
 per required disk stack, rather than stopping after one combination.
 ISO/Joliet/Rock Ridge and a declared UDF/bridge
 subset receive shared staged/rebuild qualification in Phase 4. BIN/CUE receives
-staged data-track editing and safe output-set reconstruction in Phase 6.
-Conventional 360K/720K writing remains assigned to Phase 7 item 7.10.
+staged data-track editing and safe output-set reconstruction in Phase 5.
+Conventional 360K/720K writing remains assigned to Phase 6 item 6.10.
 
 See the [delivery matrix](support-matrix.md#required-editing-delivery-roadmap)
 and [authoritative checklist](../checklist.txt) for exact assignments and gates.
@@ -187,7 +273,7 @@ Unachievable required rows stay blocked pending an explicit owner-approved
 scope decision with a named follow-up milestone, not silently deferred.
 
 The [1.0 read-only boundary](support-matrix.md#owner-approved-10-read-only-boundary)
-excludes writers for Phase 7 VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS additions,
+excludes writers for Phase 6 VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS additions,
 without reducing Phase 2B or optical/retro writing requirements. No future
 writer milestone is needed for those intentional read-only additions; exact
 reader feasibility blockers still need owner review.
@@ -292,13 +378,16 @@ before/after. Both restart pages must independently pass USA, geometry, bounds,
 client, LSN and clean-state checks. Ambiguity, dirty state and LFS 2.0 remain
 read-only. LFS 1.1 evidence is synthetic, not actual Windows media.
 
-**Phase 2B remains partial:** Windows-authored reference fixtures, actual Windows
-security-reference execution, and LFS 2.0/cached-metadata write safety are not
-qualified. Normal Windows volumes must not be claimed writable merely because
-native-created fixtures pass. These are retained required qualification gaps,
-not an owner-approved NTFS read-only scope reduction for 1.0. Formatting, source
-commit/journaling/recovery, log replay, repair and partition changes remain out
-of scope. See [repair evidence](dependency-evaluation.md#managed-ntfs-repair-implementation-and-qualification).
+**Phase 2B remains partial:** the Windows codec reference and disposable native
+author/source-readonly reopen checks have passed, but Windows-authored edited
+outputs/TxF/CLFS and LFS 2.0/cached-metadata write safety remain unqualified.
+Normal Windows volumes must not be claimed writable merely because generated
+fixtures pass. These are retained requirements, not an owner-approved NTFS
+read-only scope reduction for 1.0. Formatting, log replay, repair and partition
+changes remain unavailable. Qualified source commit/journaling/recovery primitives
+are retained in the Phase3 backend below; current commit UI and startup recovery
+are implemented as described at the top of this guide. See
+[repair evidence](dependency-evaluation.md#managed-ntfs-repair-implementation-and-qualification).
 
 ## Historical Phase 2 initial envelope
 
@@ -397,9 +486,15 @@ silently switch the workspace to the new output.
 
 1. Open an image and inspect the selected volume's capabilities. An unsupported
    stack remains browseable, with editing commands disabled and a reason.
-2. Navigate to the destination directory. Use Add or New Folder; use a single
-   selected entry for Replace, Rename or Delete. New/renamed names must satisfy
-   the current qualified FAT naming rules above.
+2. Navigate to the destination directory. Drag files from your file manager
+   onto the file list, or copy them in the file manager and press **Ctrl+V** in
+   SectorWorks (**Edit → Paste Files**). Both gestures stage local files under
+   their current names in the folder shown in the file list, even if a child folder is
+   selected. They use the same capability, naming, and space checks as **Add
+   File**. Existing entries are not replaced; check the status for skipped
+   files. Each successful addition can be undone separately. Use **Add File**
+   to choose a different name before staging, or **New Folder** to create an
+   image directory. Use a single selected entry for Replace, Rename or Delete.
 3. Open Changes to review ordered operations. Preview, hex, search and extraction
    show the current staged state. Undo/Redo and Discard affect only that state.
 4. Choose Save As and a new destination. Wait for copying, applying, flushing and
@@ -409,9 +504,34 @@ silently switch the workspace to the new output.
    with confirmation.
 
 Directory deletion is recursive. Replacing a file snapshots its replacement
-contents, not an executable action. Adding a host directory recursively,
-drag-and-drop import, text editing and metadata editing are not implemented by
-these commands.
+contents, not an executable action. Drop and paste do not import folders or
+clipboard text or move the originals. Use **Save As** or **Rebuild** for a new
+image, or the separate qualified **Commit** workflow to change the source.
+Text editing and metadata editing are not implemented by these commands.
+
+### File import verification (November 18, 2026)
+
+On Linux x64/X11, Nemo clipboard paste into an empty `/TARGET` directory and
+drag-and-drop into that same directory both staged local files in a generated
+ISO. SectorWorks rebuilt a new ISO; `isoinfo` independently found both entries
+and both extracted contents matched byte for byte. The original ISO and both
+host files kept their SHA-256 hashes. The UI suite passed 78 tests, including
+FAT Save As, conflict and read-only refusal, undo/redo, and keeping the original
+destination when the folder changes while clipboard data is pending.
+
+All four supported targets cross-published. The [Linux x64 AppImage](../artifacts/file-import-review/SectorWorks-file-import-linux-x64.AppImage)
+and [Windows x64 portable ZIP](../artifacts/file-import-review/SectorWorks-file-import-win-x64.zip)
+are local review builds, not replacements for prior packages. Native Windows
+and Wayland gesture verification remains open.
+
+The test desktop and its temporary mount were closed. Generated media and
+verification evidence were preserved in a checked private archive with a
+restore map; disposable publish trees, staging, and caches were removed.
+
+Deferred at the owner's request: some desired images reportedly reject adds even
+when attempting a rebuild, and some apparent HDD dumps reportedly open as
+optical. Neither report was investigated here; no detection or editing capability
+was changed.
 
 ## Save As safety contract
 
@@ -458,6 +578,12 @@ hostile-media defect.
 
 ## Phase 3 direct commit (implemented 2026-10-16)
 
+**Historical backend increment.** Statements below about a shared eligibility
+gate, absent UI/startup integration and unstarted legacy/list expansion describe
+that dated increment. The current workflow, independent commit contract and
+bounded catalog integration at the top of this guide supersede those statements.
+Final published application verification is tracked in the current review.
+
 Owner authorized Phase 3 ("Safe Direct Commit") on 2026-10-16 as a scoped
 child-chat session, explicitly not Phase 4/publication authority and not a
 commit/push/tag/release authorization. The delivered increment adds
@@ -501,11 +627,7 @@ journal/atomic-finalize layer, rather than reimplementing per-stack writers.
   Hash verification uses the original physical container length for source/
   backup checks and the actual output length for committed-output checks;
   dynamic-container growth must not be mistaken for a changed input.
-  macOS (where .NET does not support
-  `FileStream.Lock`) uses an exclusive sidecar marker file instead -- a
-  narrower guarantee limited to concurrent SectorWorks writers, untested on
-  physical macOS hardware, since macOS is a standing unsupported, build-only
-  target (2026-10-16). Verified cross-process on Linux with an independent Python writer
+  Verified cross-process on Linux with an independent Python writer
   holding a genuine fcntl byte-range lock. These guarantees do not make
   arbitrary external path replacement or writers ignoring advisory locks safe.
 - Recovery safety: `CommitRecovery` distinguishes the `Finalized` stage (the
@@ -573,15 +695,16 @@ review remains required.
 
 ## Recorded Phase 2B managed NTFS final verification
 
-These are retained Phase 2B results, not a Phase 2C test run or new legacy/
-attribute-list qualification. The reader-only plan above begins pending.
+These are historical Phase 2B results, not a current test run or new legacy/
+attribute-list writer qualification. Later bounded-reader, codec-reference and
+corrective-runtime evidence is recorded in the Phase 2D summary above.
 
 The owner-authorized repair's final `./scripts/verify.sh` passes **956 tests,
 one explicit Windows-only security-reference skip (957 total)**. Counts:
 691 storage passes/one skip, 156 Services, 68 UI, 14 foundation and 27 dependency.
 Locked restore, zero-warning/error Release build, formatting, UI resources,
 AppImage contracts and all authoritative reference comparisons pass.
-All six self-contained publishes and the Linux x64 AppImage prototype pass
+All then-configured self-contained publishes and the Linux x64 AppImage prototype pass
 architecture/legal/payload checks; Linux published and both FUSE/extraction-and-run
 AppImage resource diagnostics pass. Corresponding source/provenance and original
 owner-sample hashes verify unchanged.
@@ -602,7 +725,7 @@ On Linux Mint 22 x64/X11, 2026-10-15, before the managed NTFS repair:
   zero-warning Release build, formatting/resources and authoritative copies.
 - 63 direct disk matrix rows and the same 63 actual shared staged workflows
   pass, plus naming/metadata/fullness/growth, multivolume and failure regressions.
-- `./scripts/publish.sh all`: all six self-contained targets and Linux x64
+- `./scripts/publish.sh all`: all then-configured self-contained targets and Linux x64
   AppImage pass architecture/legal/sample-exclusion and local resource checks.
 - All five real X11 container workflows pass after code freeze. Outputs pass
   independent qemu conversion (plus VHDX checks), bounded `fsck.fat -n`, mtools
@@ -632,8 +755,7 @@ and supplies dialog paths; native-picker/manual accessibility review remains
 incomplete. For native checks, convert VHD with explicit qemu `-f vpc` or VHDX
 with `-f vhdx`, then extract the bounded partition before running FAT tools.
 No source mounting or owner sample is used. Windows/ARM64 Phase 2B runtime is
-unverified; macOS is a standing unsupported, build-only target and is not
-physically tested.
+unverified.
 
 ## Historical Phase 2 verification and reproduction
 
@@ -642,7 +764,7 @@ On Linux Mint 22 x64/X11, 2026-10-14:
 - `./scripts/verify.sh`: locked restore, zero-warning Release build,
   **313 passing tests / zero skips**, formatting, UI resources and unchanged
   authoritative specification/design copies.
-- `./scripts/publish.sh all`: all six self-contained outputs refreshed.
+- `./scripts/publish.sh all`: all then-configured self-contained outputs refreshed.
   Native executable architecture headers checked for each target; published
   Linux x64 resource diagnostic passed.
 - Qualified FAT12/FAT16/FAT32 round trips independently pass `fsck.fat -n` and
@@ -680,5 +802,4 @@ mdir -i artifacts/my-phase2-smoke/modified.img ::/STAGED
 The smoke requires a real graphical session and injects picker paths rather
 than automating native file dialogs. It generates synthetic, nonbootable data,
 never the ignored owner samples. Other-platform Phase 2 runtime and native
-desktop integration remain review work. macOS is a standing unsupported,
-build-only target (2026-10-16), not silently treated as physically tested.
+desktop integration remain review work.

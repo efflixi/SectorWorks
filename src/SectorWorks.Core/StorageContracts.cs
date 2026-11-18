@@ -8,13 +8,17 @@ public interface IReadOnlyBlockDevice : IDisposable
     bool IsReadOnly => true;
     int Read(long offset, Span<byte> buffer);
     ValueTask<int> ReadAsync(long offset, Memory<byte> buffer, CancellationToken cancellationToken = default);
-    void Write(long offset, ReadOnlySpan<byte> buffer) => throw new NotSupportedException("Phase 1 devices are read-only.");
-    void Flush() => throw new NotSupportedException("Phase 1 devices cannot flush writes.");
+    void Write(long offset, ReadOnlySpan<byte> buffer) => throw new NotSupportedException("This block device is read-only.");
+    void Flush() => throw new NotSupportedException("A read-only block device cannot flush writes.");
 }
 
 public sealed record ImageMetadata(
     string Path, string Format, long ContainerLength, long VirtualLength,
-    int SectorSize, IReadOnlyDictionary<string, string> Properties);
+    int SectorSize, IReadOnlyDictionary<string, string> Properties)
+{
+    public long? HexLength { get; init; }
+    public bool HasOpticalPartitionLayout { get; init; }
+}
 
 public sealed record PartitionInfo(
     int Index, string Table, long Offset, long Length, string Type,

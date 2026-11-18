@@ -8,8 +8,7 @@ public sealed class JsonLayoutStore : ILayoutStore
 
     public JsonLayoutStore(string? path = null)
     {
-        this.path = path ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SectorWorks", "layout.json");
+        this.path = path ?? Path.Combine(WorkspaceDataFiles.ApplicationDataDirectory(), "layout.json");
     }
 
     public LayoutSettings Load()

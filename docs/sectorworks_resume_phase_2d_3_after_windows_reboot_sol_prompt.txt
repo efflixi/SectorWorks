@@ -1,0 +1,122 @@
+SECTORWORKS — RESUME AND FINISH THE INTERRUPTED PHASE 2D / PHASE 3 WORK
+
+Windows rebooted for an update during the previous testing session. That broke the desktop tunnel until I returned home. The tunnel should now be restored, and I am here to approve legitimate Windows UAC prompts when needed.
+
+Resume from your existing delivered source, packages, evidence, progress ledger, and phase2d-phase3-review.md. This is a continuation of the prior autonomous Phase 2D/3 assignment, not a request to rebuild completed features from scratch or merely summarize the previous report.
+
+AUTHORIZATION
+
+The previous continuous authorization through Phase 2D and all remaining Phase 3 work remains in force. You may investigate, implement, repair, test, and package the necessary within-scope changes without asking me to approve routine engineering choices or progression between these two phases.
+
+The old “owner unavailable today; no UAC prompt” limitation no longer applies. When elevation is genuinely required, prepare the concrete finite action, tell me briefly what the prompt is for, and trigger the legitimate UAC flow so I can approve it. Do not end the assignment just because a prepared step needs UAC. After approval, carry out the action, collect its results, and continue automatically.
+
+If credential entry or another physical action is unavoidable, request that specific action rather than asking me to find and manually run another script. Never request or log my password.
+
+Stop for my review after the Phase 2D/3 work is finished or every independently achievable task has been completed and genuine remaining blockers are documented. Do not start Phase 4 or another later phase without my acceptance and explicit authorization. My authorization to continue is not acceptance of either incomplete phase or a waiver of required safety evidence.
+
+1. RECOVER THE EXACT CURRENT STATE
+
+Read current AGENTS.md, rules.txt, checklist/specifications, phase2d-phase3-review.md, the live progress ledger, evidence index, current source/code/package manifests, and directly relevant NTFS/recovery/platform documentation.
+
+Preserve the delivered 441-row bounded NTFS staged/Save As/commit coverage, mixed-volume isolation, commit UI, startup recovery, existing writer regressions, R4 first-run application-data fix, and unrelated owner changes.
+
+The prior report identifies final product source as R4b. Verify the actual current source and deployed package hashes; if there are newer changes, use the current authoritative state and explain the difference. Do not mistake R3 full-suite evidence for a full verification of final R4b.
+
+Follow the imported Dropbox/workspace/cleanup rules. macOS is removed completely; use the current four Windows/Linux x64/ARM64 targets and do not restore obsolete macOS requirements.
+
+2. CHECK THE RESTORED WINDOWS CONNECTION AND REBOOT AFTERMATH
+
+Verify both ordinary SSH access and the Windows desktop MCP connection with an actual screenshot/window inspection. Confirm the interactive account/session, MCP process, deployed application path, and available privileges.
+
+Record the owner-reported update/reboot as the reason for the interruption, rather than treating the prior outage as a deliberate withdrawal of authorization.
+
+Check task-owned process, attachment, output, journal, and pending-run state before resuming a command. A reboot can interrupt work after a command starts but before its result is collected. Do not assume a previous command succeeded, rerun single-use controls blindly, or overwrite existing run roots.
+
+Retain the manually controlled tunnel arrangement. Do not convert it to a persistent service. If connectivity fails again, distinguish the unavailable desktop from still-available SSH, checkpoint evidence, report what needs restoring, and continue independent work. Respect any explicit owner decision to end desktop control.
+
+3. CLOSE THE FINAL WINDOWS PUBLISHED-UI GAP
+
+Use the corrected R4b/current review package through the real Windows desktop. Verify its hash and use standard-user application execution for normal-user qualification.
+
+Exercise the first-run/application-data fix using an isolated task-owned profile or equivalent non-destructive test arrangement. Do not delete or reset my normal application settings. Check staging, recovery catalog, logging, preferences and layout initialization, persistence after restart, and handling of unavailable/invalid storage locations as applicable.
+
+Repeat the real published-application workflows affected by the outstanding verification:
+- Native picker, image opening, navigation, preview/hex and visible capability reasons.
+- Directory/file staging, replace/delete/rename, Pending Changes, undo/redo/discard.
+- Save As through Ctrl+Shift+S, unchanged original input, retained pending changes, and independently checked exact saved bytes.
+- Confirmed commit through Ctrl+S, refreshed baseline/tree, cleared committed history, and independently checked exact final source bytes.
+- Actual restarted recovery: matching-source cleanup and stale/changed-source refusal, preserving the safeguards against undoing an already finalized replacement.
+- Read-only browsing and clear edit/commit refusal on the captured unsupported Windows-native transaction-bearing image and optical fixture.
+
+Use generated fixtures and fresh disposable copies. Create fresh host-local interruption cases if needed; do not transfer active path-bearing journals between machines. Screenshots and tests must correspond to the exact current package, not merely an older R3 candidate.
+
+4. RESUME THE PREPARED ELEVATED LFS CAPTURE
+
+Locate and review the corrected bounded R2 capture harness and its retained preparation evidence. The previous mounted capture was short by 4096 bytes and was not coherent. Keep that failed result identifiable.
+
+I am now available for the necessary UAC prompt. Prepare fresh disposable generated virtual-disk derivatives and execute the corrected harness through legitimate elevation. Keep positive virtual-file/extent identity checks and bounded handle, length, read, lock/unlock and detachment behavior.
+
+Validate the full captured extent and the consistency needed for the claim before interpreting it. Collect exact native API results, complete hashes, actual returned byte counts, attached/detached log metadata and independently checked output. A zero exit code, two recognizable restart pages or a length match alone does not establish a coherent filesystem snapshot.
+
+Ensure task-owned handles are closed and virtual disks detached on success, failure and timeout. If the harness exposes another defect, repair it, preserve the failed evidence, and rerun on fresh copies without requesting routine implementation approval.
+
+Do not stop after obtaining a better capture. Use it to advance the actual LFS 2.0/cached-metadata safety question.
+
+5. CONTINUE THE REMAINING NTFS SAFETY AND WRITER WORK
+
+Pursue the unresolved Phase 2D/3 goals with the same serious best-effort scope as the original assignment:
+- A defensible persistent TxF/KTM recovery and offline update/preservation rule for the bounded intended subset.
+- Separate LFS 2.0/cached-metadata safety evidence.
+- Required current Windows-authored ordinary NTFS staged editing, Save As and source-commit qualification after the relevant prerequisites pass.
+
+Preserve the useful breakthrough already obtained: complete detached disposable copies allowed native queries of both clients, producing 16 matching restart/forward payload observations across six known-state clients. Do not rediscover that transport route or repeat R8's unchanged protected-path backup-privilege attempt as if it were a new strategy.
+
+Use the detached route and other justified primary-source/native evidence to advance persistent record interpretation, relevant client recovery states, prepared/in-doubt behavior, TOPS and $TXF_DATA obligations. Respect the distinction between opening a native log, matching bytes, interpreting transaction state and proving safe offline edits.
+
+Research, build diagnostics, repair isolated managed backend/parser/security components, and implement a bounded acceptance/update contract when evidence supports it. Do not require an unnecessarily universal NTFS implementation when a defensible qualified subset meets the intended requirement. Conversely, do not simplify the required proof into a version check or empty-directory heuristic.
+
+Keep dirty, recovery-needed, ambiguous, unknown and unqualified cases safely refused. Do not delete transaction metadata, strip native authentication suffixes, normalize source metadata, reset/replay logs or run repair as an unqualified shortcut to acceptance.
+
+Native Windows tools may author and validate disposable references. Core product access must remain portable and independent of host mounting. A Windows-only mounted writer is not a substitute for SectorWorks' required implementation.
+
+For each newly writable native-source row, establish all five operations and shared staged/history workflows, then validated Save As, then direct commit. Compare allocation, MFT/index/list ownership, security, names/timestamps and retained metadata independently of content hashes. Keep untouched partitions and immutable source inputs intact. Distinguish expected metadata changes from native reopening from changes made by SectorWorks.
+
+If a research route reaches a real dead end, document why, try justified alternatives, and keep completing independent tasks. Do not claim that access to UAC itself solves these remaining format questions. Do not call safe rejection completion of a still-required writer capability.
+
+6. FINISH DEFERRED CLEANUP SAFELY
+
+Use the restored interactive account to inspect the two retained desktop-profile UI test roots and the intentionally stale changed-source recovery registration described in the previous report.
+
+Verify exact recorded identities, hashes, ownership and archive/restore coverage before cleanup. The stale registration was a deliberate recovery-refusal case; remove only the proven task-owned test registration/artifacts, without weakening production refusal rules or overwriting its changed source.
+
+Review remaining small failed capture/runner roots and task-created reproduction/tool outputs under the current cleanup policy. Preserve useful compact evidence and checkpoints. Do not remove unrelated profile data, owner images, immutable fixtures, prior releases or the current runnable packages.
+
+7. COMPLETE EVERY OTHER ACHIEVABLE PHASE 2D/3 REQUIREMENT
+
+Use the actual remaining checklist and closure ledger; do not limit this assignment to the few examples above.
+
+Check established ARM64 access. If a physical target is now available, execute and record the required current reader/staged/UI workflows. If unavailable, keep the physical gate explicitly incomplete and continue other work; do not equate cross-publishes or emulation with physical qualification. Do not broaden network probing to find a machine.
+
+Retain the approved post-1.0 deferral for authentic NT4/2000/XP-authored media. Do not silently move current Windows-native or LFS/cache requirements into that deferral.
+
+8. FINAL VERIFICATION AND HANDOFF
+
+Run targeted tests during implementation, then applicable final repository verification and available Windows/Linux/native checks against a sealed final source. Close the prior missing final Windows desktop evidence and the R3-versus-R4 verification distinction. Explain legitimate host-only test exclusions; never hide failures or count excluded cases as passed.
+
+If product source changes, refresh the affected published packages and rerun affected real application workflows. Produce current four-target runnable archives, Linux AppImage and generated-only fixtures as applicable, with exact source/package manifests and evidence links. Do not rely on an earlier candidate's GUI pass after a meaningful shared initialization/storage change.
+
+Update the existing review report, progress ledger, evidence index, checklist, support matrix and relevant architecture/dependency/platform/fixture/recovery documentation. Preserve chronology and failed attempts while clearly stating the final status.
+
+Return one consolidated handoff containing:
+- Newly closed requirements since the previous report.
+- Corrected final Windows UI results and cleanup outcomes.
+- Elevated LFS capture results and their actual implications.
+- NTFS safety/writer capability changes, or concrete remaining blockers and alternatives attempted.
+- Final-source tests, skips/failures, native checks and exact runnable package paths.
+- Separate truthful Phase 2D and Phase 3 completion status and any remaining physical-platform gaps.
+- A short owner acceptance walkthrough.
+
+Provide concise progress updates and alert me when a UAC prompt is ready. Otherwise continue autonomously through all achievable remaining Phase 2D/3 work. Preserve the existing repository policy; no external push, tag, release or later-phase implementation is authorized by this prompt.
+
+When the work is complete, or only demonstrated blockers requiring unavailable evidence or an owner scope decision remain, leave the application/test systems and Dropbox in the state required by current project rules, report it accurately, and STOP for my review before Phase 4.
+

@@ -1,5 +1,282 @@
 # SectorWorks agent entry point
 
+
+## Phase 5 — owner-authorized BIN/CUE and optical expansion
+
+Phase 5 is verified and STOPPED for owner review. The owner authorized only
+this phase, with the laptop available at standard-user
+privilege and no UAC approval available. The [Phase 5 report](docs/phase5-bin-cue.md)
+tracks the qualified parser, player and rebuild scope. Stop for review before
+Phase 6. Keep phase deferrals and earlier media safety gates intact.
+
+## Remaining phase order — owner decision
+
+The [checklist](checklist.txt) now sequences **Phase 5 — BIN/CUE and Optical
+Expansion**, **Phase 6 — Additional Formats and Filesystems**, then **Phase 7 —
+Linux and ARM64 Hardening**. Broad platform testing follows the feature work
+and covers the combined product; feature-specific verification remains in
+Phases 5 and 6. Physical ARM64 stays deferred to P1.ARM64. No phase
+implementation or release is authorized by the reorder.
+
+## Phase 4 scope — November 17, 2026
+
+Phase 4 optical rebuild is verified and STOPPED for owner review. See the current
+[Phase 4 report](docs/phase4-optical-rebuild.md) and [evidence index](artifacts/phase4-review/evidence-index.json).
+Keep ISO/UDF staging and reconstruction separate from direct disk commit; optical
+source replacement is unavailable. Preserve the bounded ISO/Joliet/Rock Ridge,
+UDF 1.02 and bridge predicates, fixed qualified boot-member bytes/LBAs and all
+source/namespace/metadata checks. No blanket bootability or exact-layout claim.
+Do not use owner recovery media as fixtures. Windows verification is standard-user
+and required no UAC. Physical ARM64 deferrals and accepted Phase 2/3 scope remain.
+Stop at Phase 4 review; Phase 5 or later work and push/tag/release are not authorized.
+
+## Accepted revised 1.0 scope and phase closeout (November 17, 2026)
+
+The owner invoked [the scope-change/closeout assignment](docs/sectorworks_1_0_scope_change_and_phase_closeout_sol_prompt.txt).
+It explicitly supersedes former 1.0 default-TxF/LFS2 and physical ARM64 gates,
+and satisfies affected review requirements conditionally. The exit audit in
+[the closeout report](docs/1.0-scope-closeout.md) found no independent open exit:
+Phase 2 (its historical envelope), 2B, 2C, 2D and Phase 3 are **COMPLETE / OWNER
+ACCEPTED UNDER THE REVISED 1.0 SCOPE**. This is not a whole-product 1.0 release.
+
+Retain every qualified FAT/NTFS reader/writer, structural legacy/list row and
+the verified native passive NTFS3.1 subset: 512-byte sectors, 4096-byte clusters/
+index blocks, 1024-byte MFT records, exactly `0x1400` volume flags, paired clean
+LFS1.1 pages and the exact empty repair/deleted-state/preservation predicate.
+Default TxF-enabled/transaction-bearing images and other unqualified states
+remain read-only. No gate, log or system metadata is removed or normalized.
+
+The unchecked [checklist](checklist.txt) sibling backlog is **P1.NTFS.MODERN.1–.6**
+(default TxF/CLFS/KTM checkpoint/active/prepared/in-doubt admission, TOPS/
+`$TXF_DATA` obligations, unsupported repair/deleted states, coherent detached
+LFS2/cache safety and dependent writer rows). It is DEFERRED POST-1.0, technically
+unresolved, not passed/impossible. Preserve existing **P1.NTFS.1–.6** authentic
+legacy qualification. Native detached-copy transport is solved; state-zero/
+free-TOPS shortcuts are falsified; historical records are not automatically active.
+Use retained diagnostics/archive/restore maps, not repeated access probes.
+
+Physical Linux ARM64 / Windows ARM64: **NOT VERIFIED — DEFERRED POST-1.0 BY OWNER**,
+tracked separately as **P1.ARM64.LINUX** / **P1.ARM64.WINDOWS**. Owner has hardware
+and will test later; do not describe permanent hardware absence. Preserve code/
+build/package support for exactly four Windows/Linux RIDs; macOS stays removed.
+Cross-publishing is not physical testing. Neither deferral blocks 1.0 or phase
+completion; unrelated future x64 hardening/security/UX/optical work stays required.
+
+STOP after this scope/documentation closeout. Phase 4 is next available for
+explicit owner authorization; no implementation, new probes/UAC/ARM64 tests,
+external push, tag, release or publication is authorized. Earlier dated notes
+below retain historical findings/authority only where not superseded here.
+Dropbox lifecycle, cleanup, protected media, safety and manual tunnel rules remain.
+
+## Focused native NTFS closeout for owner review (November17,2026)
+
+The [focused assignment](docs/sectorworks_focused_ntfs_diagnosis_sol_prompt.txt)
+is delivered and STOPPED for owner review. Read the [decision report](docs/focused-ntfs-diagnosis.md)
+and [evidence index](artifacts/focused-ntfs-20261117/evidence-index.json) before
+proposing further work. Do not automatically repeat probes or start Phase4.
+No push, tag, release or owner acceptance is authorized by this closeout.
+
+The bounded native TxF/repair-log-disabled NTFS3.1 subset is implemented and
+verified: exact0x1400flags, clean pairedLFS1.1, empty repair/deleted state,
+complete protected-record/allocation/security-referent preservation. Native
+60/60volume oracles, published standard-user GUI results,15unique container/
+layout rows and final standard-user Windows runtime checks pass. Full Linux
+verification2405pass/oneWindows-onlyskip precedes a final stricter descriptor
+assertion;18focused tests,32exact-output revalidations and final builds/format/
+four publishes/AppImage pass afterward. The local native fixture is ignored by
+Git and excluded from application packages; missing-input skips are NOT VERIFIED.
+
+Default TxF-bearing admission and broader coherentLFS2 safety remain unproved;
+neither phase is complete. Physical Linux/Windows ARM64 remain **NOT VERIFIED —
+NONBLOCKING BY OWNER DECISION**. Older ARM64-blocking/blanket-repair exclusions
+below are historical to the extent superseded by the focused report.
+
+Original UAC window05:56–07:56EST was not reset by the crash. Departure notice
+moved the conservative cutoff to07:48EST; final approved cleanup completed before
+the owner left. No further elevation is available or inferred. All148checked
+current generated disks are detached and eight native roots removed only after
+790file hashes/archive/decoded-media checks. Task app/profile/payloads/recovery
+registrations are gone; normal preferences/layout and the manual tunnel remain.
+Two small final cleanup receipts remain on Windows. Large local evidence has
+verified compact archives and restore maps; do not remove historical evidence.
+
+Dropbox was stopped under the owner's explicit override of observed paused
+sync. All final writes/checks/cleanup precede the required final `dropbox start`;
+its returned outcome is recorded in chat. A later task must inspect actual
+client state again rather than infer it from this pre-restart record.
+
+PowerShell5 learning: wrapping a root-array `ConvertFrom-Json` pipeline in
+`@(...)` can produce one nested item. Direct assignment returns the expected
+array. Validate actual manifest counts/checkers before UAC; preserve failed
+receipts and never equate a wrapper result with native/cleanup success.
+
+## Resumed closeout for owner review (2026-11-16, November17 UTC)
+
+The crash-interrupted assignment has completed its independently achievable
+follow-up. Current R4b tests2387 pass/one skip; formatting succeeds with a fresh
+private TMPDIR after the retained MSBuild temporary-directory failure, and all
+remaining verification stages pass. Exact current Windows GUI Save As/commit
+outputs pass56 independent NTFS commands. All337 prior final code-manifest
+members remain unchanged. Corrected LFS R2 and NoTxF R2 results are interpreted;
+modern Windows TxF/repair/LFS2 writing and physical ARM64 remain blocked.
+Neither phase is complete. See the current review/ledger/resumed evidence index.
+
+Resumed Windows GUI/native task roots and stale test registration are removed
+only after hash/archive checks; user preferences/layout and historical evidence
+remain. The manual tunnel remains; no application/test process or generated-disk
+attachment remains. STOP for owner review before Phase4; do not automatically
+resume probes or infer acceptance/publication authority from this closeout.
+
+LFS learning: successful FSCTL_LOCK_VOLUME flushes cached data and NTFS treats
+the volume as dismounted. In R2, both mounted pages are2.0, both locked pages1.1;
+unlock/close/detach changes metadata again. Locked and detached captures are
+separate evidence. A live sequential2.0 capture is not a coherent offline writer
+oracle. Format-time NoTxF/NoRepairLogs controls still retain repair metadata;
+do not infer its update semantics or remove writer gates.
+
+Finite cleanup learning: the host's Restricted PowerShell policy can reject a
+script-file launch before any script receipt exists. Preserve that failed launch;
+execute the reviewed exact command body inline through normal UAC when authorized,
+without changing execution policy. Missing output is not a cleanup success.
+
+## Native detached-copy learning (2026-11-16)
+
+The resumed assignment established a standard-user alternate CLFS evidence
+route: copy complete sealed generated BLF/container streams into a fresh
+user-local directory when both metadata copies have independently verified
+`%BLF%\` relative container names. Native queries then read both `TxfLog` and
+`KtmLog`; fresh Ordinary/Committed/RolledBack observations match original raw
+payloads. Protected live-path access remains denied; no privilege/ACL change
+was used. Normal Windows CLFS opening automatically added authentication
+suffixes and `.cnpf` files to the disposable copies. Preserve and hash the
+entire before/after files; never strip suffixes or use changed copies as input
+evidence. This establishes transport/payload observations, not persistent
+quiescence, prepared/in-doubt handling, TOPS/$TXF_DATA update obligations or
+offline writer safety. See [live ledger](docs/phase2d-phase3-progress.md).
+
+The interactive MCP account and restricted SSH transport account use different
+profiles. Determine the actual process profile for private state/path guards;
+do not assume the SSH profile is the interactive user's. Identities and access
+inventory remain local-only.
+
+## Resumed after Windows update/reboot (2026-11-16, evening)
+
+The owner invoked [the resume assignment](docs/sectorworks_resume_phase_2d_3_after_windows_reboot_sol_prompt.txt).
+Continuous Phase2D/3 work resumes from the delivered source and evidence; the
+prior STOP below is historical. The owner attributes the interruption to a
+Windows update/reboot and has restored the manually controlled tunnel; it was
+not a deliberate withdrawal. UAC approval is available again. Prepare finite,
+generated-only privileged actions, announce and trigger legitimate UAC, then
+continue after approval. Preserve standard-user application qualification and
+all existing native safety gates. No Phase4, security weakening or publication.
+
+## Current autonomous Phase 2D / Phase 3 authority (2026-11-16)
+
+**Current disposition: independently achievable delivery is prepared and STOPPED
+for owner review. Neither phase is complete.** Retained modern Windows native
+safety, physical ARM64 and corrected Windows desktop evidence remain open; see
+[the final review](docs/phase2d-phase3-review.md). Do not automatically resume
+native probes, implement Phase 4 or infer owner acceptance from this handoff.
+
+The owner explicitly invoked [the autonomous assignment](docs/sectorworks_phase_2d_and_phase_3_autonomous_sol_prompt.txt).
+It supersedes older intermediate review stops and authorizes the remaining
+Phase 2D and Phase 3 implementation, diagnostics, verification and review
+packages continuously. Independent Phase 3 work may proceed around a retained
+2D blocker; unsafe writer/commit rows remain disabled and incomplete. Stop for
+owner review after all achievable work in both phases, with no Phase 4 work,
+release/tag or inferred external push authority.
+
+For this assignment, generated-media native tests may be run autonomously,
+including normal Windows elevation through legitimate available mechanisms
+and a narrowly scoped local elevated test runner if necessary. Inspect actual
+tokens; retain separate standard-user product qualification. Do not disable
+UAC/security, weaken protected ACLs or authentication, persist/recreate the
+owner's visible tunnel after withdrawal, touch physical disks or expand
+protected owner-media permissions. Bundle only indispensable unavailable
+credential/UAC/physical actions after concrete setup. Historical owner-launch
+restrictions below describe their dated scope and are superseded for this
+assignment. All Dropbox, cleanup, portable-storage and proof requirements remain.
+Track progress and evidence in [the live ledger](docs/phase2d-phase3-progress.md).
+
+## Owner working rules imported from WinVOX (2026-11-16)
+
+The owner explicitly adopted the Dropbox lifecycle and routine task cleanup
+rules from WinVOX. These apply before every task, including documentation-only
+work. Minimal instruction/status discovery for the preflight is permitted.
+Keep this repository's existing layout, protected media and evidence records;
+this adoption does not move documentation or authorize editing WinVOX.
+
+### Dropbox lifecycle: preflight, isolation, final restart
+
+Dropbox has previously caused conflicting source/build artifacts. Where the Dropbox client is installed and usable, pause it for the task even if some outputs are outside the synchronized tree.
+
+1. Inspect the client and synchronization state using the established local procedure. Confirm synchronization is settled BEFORE issuing stop. Do not interrupt an observed active transfer, force a misleading ready state, or change sync configuration to get past this check. If settling is delayed, use bounded observation with updates; report a concrete blocker rather than waiting silently forever.
+2. Record the initial state, then stop Dropbox and verify that it stopped before ordinary project reads/copies/changes/builds/tests. This newer status-before-stop procedure supersedes the older instruction to make stop the first shell command.
+3. Keep Dropbox stopped through implementation, imports/builds/tests, evidence extraction, history/report updates, packaging, integrity checks, checkpoints, and owned-process cleanup. Do not restart between tool calls or test phases.
+4. Establish task-wide best-effort finalization/recovery before risky work. A shell trap protects only the shell it belongs to; a trap on one short command is not protection across an entire agent session. Avoid arrangements that restart synchronization while later commands still write. Preserve enough state to recover after interruption. Do not promise recovery from an external host/agent crash.
+5. Finish ALL agent-initiated shell work and file writes, prepare final response facts and paths, finalize evidence, and complete cleanup before restart. Ensure no deferred trap/cleanup will perform more commands or writes afterward. The final shell command must be exactly:
+
+   ```sh
+   dropbox start
+   ```
+
+6. Do not run any further shell commands, status checks, listings, hashes, tool-initiated file edits, packaging, or cleanup after that command. Report the returned restart result in chat. If restart fails, disclose the failure and leave recovery to the user or a new explicitly authorized task; do not silently run additional repair commands.
+
+If Dropbox is absent, inaccessible, or not applicable to the execution host, record the actual condition and use appropriate local isolation; do not invent status or install it merely to satisfy this rule. An already stopped installed client is a distinct observed state, not a synchronization sample. The normal owner expectation is to start the usable client at task end unless the user explicitly requests it remain stopped. If current instructions make safe handling impossible, explain the conflict and continue only work that does not depend on unsafe access.
+
+### Learnings: routine task cleanup
+
+As part of every authorized task, clean up task-created disposable caches, redundant staging/extracted build trees, temporary test worlds, and closed task-owned VM disks before handing off and restarting synchronization. Preserve owner data, required source/build dependencies, deliverables, prior releases, recovery checkpoints, and evidence from successful, failed, and abandoned attempts; losslessly archive bulky evidence or repeated snapshots where useful, retaining original-path/restore mappings and verifying hashes and exact decoded media content before removing expanded originals. Keep historical evidence traceable through those archive mappings, and never alter authoritative raw evidence merely to reduce its size or make validation pass. Keep cleanup proportionate to the task, record what was retained or removed and any measured reduction, and complete it before the final integrity check and Dropbox restart to reduce file count and synchronization work.
+
+For SectorWorks, preserve immutable fixtures, required pinned SDK/dependency
+assets, owner images, prior releases, source recovery checkpoints and all
+qualification evidence. Clean only task-created disposable resources after
+stopping their exact owned processes. Preserve failed and successful Windows
+probes; archive bulky generated evidence only with verified hashes and restore
+mappings. Record cleanup in the existing platform/evidence records. Never
+remove the Tower image, supplied ISO/PMFX inputs, owner VM state or an earlier
+task's artifacts as routine cleanup. Do not infer a broad repository cleanup
+from this standing rule.
+
+Before substantial edits, preserve a recoverable source checkpoint including
+pre-existing dirty/untracked source; leave restricted owner media in place.
+Track task-wide restart/recovery state outside synchronized storage. A trap in
+one short-lived shell does not protect an entire tool session. Complete all
+checks, history/evidence writes, checkpoints and owned-resource cleanup before
+the final restart command; run no commands or file edits afterward.
+
+## Current platform and Windows test access (owner decision, 2026-11-16)
+
+Support, build and distribute only Windows/Linux on x64 and ARM64: exactly
+`linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`. Earlier platform-target
+policies are superseded. Keep authoritative specification/design copies equal.
+Upstream transitive package identities and required license texts remain intact;
+immutable historical evidence and prior releases are not rewritten or deleted.
+
+The local Linux machine remains the primary development and default test host.
+Run ordinary local builds, automated tests and Linux UI checks here.
+Use the verified `windows_laptop` MCP tools as the default connection whenever
+Windows testing is needed, including SectorWorks UI workflows. The owner
+explicitly authorizes ordinary desktop interaction for requested testing;
+perform preparation, execution, inspection, diagnosis and cleanup autonomously.
+Read [Windows desktop testing](docs/windows-desktop-testing.md) before using it.
+Start GUI work with `Snapshot`, use observed controls, verify results through
+screenshots/UI state, and release desktop control when done or waiting on the
+owner. Prefer background `PowerShell` for command-line work and avoid overwriting
+shared clipboard contents or unrelated existing documents. Ask only when a
+specific required action cannot be completed with the available authorization,
+permissions, credentials or hardware. Reuse established permissions rather than
+asking again for routine test steps.
+
+This access policy does not mark any SectorWorks GUI/platform gate passed, grant
+account elevation, authorize a privileged broker/service/schedule or allow real
+disks, log repair/reset/replay, owner-media expansion, remaining Phase 3 features
+or publication. Keep source-integrity, validation and phase boundaries intact.
+Connection addresses, keys and bearer tokens stay local-only outside Git and
+synchronized storage. SSH remains a fallback for transfer/transport failures;
+its key retains `-T` and the original source-IP restriction while permitting
+the owner-authorized MCP tunnel destination.
+
 Before **every task**, read `rules.txt`, `checklist.txt`, the full current
 technical specification, and the current UI specification and design references
 when relevant. These are mandatory project instructions, not optional context.
@@ -20,7 +297,7 @@ The supplied root specifications remain authoritative; documentation copies must
 stay byte-identical. Do not silently edit specifications or mockups to resolve
 disagreements; report conflicts and obtain owner direction first.
 Owner confirmed on 2026-10-13 that the checklist governs audio scope:
-BIN/CUE support and functional CD-DA playback belong to Phase 6. Phase 1 reserves
+BIN/CUE support and functional CD-DA playback belong to Phase 5. Phase 1 reserves
 the optical/audio structure and pane tabs without implementing those workflows.
 
 Owner also approved keeping DiscUtils 0.16.13 for development on 2026-10-13.
@@ -33,26 +310,13 @@ Authorization applies only to the requested phase. Run verification, update the
 checklist truthfully, report limitations, and stop for user review. Do not
 implement Phase 1 while carrying out foundation preparation.
 
-Owner retained macOS as an intended supported target on 2026-10-14 and explicitly
-deferred physical runtime/signing validation while authorizing Phase 2.
-Keep both cross-publishes working without claiming physical compatibility.
-
-Owner changed macOS support policy on 2026-10-16: the owner has no reliable
-macOS test environment and macOS verification will not be pursued, superseding
-the 2026-10-14 "intended supported target" framing above. macOS is now a
-standing unsupported, build-only target, not dropped: keep producing and
-distributing osx-x64/osx-arm64 cross-publishes, but stop tracking macOS
-physical verification/checks as pending or deferred work anywhere in the
-documentation or checklist. Clearly inform users in README.md and release
-notes that macOS builds are untested and unsupported. See the technical
-specification section 4.2 amendment for the full policy text.
 
 Owner approved the editing-roadmap correction on 2026-10-15: Phase 2B is a
 separate staged-editing/Save As expansion milestone before Phase 3. It covers
 the required raw/VHD/VHDX, filesystem-only/MBR/GPT, FAT/ordinary-NTFS stacks and
 FAT long names. Phase 3 must qualify direct commit per required stack.
 ISO/UDF/bridge, BIN/CUE and conventional 360K/720K delivery is explicitly
-assigned to Phases 4, 6 and 7.10 respectively. See the checklist and
+assigned to Phase 4, Phase 5 and Phase 6 item 6.10 respectively. See the checklist and
 [planned capability matrix](docs/support-matrix.md#required-editing-delivery-roadmap).
 Owner separately authorized Phase 2B implementation on 2026-10-15, after the
 1.0 scope correction. The subsequent Phase 2C authorization below does not
@@ -71,16 +335,14 @@ qualification and dependent reader/writer interoperability checks on 2026-10-15
 to the checklist's post-1.0 P1.NTFS.1-P1.NTFS.6 milestone. These are not 1.0
 blockers or passed tests; VM-authored media suffices, without vintage hardware.
 Keep automated tests, safety bounds, Tower source-integrity tasks, general
-platform testing and Phase 3 writer/commit safety in 1.0; macOS is excluded
-from general platform testing as a standing unsupported, build-only target
-(2026-10-16 policy change above). Do not waive 2B.6 current Windows-
+platform testing and Phase 3 writer/commit safety in 1.0. Do not waive 2B.6 current Windows-
 authored-media/security-reference/LFS 2.0 gates or infer Phase 3 authorization.
 Stop for owner review. Checklist 2C.1-2C.7, 2C.V1-2C.V8 and 2C.E1-2C.E6 began
 pending. Implemented bounded attribute-list/version reading has 49/49 current
 focused passes (35 attribute-list, 14 version/layout/service).
 Full verification passed 1001/one Windows-only skip, 1002 total;
 four focused cases were added after the full run's build. That snapshot's inventory
-was 1006 including the skip, not a claimed full 1005-pass run. Final repeat all-six
+was 1006 including the skip, not a claimed full 1005-pass run. Final repeat then-configured
 self-contained publish/local Linux AppImage passes on latest source, as does the
 bounded owner read-only probe. No versioned release or GitHub publication changed.
 Cross-publishes are not physical compatibility; 2C.V6a is verified and parent
@@ -110,7 +372,7 @@ structurally validating inactive MFT records without resolving their references.
 The current roadmap targets 1.0. VMDK/VDI/QCOW2/DMG/ext2/ext3/ext4/exFAT/HFS+/APFS
 target qualified read-only subsets where feasible. Their writers, modified Save
 As, commit/rebuild and creation/formatting are outside 1.0, not unassigned gaps;
-no future writer milestone/date is required or promised. Phase 7 reader
+no future writer milestone/date is required or promised. Phase 6 reader
 evaluation/fixtures/tests remain required. Detection is not browsing/extraction;
 document exact reader blockers for owner review, never silently drop them.
 Apply read-only caps across containers and filesystems compositionally. Internal
@@ -131,7 +393,8 @@ addresses/key inventory in local-only records, not committed documentation.
 Use explicit-key, publickey-only BatchMode and strict host checking for finite
 remote commands; the enrolled restricted key requires no PTY (`-T`).
 Do not bypass a host-key mismatch or elevate the standard testing account.
-GUI smoke needs a separately prepared interactive desktop. This setup does not
+The interactive desktop is now available through the verified MCP connection.
+Historical SSH-only evidence does not establish GUI qualification. This setup does not
 authorize Phase 3, real-disk operations or recurring automation.
 
 ## Phase 2D authority and retained closeout (2026-10-17)
@@ -162,13 +425,12 @@ Authentic historical authoring remains P1.NTFS; MFT-bootstrap lists unsupported;
 newly readable legacy/attribute-list volumes NONEDITABLE until Phase 3 3.0/3.7.
 Preserve every existing qualified FAT/NTFS write. ARM64 is currently unavailable:
 owner approved proceeding, not waiving 2D.8c; keep it explicitly blocked.
-macOS remains unsupported/build-only, both publishes retained, no physical checks.
 Stop at 2D verification/owner review with exact evidence and concrete blockers.
 
 Current 2D evidence: Windows codec 271/271; reader 66/66 each on Linux/Windows x64;
 bounded Tower full before/after hashes and 1235021-byte selected extraction/native
 comparisons pass, private outputs removed. Full Linux verify 1136 passes/one
-Windows-only skip; all-six publishes/local AppImage pass. These close named
+Windows-only skip; then-configured publishes/local AppImage pass. These close named
 reader/Tower subitems, not full 2D or its remaining platform/review gates.
 Windows native author/source-readonly reopen pass, but edited output is untested.
 Native writable-attached fsutil reports LFS 2.0; detached raw/read-only report 1.1,
@@ -212,7 +474,81 @@ Owner subsequently authorized committing and pushing the verified changes on
 not tags/releases, further phase implementation or waiver of retained blockers.
 Keep owner media, generated payloads and private access records out of Git.
 
+Owner resumed retained Windows-native TxF/CLFS work on 2026-10-21 under
+checklist 2D.11 and authorized the proposed decoding, safety-rule investigation
+and conditional writer implementation/verification continuously, pausing only
+for needed decisions/evidence/owner-only actions. Writer expansion still
+requires a defensible persistent recovery/update rule; no Phase 3/later-phase,
+repair/reset/replay, privileged SSH or publication authority follows.
+
 ## Learnings
+
+Resolve default application-data paths with
+`Environment.GetFolderPath(LocalApplicationData, DoNotVerify)` and require an
+absolute result. An absent first-run XDG directory made the older lookup return
+empty and crashed startup; never fall back to the working directory. Recovery,
+staging, logging, preferences and layout share the guarded resolver. Keep the
+isolated child-process fresh-profile regression and actual AppImage startup/
+Save As/commit/restart checks. Captured payloads finish immutable0400 inside
+private0700 session directories; the shared spool parent is not the payload
+security boundary.
+
+A child started with Start-Process inside a finite SSH command can end when the
+SSH session closes. Keep necessary test wrappers in the finite foreground SSH
+session; preserve partial attempts and check for existing output before retry.
+A denied CIM metadata query is not failed SSH transport or evidence that account
+elevation is required. Never recreate the owner's deliberately visible desktop
+tunnel when it has stopped listening. Cast Get-Content pipeline strings to plain
+strings before ConvertTo-Json; provider-attached properties can otherwise expand
+into megabytes of unrelated metadata. Preserve raw failed observations locally
+and derive small summaries instead of rewriting them.
+
+
+Use the actual native metadata filename `$TxfLog.blf`, preserving the leading
+`$`; the older research spelling without it caused all R4 CLFS opens to fail.
+The Microsoft SDK defines `CLFS_RECORD_TYPE` as UCHAR and `ClfsClientRecord`
+as 3, unlike an older third-party enum: use byte-by-reference and validate
+known-byte native reads before owner-only probes. Native control authoring
+success and successful CLFS queries are separate outcomes; the batch must
+report missing queries as failures, retaining the reports and unchanged account.
+
+R5 completed all three native controls, then failed the final coverage assertion
+at batch line 26 because all 16 protected CLFS opens returned access denied,
+even in the owner-local administrator run. This is not a third-control failure
+or evidence that the standard SSH account needs elevation; retain the detached
+outputs/reports and do not rerun or alter permissions without a justified new method.
+
+R6 successfully opens all metadata attributes, but GENERIC_READ fails for six
+metadata targets and both CLFS clients before record decoding; attribute access
+is not data-read permission. The owner administrator token has backup/restore
+privileges present but disabled, while the standard token lacks them; this is
+not proof of the denial's cause. Owner-launched R7 failed its dictionary-result
+checker; cleanup detached the image and source/seed hashes match, but no usable
+activation/restoration result was captured. Owner R8 subsequently completed:
+existing backup privilege was enabled/restored in the isolated finite child,
+with original queried token state verified; restore privilege stayed disabled.
+All 18 before/18 with-backup rows match, including six metadata data-read and
+both CLFS opens denied with error 5, so no protected restart/record oracle ran.
+Exact output/seed hashes and seven independent Linux reads pass; this closes
+the bounded backup-candidate evaluation only. No further owner probe is
+justified yet; keep both-client recovery/update and all writer gates open,
+and never infer another privilege/account/ACL change from these denials.
+
+Native C# Dictionary<string,object> entries are not PSObject.Properties:
+test IDictionary keys separately from JSON-deserialized object properties.
+Regress actual native rows and JSON rows, including missing native errors and
+cleanup failures, before another owner-only probe. Persist stage observations
+before assertions and retain partial results on failure; a parent wrapper line
+alone cannot certify the native cause or whether privilege activation/restoration ran.
+
+CLFS raw base field 64 is not the native `LastFlushedLsn` in the verified
+generic control; keep raw fields unlabeled until independently established.
+New generic logs can include authentication-related extra bytes beyond native
+logical sizes: bound/refuse unknown full-file suffixes, retain complete source
+hashes and label any diagnostic prefix extraction explicitly. Never strip,
+regenerate or bypass authentication to qualify writing, and do not treat a
+generic API self-test as TxF/KTM recovery proof. See
+[native and suffix evidence](docs/dependency-evaluation.md#native-r4-results-and-corrected-oracle).
 
 Zero-length ISO files can have unused out-of-range extent addresses: tolerate
 only the empty-file case, keep other structural checks, warn and return an

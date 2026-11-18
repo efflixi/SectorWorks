@@ -1,0 +1,13 @@
+{
+  "kind": "generated Windows-native qualification fixture; no owner media",
+  "sourceSha256": "1deafc1f66560d676a66b1e3668a56d88b27b4dc50cfec33f82bbe4469abc50e",
+  "sourceLength": 8413184,
+  "authoring": "Windows 11 format /FS:NTFS /Q /A:4096 /L:disable /TXF:disable /S:enable /NoRepairLogs /NoTrim; native five seed files",
+  "originalEvidence": "artifacts/resume-20261116T231137Z/evidence-index.json",
+  "nativeReadOnlyReopenSha256Unchanged": true,
+  "diskSize": 134217728,
+  "partitionOffset": 65536,
+  "partitionLength": 133103616,
+  "volumeFlags": "0x1400",
+  "distribution": "Local qualification payload; excluded from Git and runnable application packages. No publication or redistribution-rights claim."
+}

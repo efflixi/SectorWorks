@@ -28,7 +28,7 @@ internal static class NtfsCompatibilityFixtures
         uint UnicodeSecurityId, string? UnicodeSecurityHash, DateTime UnicodeModifiedUtc);
     internal sealed record Fixture(string Path, Evidence Layout);
 
-    internal static Fixture Create(WorkDirectory work, byte major, byte minor)
+    internal static Fixture Create(WorkDirectory work, byte major, byte minor, bool forWriterCandidate = false)
     {
         string path = work.Golden("ntfs.img");
         // The isolated managed backend can author ordinary children portably;
@@ -63,6 +63,7 @@ internal static class NtfsCompatibilityFixtures
         byte[] data = Attributes(first).Single(attribute => U32(attribute, 0) == 0x80 && attribute[9] == 0);
         long initialized = checked((long)U64(data, 56));
         List<(long Offset, long Length)> runs = DecodeRuns(data, cluster);
+        var releasedSecurity = new List<(long Offset, long Length)>();
         for (int logical = 0; logical < initialized; logical += recordSize)
         {
             int physical = PhysicalOffset(runs, logical, recordSize);
@@ -97,6 +98,15 @@ internal static class NtfsCompatibilityFixtures
             {
                 // NTFS 1.2 predates shared security IDs. Use a bounded valid
                 // self-relative per-file descriptor, including for metadata.
+                // Reader fixtures historically retain allocation from a replaced
+                // nonresident root descriptor. A separate writer candidate must
+                // author a consistent bitmap, never relax the product validator
+                // to accept that intentionally unqualified reader fixture.
+                if (forWriterCandidate)
+                {
+                    foreach (byte[] old in attributes.Where(a => U32(a, 0) == 0x50 && a[8] == 1))
+                    { releasedSecurity.AddRange(DecodeRuns(old, cluster)); }
+                }
                 attributes.RemoveAll(attribute => U32(attribute, 0) is 0x40 or 0x50);
                 ushort id = U16(record, 40);
                 attributes.Add(ResidentAttribute(0x50, id, SecurityDescriptor()));
@@ -124,6 +134,20 @@ internal static class NtfsCompatibilityFixtures
             Encode(record);
             record.CopyTo(bytes, physical);
         }
+        if (releasedSecurity.Count != 0)
+        {
+            byte[] bitmapRecord = Decode(bytes.AsSpan(PhysicalOffset(runs, 6 * recordSize, recordSize), recordSize).ToArray());
+            byte[] bitmap = Attributes(bitmapRecord).Single(a => U32(a, 0) == 0x80 && a[9] == 0);
+            List<(long Offset, long Length)> bitmapRuns = DecodeRuns(bitmap, cluster);
+            foreach ((long start, long length) in releasedSecurity)
+            {
+                for (long lcn = start / cluster; lcn < (start + length) / cluster; lcn++)
+                {
+                    int bitByte = PhysicalOffset(bitmapRuns, lcn / 8, 1);
+                    bytes[bitByte] &= unchecked((byte)~(1 << (int)(lcn % 8)));
+                }
+            }
+        }
         int mirror = checked((int)U64(bytes, 56) * cluster);
         int mirrorLength = Math.Max(4 * recordSize, cluster);
         for (int offset = 0; offset < mirrorLength; offset += recordSize)
@@ -131,6 +155,46 @@ internal static class NtfsCompatibilityFixtures
             bytes.AsSpan(PhysicalOffset(runs, offset, recordSize), recordSize).CopyTo(bytes.AsSpan(mirror + offset));
         }
         File.WriteAllBytes(path, bytes);
+        if (forWriterCandidate && major == 1 && minor == 2)
+        {
+            // A writer fixture must also model the pre-3.0 system namespace,
+            // rather than relabeling modern $Secure/$Extend as NTFS 1.2.
+            // This bounded synthetic subset has an empty $Quota (no quota
+            // tracking), per-file security and no modern extended metadata.
+            using (FileStream stream = File.Open(path, FileMode.Open, FileAccess.ReadWrite))
+            using (var fs = new NtfsFileSystem(stream))
+            {
+                fs.NtfsOptions.CreateObjectIds = false;
+                fs.NtfsOptions.ShortNameCreation = ShortFileNameOption.Disabled;
+                fs.MoveFile("$Secure", "$Quota");
+                SectorWorks.ManagedNtfs.File quota = fs.GetFile(9);
+                foreach (NtfsStream old in quota.AllStreams.Where(s => s.AttributeType is AttributeType.Data
+                    or AttributeType.IndexRoot or AttributeType.IndexAllocation or AttributeType.Bitmap).ToArray())
+                {
+                    using (Stream dataStream = old.Open(FileAccess.Write)) { dataStream.SetLength(0); }
+                    quota.RemoveStream(old);
+                }
+                quota.CreateStream(AttributeType.Data, null);
+                quota.UpdateRecordInMft();
+                foreach (string name in new[] { "$ObjId", "$Quota", "$Reparse" }) { fs.DeleteFile("$Extend\\" + name); }
+                fs.DeleteDirectory("$Extend");
+            }
+            byte[] authored = File.ReadAllBytes(path);
+            for (int id = 12; id <= 15; id++)
+            {
+                int physical = PhysicalOffset(runs, id * recordSize, recordSize);
+                byte[] reserved = Decode(authored.AsSpan(physical, recordSize).ToArray());
+                int start = U16(reserved, 20);
+                reserved.AsSpan(start).Clear();
+                W16(reserved, 18, 0);
+                W16(reserved, 40, 0);
+                W32(reserved, start, uint.MaxValue);
+                W32(reserved, 24, checked((uint)(start + 8)));
+                Encode(reserved);
+                reserved.CopyTo(authored, physical);
+            }
+            File.WriteAllBytes(path, authored);
+        }
         return new(path, Inspect(path, recordSize, runs, initialized));
     }
 

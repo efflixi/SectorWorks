@@ -33,7 +33,7 @@ public sealed class ExplorerPresentationTests
     {
         using var fake = new FakeExplorer();
         using var workspace = new WorkspaceViewModel(fake, new FakeDialogs(), fake.Create("optical.iso"), new LayoutSettings());
-        StructureNode reserved = workspace.Roots[0].Children.Single(n => n.Title.Contains("Phase 6", StringComparison.Ordinal));
+        StructureNode reserved = workspace.Roots[0].Children.Single(n => n.Title.Contains("Optical sessions / tracks", StringComparison.Ordinal));
         Assert.Contains("sessions / tracks", reserved.Title);
         Assert.Contains("unavailable", reserved.Title);
         Assert.Null(reserved.VolumeId);
@@ -47,10 +47,10 @@ public sealed class ExplorerPresentationTests
         Assert.Equal(0, fake.DirectoryReadCount);
         Assert.Empty(workspace.Entries);
         Assert.Contains("No sessions or tracks have been enumerated", workspace.Properties);
-        Assert.Contains("Phase 6", workspace.Properties);
+        Assert.Contains("Open a CUE sheet to browse its track layout or play supported CD audio.", workspace.Properties);
         Assert.Equal(2, workspace.ToolIndex);
         using var disk = new WorkspaceViewModel(fake, new FakeDialogs(), fake.Create("disk.img"), new LayoutSettings());
-        Assert.DoesNotContain(disk.Roots[0].Children, n => n.Title.Contains("Phase 6", StringComparison.Ordinal));
+        Assert.DoesNotContain(disk.Roots[0].Children, n => n.Title.Contains("Optical sessions / tracks", StringComparison.Ordinal));
     }
 
     [Theory]

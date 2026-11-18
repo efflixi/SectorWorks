@@ -526,18 +526,20 @@ public sealed class EditingTests
     }
 
     [Theory]
-    [InlineData("fat12.img")]
-    [InlineData("fat16.img")]
-    [InlineData("fat32.img")]
-    public async Task IncompleteReadGoldenMetadataDoesNotInheritWriteQualification(string name)
+    [InlineData("fat12.img", true)]
+    [InlineData("fat16.img", true)]
+    [InlineData("fat32.img", false)]
+    public async Task ReadGoldensQualifyOnlyWhenTheirActualMetadataIsSupported(string name, bool editable)
     {
         using var work = new EditDirectory();
         string source = work.Golden(name, false);
         string hash = Hash(source);
         using var service = new ExplorerService(stagingDirectory: work.Path);
         WorkspaceInfo info = await service.OpenAsync(source);
-        Assert.False(info.Capabilities.Modify.Available);
-        Assert.Contains("metadata", info.Capabilities.Modify.Reason, StringComparison.Ordinal);
+        // Missing root labels are now a supported FAT12/16 variant; the FAT32
+        // golden's auxiliary metadata is still outside the qualified shape.
+        Assert.Equal(editable, info.Capabilities.Modify.Available);
+        if (!editable) { Assert.Contains("metadata", info.Capabilities.Modify.Reason, StringComparison.Ordinal); }
         Assert.NotEmpty(await service.ReadDirectoryAsync(info.Id, info.Volumes[0].Id, "/"));
         Assert.Equal(hash, Hash(source));
     }
@@ -643,8 +645,6 @@ public sealed class EditingTests
     [InlineData("dynamic.vhd")]
     [InlineData("dynamic.vhdx")]
     [InlineData("joliet.iso")]
-    [InlineData("mbr.img")]
-    [InlineData("gpt.img")]
     public async Task UnqualifiedStacksRemainReadOnly(string fixture)
     {
         using var work = new EditDirectory();
@@ -654,6 +654,25 @@ public sealed class EditingTests
         Assert.False(info.Capabilities.SaveAs.Available);
         await Assert.ThrowsAsync<NotSupportedException>(() => service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/NO")));
         await Assert.ThrowsAsync<NotSupportedException>(() => service.SaveAsAsync(info.Id, Path.Combine(work.Path, "no.img")));
+    }
+
+    [Theory]
+    [InlineData("mbr.img")]
+    [InlineData("gpt.img")]
+    public async Task PartitionedFatGoldensCanSaveWithoutChangingTheSource(string fixture)
+    {
+        using var work = new EditDirectory();
+        string source = work.Golden(fixture);
+        string initialHash = Hash(source);
+        using var service = new ExplorerService(stagingDirectory: work.Path);
+        WorkspaceInfo info = await service.OpenAsync(source);
+        Assert.True(info.Capabilities.SaveAs.Available, info.Capabilities.SaveAs.Reason);
+        await service.StageAsync(info.Id, new(ImageChangeKind.CreateDirectory, info.Volumes[0].Id, "/NEW"));
+        string output = Path.Combine(work.Path, "saved.img");
+        await service.SaveAsAsync(info.Id, output);
+        using IImageSession saved = new ImageOpener().OpenReadOnly(output);
+        Assert.Contains(saved.Volumes[0].FileSystem.ReadDirectory("/"), entry => entry.Name == "NEW");
+        Assert.Equal(initialHash, Hash(source));
     }
 
     [Fact]
@@ -677,16 +696,19 @@ public sealed class EditingTests
         Assert.Contains(reopened.Volumes[0].FileSystem.ReadDirectory("/"), entry => entry.Name == "QUALIFIED");
     }
 
-    [Fact]
-    public async Task MissingExtendedBpbRemainsReadOnlyDespiteFatReadSupport()
+    [Theory]
+    [InlineData("fat12.img", "FAT12", true)]
+    [InlineData("fat16.img", "FAT16", false)]
+    public async Task MissingExtendedBpbIsSupportedOnlyForQualifiedLegacyFloppies(string fixture, string filesystem, bool editable)
     {
         using var work = new EditDirectory();
-        string source = work.Golden("fat12.img");
+        string source = work.Golden(fixture);
         using (var file = new FileStream(source, FileMode.Open, FileAccess.Write)) { file.Position = 38; file.WriteByte(0); }
         using var service = new ExplorerService(stagingDirectory: work.Path);
         WorkspaceInfo info = await service.OpenAsync(source);
-        Assert.Equal("FAT12", info.Volumes[0].FileSystem);
-        Assert.False(info.Capabilities.Modify.Available);
+        Assert.Equal(filesystem, info.Volumes[0].FileSystem);
+        Assert.Equal(editable, info.Capabilities.SaveAs.Available);
+        Assert.False(info.Capabilities.CommitInPlace.Available);
         Assert.NotEmpty(await service.ReadDirectoryAsync(info.Id, info.Volumes[0].Id, "/"));
     }
 
@@ -925,7 +947,7 @@ public sealed class EditingTests
     [Theory]
     [InlineData(368640)]
     [InlineData(737280)]
-    public async Task RetroCapacityDoesNotInheritModernFat12WriteQualification(int length)
+    public async Task RetroCapacityWithAnUnknownGeometryRemainsReadOnly(int length)
     {
         using var work = new EditDirectory();
         string source = work.Golden("fat12.img");
@@ -934,7 +956,9 @@ public sealed class EditingTests
             var boot = new byte[512];
             file.ReadExactly(boot);
             System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(boot.AsSpan(19), checked((ushort)(length / 512)));
-            System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(boot.AsSpan(24), 9);
+            // These capacities with nine sectors/track are qualified. A
+            // mismatched eight-sector declaration must remain read-only.
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(boot.AsSpan(24), 8);
             file.Position = 0;
             file.Write(boot);
             file.SetLength(length);

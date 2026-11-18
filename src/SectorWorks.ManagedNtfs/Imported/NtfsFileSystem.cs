@@ -99,6 +99,7 @@ namespace SectorWorks.ManagedNtfs
             File volumeInfoFile = GetFile(MasterFileTable.VolumeIndex);
             _volumeInfo =
                 volumeInfoFile.GetStream(AttributeType.VolumeInformation, null).GetContent<VolumeInformation>();
+            _context.VolumeVersion = _volumeInfo.Version;
 
             // Initialize access to the other well-known metadata files
             _context.ClusterBitmap = new ClusterBitmap(GetFile(MasterFileTable.BitmapIndex));
@@ -2185,6 +2186,10 @@ namespace SectorWorks.ManagedNtfs
         private void DoSetSecurity(File file, PortableSecurityDescriptor securityDescriptor)
         {
             NtfsStream legacyStream = file.GetStream(AttributeType.SecurityDescriptor, null);
+            if (legacyStream == null && _context.VolumeVersion == VolumeInformation.VersionNt4)
+            {
+                legacyStream = file.CreateStream(AttributeType.SecurityDescriptor, null);
+            }
             if (legacyStream != null)
             {
                 SecurityDescriptor sd = new SecurityDescriptor();

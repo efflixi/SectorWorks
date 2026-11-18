@@ -201,7 +201,7 @@ public sealed class FileSystemTests
         using IImageSession session = new ImageOpener().OpenReadOnly(path);
         Assert.Empty(session.Volumes);
         Assert.Contains(session.Warnings, s => s.Contains("UDF", StringComparison.Ordinal)
-            && s.Contains("not implemented", StringComparison.Ordinal));
+            && s.Contains("browsing is unavailable", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -1,5 +1,49 @@
 # Foundation fixtures and direct-library experiments
 
+## November 17 scope/closeout status
+
+See the [accepted 1.0 scope and exit audit](1.0-scope-closeout.md). Phase 2B/2C/2D
+and Phase 3 are COMPLETE / OWNER ACCEPTED UNDER THE REVISED 1.0 SCOPE. Qualified
+readers, structural legacy/list writers and the exact native passive NTFS3.1
+0x1400/cleanLFS1.1 writer are retained; unsupported states stay read-only with
+all existing guards. Further modern-state qualification is DEFERRED POST-1.0
+under P1.NTFS.MODERN.1–.6; authentic historical authoring remains P1.NTFS.1–.6.
+Physical ARM64 is NOT VERIFIED — DEFERRED POST-1.0 BY OWNER under separate
+P1.ARM64.LINUX/P1.ARM64.WINDOWS tasks. Earlier dated/current-state descriptions
+below retain their original evidence envelope, not superseded completion gates.
+
+
+
+## Expanded NTFS writer fixtures (2026-11-16)
+
+Resumed native controls remain legal generated evidence, separate from immutable
+reader/writer goldens. LFS R2 has complete mounted/locked captures; NoTxF R1 is a
+retained safe failure and NoTxF R2 a fresh successful format-time control whose
+repair metadata remains writer-unqualified. Archives preserve full before/after
+files and restore paths. Current GUI fixture outputs now independently pass;
+expanded copies were removed only after decoded hash checks. No owner media
+became a fixture. See the resumed evidence index and current review.
+
+`NtfsCompatibilityFixtures.Create(..., forWriterCandidate: true)` creates separate
+legal structural writer controls from disposable golden expansions. NTFS 1.2
+uses empty `$Quota`/no `$Extend`, per-file security, SI48 and legacy headers; it
+reclaims the replaced security allocation rather than weakening the bitmap
+validator. The retained NTFS 1.2 reader fixture intentionally remains unqualified.
+
+21 feature sets combine versions 1.2/3.0/3.1 with ordinary metadata or resident/
+nonresident lists containing moved/continued file data or a moved root index.
+Writer extension records have zero link counts and independently accounted base
+ownership. The 441-row disk matrix wraps these in all 21 required bounded disk
+rows; read goldens and signed packages are unchanged. These are not authentic
+historical-OS-authored media; P1.NTFS remains the approved deferral.
+
+Additional controls exercise actual MFT/root-index growth in every feature set,
+near-full data allocation with exact released-list accounting, readable orphan/
+nonzero-link extensions, invalid raw SI timestamps, changed opaque SI fields and
+per-volume dirty-sibling refusal/preservation. Failed attempts remain evidence.
+No Tower, owner ISO/PMFX, owner VM or other protected-media content is a fixture
+or package input. See [current review](phase2d-phase3-review.md).
+
 These are synthetic, legally generated test media, not operating-system media.
 They contain the text `SectorWorks foundation sentinel v1\n` in `SENTINEL.TXT`.
 They are **not bootable** and establish no SectorWorks application support.
@@ -40,8 +84,7 @@ dependent **2C.3/2C.5/2C.V2/2C.V3/2C.V6/2C.E1/2C.E5/2C.E6** checks to the
 These are incomplete follow-ups, not 1.0 blockers. A disposable disk formatted
 and populated by the historical OS in a VM is sufficient; vintage hardware is
 not required. Current automated/safety/source-integrity/general-platform and
-writer checks remain in 1.0; macOS is excluded from general-platform checks
-as a standing unsupported, build-only target (2026-10-16).
+writer checks remain in 1.0.
 Completed structural version and attribute-list fixture work
 below qualifies the bounded synthetic subset, not authentic historical media.
 No authentic NT4-authored fixture exists yet. Synthetic version-field
@@ -75,8 +118,9 @@ promote owner content into synthetic fixtures or infer successful qualification.
 Newly readable legacy/attribute-list variants remain noneditable until Phase 3
 **3.0.1-3.0.5** qualifies staged editing, validated Save As and new-output NTFS
 writing before **3.7** direct commit. Existing Phase 2B fixtures/results and
-required actual Windows-authored/security-reference/LFS 2.0 gaps under **2B.6**
-remain unchanged; reader fixtures cannot close writer gates.
+required Windows-authored edited-output/TxF/CLFS and LFS 2.0 gaps under **2B.6**
+remain; reader fixtures cannot close writer gates. The Windows codec reference
+has independently passed under **2D.2**, not through synthetic reader fixtures.
 
 ### Verified structural version fixtures
 
@@ -471,3 +515,15 @@ The installed authoring tools are not bundled/linked dependencies, required
 runtime utilities, or production storage backends. SectorWorks-authored fixture
 content follows the repository GPL-3.0-only license. No proprietary content or
 upstream sample images are included.
+
+## Local native passive-metadata regression fixture
+
+The focused November17 qualification uses the project-generated Windows native
+NoTxF control described in [its provenance](../fixtures/qualification/native-notxf.provenance.json).
+Its compressed payload is local-only, ignored by Git and excluded from runnable
+application packages. The original sealed VHD member is retained in the native
+control archive identified by the focused evidence index; restore it as the
+provenance-named gzip fixture with the documented source SHA-256. The native
+workflow/corruption regressions explicitly skip as NOT VERIFIED when that local
+input is unavailable. Empty mapping-pairs unit cases remain independent of it.
+A missing fixture never establishes the native qualification gate.

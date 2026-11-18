@@ -1,9 +1,12 @@
 using System.Buffers.Binary;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using DiscUtils;
 using DiscUtils.Fat;
 using DiscUtils.Streams;
+using Microsoft.Win32.SafeHandles;
 using SectorWorks.Core;
 using SectorWorks.DependencyProbe;
 using SectorWorks.Storage;
@@ -97,6 +100,11 @@ public sealed class StorageTests
         const long length = 8L * 1024 * 1024 * 1024 * 1024;
         using (FileStream file = File.Create(path))
         {
+            // Windows doesn't create sparse files by extending their length.
+            // Mark only this disposable fixture before testing its 8 TiB offsets.
+            if (OperatingSystem.IsWindows()
+                && !DeviceIoControl(file.SafeFileHandle, 0x000900c4, 0, 0, 0, 0, out _, 0))
+            { throw new Win32Exception(Marshal.GetLastPInvokeError()); }
             file.SetLength(length);
             file.WriteByte(0x11);
             file.Position = length / 2;
@@ -130,6 +138,11 @@ public sealed class StorageTests
         Assert.Empty(session.Volumes);
         Assert.Contains(session.Warnings, s => s.Contains("Unknown layouts", StringComparison.Ordinal));
     }
+
+    [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DeviceIoControl(SafeFileHandle device, uint controlCode, nint input, uint inputSize,
+        nint output, uint outputSize, out uint bytesReturned, nint overlapped);
 
     [Theory]
     [InlineData(false)]

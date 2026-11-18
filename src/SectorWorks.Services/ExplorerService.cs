@@ -5,7 +5,7 @@ using SectorWorks.Platform;
 
 namespace SectorWorks.Services;
 
-public sealed partial class ExplorerService : IExplorerService, IImageEditingService
+public sealed partial class ExplorerService : IExplorerService, IImageEditingService, IImageCommitService, ICdTrackSource
 {
     private const int MaximumEntries = 100000;
     private const int MaximumResults = 10000;
@@ -13,24 +13,27 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
     private readonly IExplorerLog log;
     private readonly IStagedImageWriter writer;
     private readonly IStorageSpace storageSpace;
+    private readonly CommitRecoveryCatalog? recoveryCatalog;
     private readonly string stagingRoot;
     private readonly ConcurrentDictionary<Guid, SessionLease> sessions = new();
     private readonly object lifecycle = new();
     private bool disposed;
 
-    public ExplorerService(string? stagingDirectory = null) : this(new SectorWorks.Storage.ImageOpener(), stagingDirectory: stagingDirectory) { }
+    public ExplorerService(string? stagingDirectory = null, CommitRecoveryCatalog? recoveryCatalog = null)
+        : this(new SectorWorks.Storage.ImageOpener(), stagingDirectory: stagingDirectory, recoveryCatalog: recoveryCatalog
+            ?? (stagingDirectory is null ? new CommitRecoveryCatalog() : null))
+    { }
 
     public ExplorerService(IImageOpener opener, IExplorerLog? log = null, IStagedImageWriter? writer = null,
-        string? stagingDirectory = null, IStorageSpace? storageSpace = null)
+        string? stagingDirectory = null, IStorageSpace? storageSpace = null, CommitRecoveryCatalog? recoveryCatalog = null)
     {
         this.opener = opener;
         this.log = log ?? new JsonExplorerLog();
         this.writer = writer ?? new SectorWorks.Storage.DiskImageWriter();
         this.storageSpace = storageSpace ?? new HostStorageSpace();
-        string userData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        this.recoveryCatalog = recoveryCatalog;
         stagingRoot = stagingDirectory is not null ? Path.GetFullPath(stagingDirectory)
-            : string.IsNullOrWhiteSpace(userData) ? throw new InvalidOperationException("No managed user-data directory is available for staged image content.")
-            : Path.Combine(userData, "SectorWorks", "WorkspaceData");
+            : Path.Combine(WorkspaceDataFiles.ApplicationDataDirectory(), "WorkspaceData");
     }
 
     public Task<WorkspaceInfo> OpenAsync(string path, CancellationToken cancellationToken = default) =>
@@ -48,6 +51,26 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
                 image = opener.OpenReadOnly(path, cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 Guid id = Guid.NewGuid();
+                Capability editing = QualifyEdit(image);
+                Capability? rebuild = RebuildCapability(image);
+                string? sourceHash = editing.Available ? HashSourceImage(image, cancellationToken) : null;
+                if (rebuild?.Available == true)
+                {
+                    // Reparse the exact edit model between the source baseline
+                    // checks so metadata observed before the first hash isn't
+                    // carried into a rebuilt image after an intervening change.
+                    IImageSession provisional = image;
+                    image = opener.OpenReadOnly(provisional.Metadata.Path, cancellationToken);
+                    provisional.Dispose();
+                    editing = QualifyEdit(image);
+                    rebuild = RebuildCapability(image);
+                    if (rebuild?.Available != true)
+                    { throw new IOException("Optical layout changed while establishing the rebuild baseline; reopen the image."); }
+                }
+                if (sourceHash is not null && HashSourceImage(image, cancellationToken) != sourceHash)
+                {
+                    throw new IOException("Source changed while establishing the Save As baseline; reopen the image.");
+                }
                 bool browse = image.Volumes.Any(v => v.FileSystem.Capabilities.Browse.Available);
                 bool extract = image.Volumes.Any(v => v.FileSystem.Capabilities.Extract.Available && v.FileSystem.Capabilities.Browse.Available);
                 bool preview = image.Volumes.Any(v => v.FileSystem.Capabilities.Preview.Available && v.FileSystem.Capabilities.Browse.Available);
@@ -56,22 +79,24 @@ public sealed partial class ExplorerService : IExplorerService, IImageEditingSer
                     new Capability(extract, extract ? "Streaming extraction; existing host files are never overwritten." : "No browsable filesystem permits ordinary file reads."),
                     new Capability(preview, preview ? "Bounded text/file hex preview." : "Only raw image hex inspection is available."),
                     new Capability(false, "Full filesystem validation is not implemented; opening performs bounded structural checks only."));
-                Capability editing = writer.Qualify(image);
-                string? sourceHash = editing.Available ? HashSourceFile(image.Metadata.Path, image.Metadata.ContainerLength, cancellationToken) : null;
-                if (sourceHash is not null && HashSourceFile(image.Metadata.Path, image.Metadata.ContainerLength, cancellationToken) != sourceHash)
-                {
-                    throw new IOException("Source changed while establishing the Save As baseline; reopen the image.");
-                }
-                capabilities = WithEditing(capabilities, editing);
-                var info = new WorkspaceInfo(id, editing.Available ? WorkspaceState.ReadyWritable : WorkspaceState.ReadyReadOnly, image.Metadata, image.Partitions,
+                Capability[] commits = image.Volumes.Select(v => QualifySourceCommit(image, v.Id)).ToArray();
+                Capability commit = commits.FirstOrDefault(c => c.Available)
+                    ?? commits.FirstOrDefault() ?? new(false, "No qualified commit volume.");
+                CdDisc? disc = (image as ICdImageSession)?.Disc;
+                if (disc?.Sessions.SelectMany(session => session.Tracks).Any(track => track.Playback.Available) == true)
+                { capabilities = capabilities with { PlayAudioTrack = new(true, "Read-only playback from supported CD audio tracks.") }; }
+                capabilities = WithEditing(capabilities, editing, commit, rebuild);
+                var info = new WorkspaceInfo(id, rebuild?.Available == true ? WorkspaceState.RebuildRequired
+                    : editing.Available ? WorkspaceState.ReadyWritable : WorkspaceState.ReadyReadOnly, image.Metadata, image.Partitions,
                     image.Volumes.Select(v => new VolumeInfo(v.Id, v.FileSystem.Name, v.FileSystem.VolumeLabel, v.Partition, v.FileSystem.Properties,
-                        WithEditing(v.FileSystem.Capabilities, writer.QualifyVolume(image, v.Id)))).ToArray(),
-                    image.Warnings, capabilities);
+                        WithEditing(v.FileSystem.Capabilities, QualifyEdit(image, v.Id), QualifySourceCommit(image, v.Id), RebuildCapability(image, v.Id)))).ToArray(),
+                    image.Warnings, capabilities)
+                { OpticalDisc = disc };
                 foreach (string warning in image.Warnings)
                 {
                     log.Write("ValidationWarning", path, warning, "Warning");
                 }
-                log.Write("Capabilities", path, $"Source read-only; browse={browse}; extract={extract}; preview={preview}; stagedSaveAs={editing.Available}; direct writes and playback disabled.");
+                log.Write("Capabilities", path, $"Source read-only; browse={browse}; extract={extract}; preview={preview}; stagedSaveAs={editing.Available}; rebuild={rebuild?.Available == true}; commit={commit.Available}.");
                 log.Write(info.State.ToString(), path, info.Metadata.Format);
                 lock (lifecycle)
                 {

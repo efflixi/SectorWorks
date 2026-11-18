@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
 using SectorWorks.Core;
 using SectorWorks.NtfsSecurity;
@@ -10,7 +11,9 @@ using Attribute = SectorWorks.Storage.NtfsValidation.Attribute;
 namespace SectorWorks.Storage;
 
 internal sealed record NtfsWriteSnapshot(int ClusterSize, long ClusterCount, long FreeClusters,
-    long FreeMftRecords, IReadOnlyDictionary<long, byte[]> SecurityDescriptors);
+    long FreeMftRecords, IReadOnlyDictionary<long, byte[]> SecurityDescriptors,
+    IReadOnlyDictionary<long, byte[]> StandardInformation,
+    IReadOnlyDictionary<long, byte[]> PassiveMetadata);
 
 /// <summary>Bounded, dependency-independent qualification of the writable NTFS subset.</summary>
 internal static class NtfsWriteValidation
@@ -39,7 +42,7 @@ internal static class NtfsWriteValidation
     {
         try
         {
-            return CaptureCore(device, token);
+            return CaptureCore(device, token, allowLegacyLayouts: false);
         }
         catch (Exception ex) when (ex is OverflowException or ArgumentOutOfRangeException
             or InvalidOperationException or DecoderFallbackException)
@@ -48,7 +51,13 @@ internal static class NtfsWriteValidation
         }
     }
 
-    private static NtfsWriteSnapshot CaptureCore(IReadOnlyBlockDevice device, CancellationToken token)
+    // Resolved legacy/list qualification used by the separately verified expanded
+    // writer. The historical name remains for reproducible candidate evidence;
+    // Capture still exposes the narrower original validator independently.
+    internal static NtfsWriteSnapshot CaptureLegacyCandidate(IReadOnlyBlockDevice device, CancellationToken token = default)
+        => CaptureCore(device, token, allowLegacyLayouts: true);
+
+    private static NtfsWriteSnapshot CaptureCore(IReadOnlyBlockDevice device, CancellationToken token, bool allowLegacyLayouts)
     {
         token.ThrowIfCancellationRequested();
         if (device.Length < 32 * 1024 || device.Length > 64L * 1024 * 1024 * 1024
@@ -84,11 +93,11 @@ internal static class NtfsWriteValidation
         {
             Fail("Unsupported NTFS file/index record size.");
         }
-        Validate(device, boot, sector, cluster, token);
+        if (!allowLegacyLayouts) { Validate(device, boot, sector, cluster, token); }
         byte[] first = Bounds.Read(device, checked((long)U64(boot, 48) * cluster), recordSize);
         List<Attribute> firstAttributes = ValidateRecord(first, sector, cluster, device.Length);
         Attribute mft = firstAttributes.Single(a => a.Type == 0x80 && AttributeName(a.Bytes) == "");
-        List<Run> mftRuns = Runs(mft.Bytes, cluster, volumeBytes, false);
+        List<Run> mftRuns = WriteRuns(mft.Bytes, cluster, volumeBytes, false);
         long initialized = checked((long)U64(mft.Bytes, 56));
         if (initialized > 128L * 1024 * 1024 || initialized % recordSize != 0)
         {
@@ -96,31 +105,57 @@ internal static class NtfsWriteValidation
         }
         var records = new Dictionary<long, Record>();
         var live = new HashSet<long>();
-        for (long offset = 0; offset < initialized; offset += recordSize)
+        if (allowLegacyLayouts)
         {
-            token.ThrowIfCancellationRequested();
-            byte[] raw = new byte[recordSize];
-            ReadRuns(device, mftRuns, offset, raw);
-            if (raw.AsSpan().IndexOfAnyExcept((byte)0) < 0)
+            NtfsResolvedMetadata resolved = NtfsReadValidation.ResolveForWriter(device, boot, sector,
+                cluster, recordSize, indexSize, token);
+            byte[] candidateInfo = resolved.Files.Single(f => f.Id == 3).Streams.Single(a => a.Type == 0x70).Extents[0].Bytes;
+            byte[] candidateVersion = Resident(new(0x70, candidateInfo));
+            bool expanded = candidateVersion.Length == 12 && (candidateVersion[8], candidateVersion[9]) != (3, 1)
+                || resolved.Files.Any(f => f.AttributeList is not null);
+            if (expanded && (cluster != 4096 || recordSize != 1024 || indexSize != 4096))
+            { Fail("Expanded NTFS writer candidates require qualified 4096-byte clusters/index blocks and 1024-byte MFT records."); }
+            foreach (NtfsResolvedFile file in resolved.Files)
             {
-                continue;
+                List<Attribute> attributes = file.Streams.Select(a => NtfsLogicalAttributes.Combine(a, cluster)).ToList();
+                if (file.AttributeList is { } list) { attributes.Add(list); }
+                records.Add(file.Id, new(file.Id, file.Bytes, attributes));
             }
-            List<Attribute> attributes = ValidateRecord(raw, sector, cluster, device.Length);
-            ApplyFixups(raw, sector);
-            long id = offset / recordSize;
-            if ((U16(raw, 22) & 1) == 0)
-            {
-                continue;
-            }
-            if (U64(raw, 32) != 0 || U32(raw, 44) != id || U16(raw, 16) == 0)
-            {
-                Fail("NTFS live record has a continuation, wrong MFT identity or zero sequence.");
-            }
-            records.Add(id, new(id, raw, attributes));
-            live.Add(id);
+            live.UnionWith(resolved.PhysicalRecords.Keys);
         }
+        else
+        {
+            for (long offset = 0; offset < initialized; offset += recordSize)
+            {
+                token.ThrowIfCancellationRequested();
+                byte[] raw = new byte[recordSize];
+                ReadRuns(device, mftRuns, offset, raw);
+                if (raw.AsSpan().IndexOfAnyExcept((byte)0) < 0)
+                {
+                    continue;
+                }
+                List<Attribute> attributes = ValidateRecord(raw, sector, cluster, device.Length);
+                ApplyFixups(raw, sector);
+                long id = offset / recordSize;
+                if ((U16(raw, 22) & 1) == 0)
+                {
+                    continue;
+                }
+                if (U64(raw, 32) != 0 || (U16(raw, 4) >= 48 && U32(raw, 44) != id) || U16(raw, 16) == 0)
+                {
+                    Fail("NTFS live record has a continuation, wrong MFT identity or zero sequence.");
+                }
+                records.Add(id, new(id, raw, attributes));
+                live.Add(id);
+            }
+        }
+        byte[] versionInfo = Resident(records.TryGetValue(3, out Record? volumeRecord)
+            ? volumeRecord.Find(0x70) ?? throw new ImageFormatException("Missing NTFS volume information.")
+            : throw new ImageFormatException("NTFS required volume record is unallocated."));
+        bool nt4 = allowLegacyLayouts && versionInfo.Length == 12 && versionInfo[8] == 1 && versionInfo[9] == 2;
         for (int id = 0; id < 16; id++)
         {
+            if (nt4 && id == 11) { continue; }
             if (!records.ContainsKey(id))
             {
                 Fail("NTFS required system/reserved record is unallocated.");
@@ -147,15 +182,16 @@ internal static class NtfsWriteValidation
         var referenced = new byte[checked((int)((clusters + 7) / 8))];
         long allocatedClusters = 0;
         var names = records.ToDictionary(p => p.Key, p => Names(p.Value));
-        HashSet<long> system = IdentifySystemRecords(records, names);
+        HashSet<long> system = IdentifySystemRecords(records, names, nt4);
+        Dictionary<long, byte[]> passive = CapturePassiveMetadata(device, records, names, cluster, volumeBytes, sector, indexSize, token);
         foreach (Record record in records.Values)
         {
             token.ThrowIfCancellationRequested();
-            ValidateFeatures(record, system.Contains(record.Id));
+            ValidateFeatures(record, system.Contains(record.Id), allowLegacyLayouts, passive.ContainsKey(record.Id));
             foreach (Attribute attribute in record.Attributes.Where(a => a.Bytes[8] == 1))
             {
                 bool badPlaceholder = record.Id == 8 && attribute.Type == 0x80 && AttributeName(attribute.Bytes) == "$Bad";
-                List<Run> runs = Runs(attribute.Bytes, cluster, volumeBytes, badPlaceholder);
+                List<Run> runs = WriteRuns(attribute.Bytes, cluster, volumeBytes, badPlaceholder);
                 if (badPlaceholder && runs.Any(r => r.Offset >= 0))
                 {
                     Fail("NTFS media with recorded bad clusters is not writable.");
@@ -198,55 +234,145 @@ internal static class NtfsWriteValidation
         {
             if (Bit(bitmap, lcn) != (lcn >= clusters || Bit(referenced, lcn)))
             {
-                Fail("NTFS bitmap has a lost cluster, unmarked allocation or invalid tail bit.");
+                Fail($"NTFS bitmap has a lost cluster, unmarked allocation or invalid tail bit at LCN {lcn} (bitmap={Bit(bitmap, lcn)}, referenced={Bit(referenced, lcn)}).");
             }
         }
         if (!Bit(referenced, 0) || records[7].Find(0x80) is not { } bootData
-            || Runs(bootData.Bytes, cluster, volumeBytes, false)[0].Offset != 0)
+            || WriteRuns(bootData.Bytes, cluster, volumeBytes, false)[0].Offset != 0)
         {
             Fail("NTFS boot clusters are not reserved by $Boot.");
         }
         ValidateMirror(device, records[1], first, mftRuns, boot, recordSize, cluster, volumeBytes, token);
-        ValidateVolumeAndLog(device, records, cluster, volumeBytes, token);
+        ValidateVolumeAndLog(device, records, cluster, volumeBytes, token, allowLegacyLayouts, passive.Count != 0);
         ValidateDirectories(device, records, names, system, cluster, volumeBytes, sector, indexSize, token);
-        Dictionary<long, byte[]> descriptors = ValidateSecurity(device, records, system, cluster, volumeBytes, sector, indexSize, token);
-        return new(cluster, clusters, clusters - allocatedClusters, allocatedMft - live.Count, descriptors);
+        Dictionary<long, byte[]> descriptors = ValidateSecurity(device, records, system, cluster, volumeBytes, sector, indexSize, token, nt4, passive.Keys.ToHashSet());
+        Dictionary<long, byte[]> information = records.Values.Where(r => !EmptyReservedRecord(r))
+            .ToDictionary(r => r.Id, r => Resident(r.Find(0x10)!));
+        return new(cluster, clusters, clusters - allocatedClusters, allocatedMft - live.Count, descriptors, information, passive);
     }
 
-    private static HashSet<long> IdentifySystemRecords(Dictionary<long, Record> records, Dictionary<long, List<FileName>> names)
+    private static HashSet<long> IdentifySystemRecords(Dictionary<long, Record> records, Dictionary<long, List<FileName>> names, bool nt4)
     {
         var result = Enumerable.Range(0, 16).Select(i => (long)i).ToHashSet();
         string[] expected = ["$MFT", "$MFTMirr", "$LogFile", "$Volume", "$AttrDef", ".",
             "$Bitmap", "$Boot", "$BadClus", "$Secure", "$UpCase", "$Extend"];
+        if (nt4) { expected[9] = "$Quota"; }
         for (int id = 0; id < expected.Length; id++)
         {
+            if (nt4 && id == 11)
+            {
+                if (records.ContainsKey(11)) { Fail("NTFS 1.2 candidate requires reserved record 11 to be unused."); }
+                continue;
+            }
             if (names[id].Count != 1 || names[id][0].Name != expected[id]
                 || (names[id][0].Parent & 0xffffffffffff) != 5)
             {
                 Fail("NTFS fixed system-record identity/parent is inconsistent.");
             }
         }
+        if (nt4 && (records[9].Find(0x80) is not { } quota || quota.Bytes[8] != 0 || Resident(quota).Length != 0
+            || records[9].Attributes.Any(a => a.Type is 0x90 or 0xa0 or 0xb0 || AttributeName(a.Bytes) != "")))
+        { Fail("NTFS 1.2 quota tracking is unqualified; require the empty ordinary $Quota subset."); }
         foreach (var pair in names.Where(p => p.Key >= 16))
         {
             if (pair.Value.Any(n => (n.Parent & 0xffffffffffff) == 11))
             {
-                if (pair.Value.Count != 1 || pair.Value[0].Name is not ("$ObjId" or "$Quota" or "$Reparse"))
+                if (pair.Value.Count != 1 || pair.Value[0].Name is not ("$ObjId" or "$Quota" or "$Reparse" or "$RmMetadata" or "$Deleted"))
                 {
-                    Fail("Unsupported NTFS $Extend metadata (journal/transaction/unknown feature).");
+                    Fail($"Unsupported NTFS $Extend metadata: MFT record {pair.Key}, "
+                        + string.Join(", ", pair.Value.Select(n => n.Name)) + " (journal/transaction/unknown feature).");
                 }
                 result.Add(pair.Key);
             }
         }
+        foreach (var pair in names.Where(p => p.Key >= 16 && p.Value.Count == 1 && p.Value[0].Name == "$Repair"))
+        {
+            long parent = (long)(pair.Value[0].Parent & 0xffffffffffff);
+            if (names.TryGetValue(parent, out var parents) && parents.Count == 1 && parents[0].Name == "$RmMetadata"
+                && result.Contains(parent)) { result.Add(pair.Key); }
+        }
         return result;
     }
 
-    private static void ValidateFeatures(Record record, bool system)
+    // This is a bounded clean on-disk subset, not an instruction to normalize an
+    // input with Windows. Native format-axis controls independently distinguish
+    // TxF-disabled (0x0400) and repair-log-disabled (0x1000) volume flags.
+    // The remaining empty repair/deleted structures are preserved in full.
+    private static Dictionary<long, byte[]> CapturePassiveMetadata(IReadOnlyBlockDevice device,
+        Dictionary<long, Record> records, Dictionary<long, List<FileName>> names,
+        int cluster, long volumeBytes, int sector, int indexSize, CancellationToken token)
     {
+        var result = new Dictionary<long, byte[]>();
+        var roots = names.Where(p => p.Key >= 16 && p.Value.Any(n => n.Name is "$RmMetadata" or "$Deleted"
+            && (n.Parent & 0xffffffffffff) == 11)).ToArray();
+        if (roots.Length == 0) { return result; }
+        byte[] info = Resident(records[3].Find(0x70));
+        if (info.Length != 12 || info[8] != 3 || info[9] != 1 || U16(info, 10) != 0x1400
+            || cluster != 4096 || indexSize != 4096 || records[0].Bytes.Length != 1024 || roots.Length != 2
+            || roots.Any(p => p.Value.Count != 1 || p.Value[0].Namespace != 0)
+            || roots.Count(p => p.Value[0].Name == "$RmMetadata") != 1
+            || roots.Count(p => p.Value[0].Name == "$Deleted") != 1)
+        { Fail("Native repair/deleted metadata requires the qualified clean NTFS 3.1 TxF/repair-log-disabled subset."); }
+        Record Named(string name) => records[roots.Single(p => p.Value.Count == 1 && p.Value[0].Name == name
+            && p.Value[0].Namespace == 0).Key];
+        Record rm = Named("$RmMetadata"), deleted = Named("$Deleted");
+        var children = names.Where(p => p.Value.Any(n => (n.Parent & 0xffffffffffff) == (ulong)rm.Id)).ToArray();
+        if (children.Length != 1 || children[0].Value.Count != 1 || children[0].Value[0].Name != "$Repair"
+            || children[0].Value[0].Namespace != 0)
+        { Fail("Native resource metadata must contain only the empty $Repair control; TxF/TOPS/unknown children are unsupported."); }
+        Record repair = records[children[0].Key];
+        if (U16(rm.Bytes, 22) != 3 || U16(deleted.Bytes, 22) != 7 || U16(repair.Bytes, 22) != 5
+            || rm.Attributes.Count != 3 || deleted.Attributes.Count != 5 || repair.Attributes.Count != 4
+            || Resident(rm.Find(0x10)).Length != 72 || Resident(deleted.Find(0x10)).Length != 72
+            || Resident(repair.Find(0x10)).Length != 72)
+        { Fail("Native repair/deleted record layout is outside the qualified passive subset."); }
+        Attribute? data = repair.Find(0x80), allocation = deleted.Find(0xa0, "$I30");
+        if (data is null || data.Bytes[8] != 1 || U64(data.Bytes, 40) != 0 || U64(data.Bytes, 48) != 0 || U64(data.Bytes, 56) != 0
+            || !Resident(repair.Find(0x80, "$Config")).AsSpan().SequenceEqual(new byte[] { 1, 0, 0, 0, 3, 0, 0, 0 })
+            || allocation is null || allocation.Bytes[8] != 1 || U64(allocation.Bytes, 40) > 65536
+            || U64(allocation.Bytes, 48) != 0 || U64(allocation.Bytes, 56) != 0
+            || Resident(deleted.Find(0xb0, "$I30")).Length != 8
+            || Resident(deleted.Find(0xb0, "$I30")).AsSpan().IndexOfAnyExcept((byte)0) >= 0
+            || ReadIndex(device, deleted, "$I30", cluster, volumeBytes, sector, indexSize, token).Count != 0)
+        { Fail("Native repair/deleted metadata is not the qualified empty passive state."); }
+        foreach (Record record in new[] { rm, repair, deleted })
+        {
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            hash.AppendData(record.Bytes);
+            foreach (Attribute attribute in record.Attributes.Where(a => a.Bytes[8] == 1))
+            {
+                foreach (Run run in WriteRuns(attribute.Bytes, cluster, volumeBytes, false))
+                {
+                    if (run.Offset < 0 || run.Length > 65536) { Fail("Passive native metadata allocation exceeds its bounds."); }
+                    byte[] bytes = Bounds.Read(device, run.Offset, checked((int)run.Length));
+                    token.ThrowIfCancellationRequested(); hash.AppendData(bytes);
+                }
+            }
+            result.Add(record.Id, hash.GetHashAndReset());
+        }
+        return result;
+    }
+
+    private static List<Run> WriteRuns(byte[] attribute, int cluster, long volumeLength, bool allowSparse)
+        => Runs(attribute, cluster, volumeLength, allowSparse, allowEmpty: true);
+
+    private static void ValidateFeatures(Record record, bool system, bool allowAttributeLists, bool passive)
+    {
+        if (allowAttributeLists && EmptyReservedRecord(record)) { return; }
         Attribute si = record.Find(0x10) ?? throw new ImageFormatException("NTFS live record lacks standard information.");
         byte[] info = Resident(si);
         if (info.Length is not (48 or 72) || (U32(info, 32) & (0x200u | 0x400u | 0x800u | 0x4000u)) != 0)
         {
             Fail("NTFS sparse/compressed/encrypted/reparse file flags are unsupported.");
+        }
+        // The managed adapter converts out-of-range FILETIMEs to zero. Refuse
+        // those inputs before capturing metadata, rather than silently changing
+        // their original bytes during an otherwise unrelated edit.
+        for (int offset = 0; offset < 32; offset += 8)
+        {
+            ulong value = U64(info, offset);
+            if (value > 2650467743999999999UL)
+            { Fail("NTFS standard-information timestamp is outside the supported FILETIME range."); }
         }
         foreach (Attribute attribute in record.Attributes)
         {
@@ -258,7 +384,7 @@ internal static class NtfsWriteValidation
                 Fail($"NTFS sparse/compressed/encrypted attributes are unsupported: MFT record {record.Id}, "
                     + $"attribute 0x{attribute.Type:X} '{name}', flags 0x{U16(attribute.Bytes, 12):X}.");
             }
-            if (attribute.Type is 0x20 or 0x100 or 0xc0 || attribute.Type > 0xb0)
+            if ((attribute.Type == 0x20 && !allowAttributeLists) || attribute.Type is 0x100 or 0xc0 || attribute.Type > 0xb0)
             {
                 Fail($"NTFS attribute-list/reparse/unsupported attribute feature: MFT record {record.Id}, "
                     + $"attribute 0x{attribute.Type:X} '{name}'.");
@@ -269,7 +395,8 @@ internal static class NtfsWriteValidation
                     + $"attribute 0x{attribute.Type:X} '{name}'.");
             }
             if (system && name != "" && !(
-                ((record.Id is 5 or 11) && name == "$I30" && attribute.Type is 0x90 or 0xa0 or 0xb0)
+                ((record.Id is 5 or 11 || passive && record.Directory) && name == "$I30" && attribute.Type is 0x90 or 0xa0 or 0xb0)
+                || (passive && !record.Directory && name == "$Config" && attribute.Type == 0x80)
                 || (record.Id == 8 && name == "$Bad" && attribute.Type == 0x80)
                 || (record.Id == 9 && ((name == "$SDS" && attribute.Type == 0x80)
                     || (name is "$SDH" or "$SII" && attribute.Type is 0x90 or 0xa0 or 0xb0)))
@@ -279,7 +406,8 @@ internal static class NtfsWriteValidation
                 Fail($"Unknown named NTFS system metadata stream: MFT record {record.Id}, "
                     + $"attribute 0x{attribute.Type:X} '{name}'.");
             }
-            if (!system && attribute.Type is not (0x10 or 0x30 or 0x50 or 0x80 or 0x90 or 0xa0 or 0xb0))
+            if (!system && !(allowAttributeLists && attribute.Type == 0x20)
+                && attribute.Type is not (0x10 or 0x30 or 0x50 or 0x80 or 0x90 or 0xa0 or 0xb0))
             {
                 Fail($"Unsupported NTFS user metadata: MFT record {record.Id}, "
                     + $"attribute 0x{attribute.Type:X} '{name}' "
@@ -307,7 +435,7 @@ internal static class NtfsWriteValidation
         List<Run> mftRuns, byte[] boot, int recordSize, int cluster, long volumeBytes, CancellationToken token)
     {
         Attribute data = mirror.Find(0x80) ?? throw new ImageFormatException("Missing NTFS MFT mirror data.");
-        List<Run> runs = Runs(data.Bytes, cluster, volumeBytes, false);
+        List<Run> runs = WriteRuns(data.Bytes, cluster, volumeBytes, false);
         int expected = Math.Max(4 * recordSize, cluster);
         if (U64(data.Bytes, 48) != (ulong)expected || runs[0].Offset != checked((long)U64(boot, 56) * cluster)
             || mftRuns[0].Offset != checked((long)U64(boot, 48) * cluster))
@@ -337,15 +465,17 @@ internal static class NtfsWriteValidation
     }
 
     private static void ValidateVolumeAndLog(IReadOnlyBlockDevice device, Dictionary<long, Record> records,
-        int cluster, long volumeBytes, CancellationToken token)
+        int cluster, long volumeBytes, CancellationToken token, bool allowLegacyLayouts, bool passive)
     {
         byte[] info = Resident(records[3].Find(0x70) ?? throw new ImageFormatException("Missing NTFS volume information."));
-        if (info.Length != 12 || info[8] != 3 || info[9] != 1 || U16(info, 10) != 0)
+        if (info.Length != 12 || U16(info, 10) != (passive ? 0x1400 : 0)
+            || ((info[8], info[9]) != (3, 1)
+                && (!allowLegacyLayouts || (info[8], info[9]) is not ((1, 2) or (3, 0)))))
         {
             Fail("NTFS must be clean version 3.1 without pending volume flags.");
         }
         Attribute log = records[2].Find(0x80) ?? throw new ImageFormatException("Missing NTFS transaction log.");
-        List<Run> runs = Runs(log.Bytes, cluster, volumeBytes, false);
+        List<Run> runs = WriteRuns(log.Bytes, cluster, volumeBytes, false);
         long length = checked((long)U64(log.Bytes, 56));
         if (U64(log.Bytes, 48) != (ulong)length || length < 512)
         {
@@ -590,61 +720,66 @@ internal static class NtfsWriteValidation
     }
 
     private static Dictionary<long, byte[]> ValidateSecurity(IReadOnlyBlockDevice device, Dictionary<long, Record> records,
-        HashSet<long> system, int cluster, long volumeBytes, int sector, int indexSize, CancellationToken token)
+        HashSet<long> system, int cluster, long volumeBytes, int sector, int indexSize, CancellationToken token, bool nt4, HashSet<long> passive)
     {
-        Record secure = records[9];
-        Attribute sds = secure.Find(0x80, "$SDS") ?? throw new ImageFormatException("Missing NTFS $Secure:$SDS.");
-        byte[] bytes = ReadAttribute(device, sds, cluster, volumeBytes, 16 * 1024 * 1024);
         var entries = new Dictionary<uint, SecurityEntry>();
-        for (int block = 0; block < bytes.Length; block += 0x80000)
+        if (!nt4)
         {
-            int primaryEnd = Math.Min(bytes.Length, checked(block + 0x40000));
-            int offset = block;
-            while (offset <= primaryEnd - 20 && U32(bytes, offset + 16) != 0)
+            Record secure = records[9];
+            Attribute sds = secure.Find(0x80, "$SDS") ?? throw new ImageFormatException("Missing NTFS $Secure:$SDS.");
+            byte[] bytes = ReadAttribute(device, sds, cluster, volumeBytes, 16 * 1024 * 1024);
+            for (int block = 0; block < bytes.Length; block += 0x80000)
             {
-                token.ThrowIfCancellationRequested();
-                uint length = U32(bytes, offset + 16);
-                if (length < 40 || length > primaryEnd - offset || U64(bytes, offset + 8) != (ulong)offset)
+                int primaryEnd = Math.Min(bytes.Length, checked(block + 0x40000));
+                int offset = block;
+                while (offset <= primaryEnd - 20 && U32(bytes, offset + 16) != 0)
                 {
-                    Fail("Invalid NTFS security descriptor stream entry bounds/offset.");
+                    token.ThrowIfCancellationRequested();
+                    uint length = U32(bytes, offset + 16);
+                    if (length < 40 || length > primaryEnd - offset || U64(bytes, offset + 8) != (ulong)offset)
+                    {
+                        Fail("Invalid NTFS security descriptor stream entry bounds/offset.");
+                    }
+                    int duplicate = checked(offset + 0x40000);
+                    if (duplicate > bytes.Length || length > bytes.Length - duplicate
+                        || !bytes.AsSpan(offset, (int)length).SequenceEqual(bytes.AsSpan(duplicate, (int)length)))
+                    {
+                        Fail("NTFS $SDS primary/duplicate descriptor copies disagree.");
+                    }
+                    byte[] descriptor = bytes.AsSpan(offset + 20, (int)length - 20).ToArray();
+                    ValidateDescriptor(descriptor, false);
+                    uint hash = SecurityHash(descriptor);
+                    uint id = U32(bytes, offset + 4);
+                    if (id < 256 || hash != U32(bytes, offset)
+                        || !entries.TryAdd(id, new(hash, id, (ulong)offset, length, descriptor)))
+                    {
+                        Fail("NTFS $SDS security hash/ID is invalid or duplicated.");
+                    }
+                    offset = checked((offset + (int)length + 15) & ~15);
                 }
-                int duplicate = checked(offset + 0x40000);
-                if (duplicate > bytes.Length || length > bytes.Length - duplicate
-                    || !bytes.AsSpan(offset, (int)length).SequenceEqual(bytes.AsSpan(duplicate, (int)length)))
+                if (bytes.AsSpan(Math.Min(offset, primaryEnd), primaryEnd - Math.Min(offset, primaryEnd)).IndexOfAnyExcept((byte)0) >= 0)
                 {
-                    Fail("NTFS $SDS primary/duplicate descriptor copies disagree.");
+                    Fail("NTFS $SDS primary padding contains unindexed security data.");
                 }
-                byte[] descriptor = bytes.AsSpan(offset + 20, (int)length - 20).ToArray();
-                ValidateDescriptor(descriptor, false);
-                uint hash = SecurityHash(descriptor);
-                uint id = U32(bytes, offset + 4);
-                if (id < 256 || hash != U32(bytes, offset)
-                    || !entries.TryAdd(id, new(hash, id, (ulong)offset, length, descriptor)))
+                int duplicateStart = checked(block + 0x40000);
+                if (duplicateStart < bytes.Length)
                 {
-                    Fail("NTFS $SDS security hash/ID is invalid or duplicated.");
+                    int duplicateLength = Math.Min(0x40000, bytes.Length - duplicateStart);
+                    if (!bytes.AsSpan(block, duplicateLength).SequenceEqual(bytes.AsSpan(duplicateStart, duplicateLength)))
+                    {
+                        Fail("NTFS $SDS duplicate block/padding disagrees.");
+                    }
                 }
-                offset = checked((offset + (int)length + 15) & ~15);
             }
-            if (bytes.AsSpan(Math.Min(offset, primaryEnd), primaryEnd - Math.Min(offset, primaryEnd)).IndexOfAnyExcept((byte)0) >= 0)
-            {
-                Fail("NTFS $SDS primary padding contains unindexed security data.");
-            }
-            int duplicateStart = checked(block + 0x40000);
-            if (duplicateStart < bytes.Length)
-            {
-                int duplicateLength = Math.Min(0x40000, bytes.Length - duplicateStart);
-                if (!bytes.AsSpan(block, duplicateLength).SequenceEqual(bytes.AsSpan(duplicateStart, duplicateLength)))
-                {
-                    Fail("NTFS $SDS duplicate block/padding disagrees.");
-                }
-            }
+            ValidateSecurityIndex(ReadIndex(device, secure, "$SII", cluster, volumeBytes, sector, indexSize, token), entries, false);
+            ValidateSecurityIndex(ReadIndex(device, secure, "$SDH", cluster, volumeBytes, sector, indexSize, token), entries, true);
         }
-        ValidateSecurityIndex(ReadIndex(device, secure, "$SII", cluster, volumeBytes, sector, indexSize, token), entries, false);
-        ValidateSecurityIndex(ReadIndex(device, secure, "$SDH", cluster, volumeBytes, sector, indexSize, token), entries, true);
         var result = new Dictionary<long, byte[]>();
         foreach (Record record in records.Values)
         {
+            if (EmptyReservedRecord(record)) { result.Add(record.Id, []); continue; }
             byte[] si = Resident(record.Find(0x10)!);
+            if (nt4 && si.Length != 48) { Fail("NTFS 1.2 candidate requires legacy 48-byte standard information."); }
             uint id = si.Length >= 56 ? U32(si, 52) : 0;
             Attribute? legacy = record.Find(0x50);
             byte[] descriptor;
@@ -660,11 +795,12 @@ internal static class NtfsWriteValidation
             {
                 descriptor = entry.Descriptor;
             }
-            else if (record.Id == 0 && id == 0)
+            else if (id == 0 && (record.Id == 0 || passive.Contains(record.Id) && Names(record).Single().Name == "$RmMetadata"))
             {
                 // ntfs-3g's ordinary ntfscp updates leave $MFT itself without a
-                // descriptor. This fixed metadata exception never applies to users.
-                result.Add(0, []);
+                // descriptor. The independently bounded native $RmMetadata directory
+                // also uses zero. These exceptions never apply to user records.
+                result.Add(record.Id, []);
                 continue;
             }
             else
@@ -676,6 +812,9 @@ internal static class NtfsWriteValidation
         }
         return result;
     }
+
+    private static bool EmptyReservedRecord(Record record) => record.Id is >= 12 and <= 15
+        && record.Attributes.Count == 0 && !record.Directory && U16(record.Bytes, 18) == 0;
 
     private static void ValidateSecurityIndex(List<IndexEntry> index, Dictionary<uint, SecurityEntry> entries, bool hashIndex)
     {
@@ -769,7 +908,7 @@ internal static class NtfsWriteValidation
         {
             Fail("NTFS index allocation/bitmap bounds disagree.");
         }
-        List<Run>? runs = allocation == null ? null : Runs(allocation.Bytes, cluster, volumeBytes, false);
+        List<Run>? runs = allocation == null ? null : WriteRuns(allocation.Bytes, cluster, volumeBytes, false);
         var visited = new HashSet<long>();
         var entries = new List<IndexEntry>();
         Walk(rootBytes, 16, 0);
@@ -890,7 +1029,7 @@ internal static class NtfsWriteValidation
             throw new ImageFormatException("NTFS metadata stream exceeds its safety cap or is not fully initialized.");
         }
         byte[] bytes = new byte[(int)length];
-        ReadRuns(device, Runs(attribute.Bytes, cluster, volumeBytes, false), 0, bytes);
+        ReadRuns(device, WriteRuns(attribute.Bytes, cluster, volumeBytes, false), 0, bytes);
         return bytes;
     }
 

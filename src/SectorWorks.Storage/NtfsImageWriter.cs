@@ -8,8 +8,21 @@ using NtfsFileSystem = SectorWorks.ManagedNtfs.NtfsFileSystem;
 
 namespace SectorWorks.Storage;
 
-internal sealed class NtfsImageWriter
+internal sealed class NtfsImageWriter(bool includeCandidates = false, bool includeCommitCandidates = false)
 {
+    internal Capability QualifyCommit(IImageSession image)
+    {
+        if (includeCommitCandidates) { return new(true, "Qualified bounded NTFS commit pipeline with independent per-volume validation."); }
+        try
+        {
+            _ = NtfsWriteValidation.Capture(image.Device);
+            return new(true, "Independently qualified ordinary NTFS commit pipeline.");
+        }
+        catch (ImageFormatException error)
+        { return new(false, "Direct commit is unavailable for this NTFS volume: " + error.Message); }
+    }
+    private NtfsWriteSnapshot CaptureAllocation(IReadOnlyBlockDevice device, CancellationToken token = default)
+        => includeCandidates ? NtfsWriteValidation.CaptureLegacyCandidate(device, token) : NtfsWriteValidation.Capture(device, token);
     private sealed record Entry(string Path, bool Directory, long Length, long Id,
         DateTime Created, DateTime Accessed, DateTime Written, DateTime Changed,
         FileAttributes Attributes, string? ShortName, byte[] Security, byte[] FileNameTimes, byte[]? ShortNameTimes);
@@ -19,9 +32,9 @@ internal sealed class NtfsImageWriter
         try
         {
             RequireLayout(image.Device, hiddenSectors);
-            _ = NtfsWriteValidation.Capture(image.Device);
+            _ = CaptureAllocation(image.Device);
             _ = Capture(image.Device, default);
-            return new(true, "Qualified ordinary NTFS staged editing and validated Save As within the declared allocation/security subset; no source commit or formatting.");
+            return new(true, "Qualified bounded NTFS staged editing and validated Save As within the declared allocation/security subset; source commit has separate qualification. Formatting is unsupported.");
         }
         catch (Exception error) when (error is IOException or ArgumentException or NotSupportedException
             or InvalidOperationException or OverflowException or UnauthorizedAccessException)
@@ -34,7 +47,7 @@ internal sealed class NtfsImageWriter
         uint hiddenSectors, CancellationToken token)
     {
         RequireLayout(image.Device, hiddenSectors);
-        NtfsWriteSnapshot allocation = NtfsWriteValidation.Capture(image.Device, token);
+        NtfsWriteSnapshot allocation = CaptureAllocation(image.Device, token);
         Dictionary<string, Entry> entries = Capture(image.Device, token);
         long available = checked(allocation.FreeClusters * allocation.ClusterSize);
         var addedDescriptors = new HashSet<string>(StringComparer.Ordinal);
@@ -204,15 +217,23 @@ internal sealed class NtfsImageWriter
         }
         stream.Flush();
         using var device = new StreamBlockDevice(stream, new ParserContext());
-        _ = NtfsWriteValidation.Capture(device, token);
+        _ = CaptureAllocation(device, token);
         Compare(expected, Capture(device, token));
     }
 
     internal void ValidatePreservedMetadata(IImageSession source, IImageSession output,
         IReadOnlyList<StagedWriteOperation> operations, CancellationToken token)
     {
-        NtfsWriteSnapshot sourceAllocation = NtfsWriteValidation.Capture(source.Device, token);
-        NtfsWriteSnapshot outputAllocation = NtfsWriteValidation.Capture(output.Device, token);
+        NtfsWriteSnapshot sourceAllocation = CaptureAllocation(source.Device, token);
+        NtfsWriteSnapshot outputAllocation = CaptureAllocation(output.Device, token);
+        if (sourceAllocation.PassiveMetadata.Count != outputAllocation.PassiveMetadata.Count
+            || sourceAllocation.PassiveMetadata.Any(pair => !outputAllocation.PassiveMetadata.TryGetValue(pair.Key, out byte[]? value)
+                || !pair.Value.AsSpan().SequenceEqual(value)
+                || !sourceAllocation.SecurityDescriptors[pair.Key].AsSpan()
+                    .SequenceEqual(outputAllocation.SecurityDescriptors[pair.Key])))
+        {
+            throw new ImageFormatException("NTFS output changed protected passive repair/deleted records or their allocation bytes.");
+        }
         Dictionary<string, Entry> expected = Capture(source.Device, token);
         var originalIds = expected.Values.Select(entry => entry.Id).ToHashSet();
         Dictionary<string, Entry> actual = Capture(output.Device, token);
@@ -268,6 +289,11 @@ internal sealed class NtfsImageWriter
                 .SequenceEqual(outputAllocation.SecurityDescriptors[record]))
             {
                 throw new ImageFormatException("NTFS output changed original stored security-descriptor bytes: " + entry.Path);
+            }
+            if (!sourceAllocation.StandardInformation[record].AsSpan()
+                .SequenceEqual(outputAllocation.StandardInformation[record]))
+            {
+                throw new ImageFormatException("NTFS output changed original standard-information bytes: " + entry.Path);
             }
         }
         if (!Bounds.Read(source.Device, 0, 512).AsSpan().SequenceEqual(Bounds.Read(output.Device, 0, 512))

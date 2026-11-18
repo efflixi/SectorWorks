@@ -25,6 +25,27 @@ The agent must use the documents as the source of truth and must not substitute 
 If documents conflict, the agent must stop the conflicting work, document the conflict, and notify the user rather than silently choosing one interpretation.
 
 
+CURRENT OWNER SCOPE DECISION - NOVEMBER 17, 2026
+
+The owner explicitly approved the 1.0 scope/phase closeout assignment in
+ docs/sectorworks_1_0_scope_change_and_phase_closeout_sol_prompt.txt.
+Phase 2/2B/2C/2D and Phase 3 are accepted under the revised bounded scope;
+see docs/1.0-scope-closeout.md and checklist.txt, not older blocked summaries.
+Remaining unqualified default-TxF/CLFS/KTM, TOPS/$TXF_DATA/checkpoint,
+repair/deleted and coherent detached LFS 2.0/cache writer work is DEFERRED
+POST-1.0 to P1.NTFS.MODERN.1-P1.NTFS.MODERN.6. Existing qualified NTFS/FAT
+and native passive NTFS3.1/0x1400/clean-LFS1.1 writing remain in 1.0.
+Unsupported states remain read-only; admission/preservation checks are unchanged.
+Physical Linux/Windows ARM64: NOT VERIFIED — DEFERRED POST-1.0 BY OWNER,
+P1.ARM64.LINUX/P1.ARM64.WINDOWS. Owner owns hardware for later testing.
+Keep all four build/package targets; cross-builds never establish runtime proof.
+Use [-] for original deferred gates, unchecked [ ] post-1.0 tasks, [x] only for
+verified delivery/accepted revised exits. This decision changes exit scope, not
+technical findings, existing test identities or safety rules. No date/immediate
+follow-up work, Phase 4 implementation, push/tag/release/publication is authorized.
+Other phase/release requirements and existing P1.NTFS.1-P1.NTFS.6 remain.
+
+
 ============================================================
 2. PHASE-BASED DEVELOPMENT AUTHORITY
 ============================================================
@@ -207,8 +228,6 @@ Target runtime families:
 - linux-arm64
 - win-x64
 - win-arm64
-- osx-x64
-- osx-arm64
 
 The primary development host is Linux. Do not assume Visual Studio for Windows is available or required.
 
@@ -273,8 +292,6 @@ Do not introduce Windows-only dependencies into shared projects.
 
 Do not introduce Linux-only dependencies into shared projects.
 
-Do not introduce macOS-only dependencies into shared projects.
-
 Prefer managed .NET libraries when practical.
 
 Before adding a native dependency, verify its intended availability for relevant combinations of:
@@ -283,8 +300,6 @@ Before adding a native dependency, verify its intended availability for relevant
 - Linux ARM64
 - Windows x86-64
 - Windows ARM64
-- macOS x86-64
-- macOS ARM64
 
 If a dependency does not support all required targets, document the limitation and determine whether a platform-specific implementation or another dependency is appropriate.
 
@@ -476,7 +491,7 @@ An agent must never claim a phase, task, format, platform, or feature is complet
 
 Examples of unacceptable completion claims:
 
-- "macOS support complete" when the project only cross-compiled and was never run on macOS.
+- "Platform support complete" when the project only cross-compiled and was never run on the target platform.
 - "NTFS writing complete" when only the underlying library API was called but round-trip behavior was not tested.
 - "BIN/CUE support complete" when only simple single-track data CUE files were tested.
 - "Phase complete" when checklist exit criteria remain unresolved.

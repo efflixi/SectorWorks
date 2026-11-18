@@ -1,8 +1,22 @@
 # Explorer operations
 
+## November 17 scope/closeout status
+
+See the [accepted 1.0 scope and exit audit](1.0-scope-closeout.md). Phase 2B/2C/2D
+and Phase 3 are COMPLETE / OWNER ACCEPTED UNDER THE REVISED 1.0 SCOPE. Qualified
+readers, structural legacy/list writers and the exact native passive NTFS3.1
+0x1400/cleanLFS1.1 writer are retained; unsupported states stay read-only with
+all existing guards. Further modern-state qualification is DEFERRED POST-1.0
+under P1.NTFS.MODERN.1–.6; authentic historical authoring remains P1.NTFS.1–.6.
+Physical ARM64 is NOT VERIFIED — DEFERRED POST-1.0 BY OWNER under separate
+P1.ARM64.LINUX/P1.ARM64.WINDOWS tasks. Earlier dated/current-state descriptions
+below retain their original evidence envelope, not superseded completion gates.
+
+
+
 `IExplorerService` is the UI-facing boundary. Core contracts contain no Avalonia
 or DiscUtils types. The service composes the approved storage implementation
-internally. All image input handles remain read-only; extraction writes only to
+internally. Ordinary reader input handles remain read-only; extraction writes only to
 the explicitly selected host destination. Phase 2 adds a separate editing
 boundary and validated new-image output; see [staged editing](staged-editing.md).
 
@@ -16,8 +30,11 @@ The UI must cancel its current operation before closing a busy tab.
 
 Opening errors propagate without closing other workspaces. A workspace with no
 supported filesystem can still expose metadata and raw image hex. Editing is
-available only for the separately qualified Phase 2 stack. Commit, rebuild,
-audio and preservation capabilities remain unavailable.
+available only for separately qualified Phase 2/2B stacks. The separately
+authorized Phase 3 backend suspends the source reader before acquiring its
+commit write lock and publishing validated output. Commit UI and bounded
+automatic startup recovery are implemented and verified; see the current review. Rebuild, audio and bootability/exact-layout
+preservation claims remain unavailable.
 Structural checks on open are not advertised as full filesystem validation.
 
 ## Extraction policy
@@ -46,7 +63,7 @@ insufficient: a directory could be replaced between the check and the write.
 No native package is added, and these APIs are **not** used to mount images or
 interpret their filesystems.
 
-Linux/macOS traversal uses directory handles and `openat` with `O_NOFOLLOW`/
+Linux traversal uses directory handles and `openat` with `O_NOFOLLOW`/
 `O_DIRECTORY`, `mkdirat`, and exclusive no-follow file creation. Each component
 is resolved relative to a held directory; an existing host symlink cannot redirect
 extraction. Partial files are removed relative to that same directory handle.
@@ -59,8 +76,7 @@ Windows opens directories without following reparse points, checks their tags,
 and keeps ancestor handles without write/delete sharing for the operation.
 Creation uses `CREATE_NEW`; reparse targets and sharing conflicts fail explicitly.
 Runtime validation on real Windows machines is tracked separately from
-cross-compilation; macOS is a standing unsupported, build-only target
-(2026-10-16) and no macOS runtime validation is planned. Ordinary local directories are the intended destination;
+cross-compilation; Ordinary local directories are the intended destination;
 network/filesystem providers with different handle semantics require validation.
 
 ## Preview, hex and search

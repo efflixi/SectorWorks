@@ -174,7 +174,7 @@ public sealed class DiskStagedWorkflowTests
         // bytes, but the source already holds the validated, committed bytes.
         File.Copy(source, backupPath);
         File.WriteAllBytes(backupPath, [.. File.ReadAllBytes(backupPath).Select(b => (byte)(b ^ 0xFF))]);
-        CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, source + ".stage", CommitStage.Finalized, DateTime.UtcNow));
+        CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, CommitJournal.StagingPathFor(source, transactionId), CommitStage.Finalized, DateTime.UtcNow));
 
         CommitRecovery.RecoveryAction action = Assert.Single(CommitRecovery.Discover(Path.GetDirectoryName(source)!));
         Assert.True(action.SourceWasModified);
@@ -190,6 +190,7 @@ public sealed class DiskStagedWorkflowTests
     {
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public Capability QualifyVolume(IImageSession image, string volumeId) => inner.QualifyVolume(image, volumeId);
+        public Capability QualifyCommitVolume(IImageSession image, string volumeId) => inner.QualifyCommitVolume(image, volumeId);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken) =>
             inner.ValidateCapacity(image, operations, cancellationToken);
         public void Apply(string copyPath, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)

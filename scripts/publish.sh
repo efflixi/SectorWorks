@@ -2,12 +2,12 @@
 source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
 
 if [[ $# -ne 1 ]]; then
-    printf "Usage: %s <linux-x64|linux-arm64|win-x64|win-arm64|osx-x64|osx-arm64|all>\n" "$0" >&2
+    printf "Usage: %s <linux-x64|linux-arm64|win-x64|win-arm64|all>\n" "$0" >&2
     exit 2
 fi
 case "$1" in
-    all) targets=(linux-x64 linux-arm64 win-x64 win-arm64 osx-x64 osx-arm64) ;;
-    linux-x64|linux-arm64|win-x64|win-arm64|osx-x64|osx-arm64) targets=("$1") ;;
+    all) targets=(linux-x64 linux-arm64 win-x64 win-arm64) ;;
+    linux-x64|linux-arm64|win-x64|win-arm64) targets=("$1") ;;
     *) printf "FAIL [arguments]: unsupported runtime identifier: %s\n" "$1" >&2; exit 2 ;;
 esac
 if [[ "$1" == linux-x64 || "$1" == all ]]; then

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using SectorWorks.Core;
 using SectorWorks.Platform;
 
@@ -38,6 +39,7 @@ internal sealed class EditingTree(Dictionary<string, Dictionary<string, StagedNo
 {
     public Dictionary<string, Dictionary<string, StagedNode>> Volumes { get; } = volumes;
     public int Count => Volumes.Values.Sum(nodes => nodes.Count);
+    public long? EstimatedOutputBytes { get; set; }
     public IEnumerable<StagedNode> Values => Volumes.Values.SelectMany(nodes => nodes.Values);
 }
 
@@ -46,6 +48,7 @@ internal sealed class StagedContent : IDisposable
     private readonly FileStream owner;
     public long Length => owner.Length;
     public string Path => owner.Name;
+    public string Sha256 { get; private set; } = "";
 
     public StagedContent(Stream source, string stagingDirectory, long expectedLength, long maximumLength, CancellationToken token)
     {
@@ -58,6 +61,7 @@ internal sealed class StagedContent : IDisposable
                 throw new IOException("Imported file length changed since preflight or exceeds the staging limit.");
             }
             byte[] buffer = new byte[65536];
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             while (owner.Length < expectedLength)
             {
                 token.ThrowIfCancellationRequested();
@@ -68,6 +72,7 @@ internal sealed class StagedContent : IDisposable
                     throw new IOException("Imported content exceeded its preflight length or staging limit.");
                 }
                 owner.Write(buffer, 0, read);
+                hash.AppendData(buffer, 0, read);
             }
             token.ThrowIfCancellationRequested();
             if (source.Length != expectedLength || source.ReadByte() != -1 || source.Length != expectedLength)
@@ -75,6 +80,7 @@ internal sealed class StagedContent : IDisposable
                 throw new IOException("Imported file length changed while staging; import discarded.");
             }
             owner.Flush();
+            Sha256 = Convert.ToHexString(hash.GetHashAndReset());
             File.SetAttributes(owner.Name, File.GetAttributes(owner.Name) | FileAttributes.ReadOnly);
         }
         catch

@@ -27,7 +27,7 @@ public sealed class NtfsAttributeListTests
         {
             IReadOnlyFileSystem fs = image.Volumes.Single().FileSystem;
             Assert.Equal("3.1", fs.Properties["NTFS version"]);
-            Assert.StartsWith("Validated read-only", fs.Properties["Attribute lists"], StringComparison.Ordinal);
+            Assert.StartsWith("Validated by the read-only reader", fs.Properties["Attribute lists"], StringComparison.Ordinal);
             Assert.Contains(fs.ReadDirectory("/"), e => e.Name == "LARGE.BIN");
             using Stream file = fs.OpenRead("/LARGE.BIN");
             var content = new byte[8192];
@@ -221,12 +221,14 @@ public sealed class NtfsAttributeListTests
         private readonly int _extensionId;
         private readonly int _listId;
         private readonly bool _directory;
+        private readonly bool _forWriterCandidate;
         internal string Path { get; }
 
         internal ExtensionFixture(WorkDirectory work, bool nonresidentList, bool directory, bool split,
-            bool withEmptyDirectory = false)
+            bool withEmptyDirectory = false, string? existingPath = null)
         {
-            Path = work.Golden("ntfs.img");
+            Path = existingPath ?? work.Golden("ntfs.img");
+            _forWriterCandidate = existingPath is not null;
             if (withEmptyDirectory)
             {
                 using FileStream stream = File.Open(Path, FileMode.Open, FileAccess.ReadWrite);
@@ -273,6 +275,7 @@ public sealed class NtfsAttributeListTests
             ulong ownerReference = Reference(owner, _ownerId);
             byte[] extension = (byte[])owner.Clone();
             W16(extension, 16, 1);
+            if (_forWriterCandidate) { W16(extension, 18, 0); }
             W64(extension, 32, ownerReference);
             W32(extension, 44, checked((uint)_extensionId));
             WriteRecord(_extensionId, extension, [extensionAttribute]);
@@ -375,6 +378,7 @@ public sealed class NtfsAttributeListTests
                         case "wrong-owner": W64(extension, 32, (1UL << 48) | 5); break;
                         case "wrong-record-id": W32(extension, 44, checked((uint)(_extensionId + 1))); break;
                         case "inactive-extension": W16(extension, 22, 0); break;
+                        case "nonzero-link-count": W16(extension, 18, 1); break;
                         case "wrong-directory": W16(extension, 22, _directory ? (ushort)1 : (ushort)3); break;
                         case "nested-list": extAttributes.Add(Resident(0x20, 99, [])); break;
                         case "split-gap":
@@ -388,6 +392,16 @@ public sealed class NtfsAttributeListTests
                     break;
             }
             WriteRecord(_ownerId, owner, attributes);
+            Save();
+        }
+
+        internal void LeaveUnreferencedExtension()
+        {
+            byte[] owner = ReadRecord(_ownerId);
+            List<byte[]> attributes = Attributes(owner);
+            attributes.RemoveAll(a => U32(a, 0) == 0x20);
+            attributes.AddRange(Attributes(ReadRecord(_extensionId)));
+            WriteRecord(_ownerId, owner, attributes.OrderBy(a => U32(a, 0)).ToList());
             Save();
         }
 
@@ -474,7 +488,15 @@ public sealed class NtfsAttributeListTests
             Save();
         }
 
-        private void Save() => File.WriteAllBytes(Path, _bytes);
+        private void Save()
+        {
+            if (_forWriterCandidate)
+            {
+                int mirror = checked((int)U64(_bytes, 56) * _cluster);
+                _bytes.AsSpan(_mft, Math.Max(4096, _cluster)).CopyTo(_bytes.AsSpan(mirror));
+            }
+            File.WriteAllBytes(Path, _bytes);
+        }
 
         private byte[] ReadRecord(int id)
         {

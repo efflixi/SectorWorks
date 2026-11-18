@@ -37,7 +37,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         Info = info;
         Layout = layout;
         Volume = info.Volumes.FirstOrDefault();
-        var root = new StructureNode(Title, info.Metadata.Format.Contains("ISO", StringComparison.OrdinalIgnoreCase) ? "Optical" : "Disk");
+        var root = new StructureNode(Title, info.Metadata.Format is "ISO" or "UDF" or "BIN/CUE" ? "Optical" : "Disk");
         root.Children.Add(new StructureNode("Image information", "Info"));
         foreach (IGrouping<string, PartitionInfo> table in info.Partitions.GroupBy(p => p.Table))
         {
@@ -53,17 +53,20 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
             }
             root.Children.Add(tableNode);
         }
-        foreach (VolumeInfo volume in info.Volumes.Where(v => v.Partition is null))
+        if (info.OpticalDisc is { } disc) { AddDiscNodes(root, disc); }
+        else
         {
-            root.Children.Add(DirectoryNode(volume, "/"));
-        }
-        if (info.Metadata.Format.Contains("ISO", StringComparison.OrdinalIgnoreCase))
-        {
-            root.Children.Add(new StructureNode("Optical sessions / tracks — unavailable (Phase 6 reservation)", "Info")
+            foreach (VolumeInfo volume in info.Volumes.Where(v => v.Partition is null))
             {
-                Description = "Optical session and track browsing is reserved for Phase 6 and is unavailable.\n"
-                    + "No sessions or tracks have been enumerated. BIN/CUE parsing and CD-DA playback are not implemented.\n"
-                    + "The ISO filesystem remains independently browseable where its capabilities permit."
+                root.Children.Add(DirectoryNode(volume, "/"));
+            }
+        }
+        if (info.Metadata.Format is "ISO" or "UDF")
+        {
+            root.Children.Add(new StructureNode("Optical sessions / tracks — unavailable", "Info")
+            {
+                Description = "No sessions or tracks have been enumerated. Open a CUE sheet to browse its track layout or play supported CD audio.\n"
+                    + "You can still browse supported optical filesystems."
             });
         }
         if (info.Partitions.Count > 0)
@@ -93,10 +96,10 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         UpdateInspector();
     }
 
-    public WorkspaceInfo Info { get; }
+    public WorkspaceInfo Info { get; private set; }
     public ApplicationPreferences BrowserPreferences => browserPreferences;
     public string Title => Path.GetFileName(Info.Metadata.Path) + (IsModified ? " *" : "");
-    public Geometry Icon => Icons.Get(Info.Metadata.Format.Contains("ISO", StringComparison.OrdinalIgnoreCase) ? "Optical" : "Disk");
+    public Geometry Icon => Icons.Get(Info.Metadata.Format is "ISO" or "UDF" or "BIN/CUE" ? "Optical" : "Disk");
     public LayoutSettings Layout { get; set; }
     public ObservableCollection<StructureNode> Roots { get; } = [];
     public ObservableCollection<Breadcrumb> Breadcrumbs { get; } = [];
@@ -109,12 +112,16 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
     public bool CanPreview => Info.Capabilities.Preview.Available && SelectedCapabilities.Preview.Available && Volume is not null;
     public bool HasPreviousHex => HexOffset > 0;
     public bool HasNextHex => HexOffset < Math.Max(0,
-        (selection.Count == 1 && !selection[0].IsDirectory ? selection[0].Length : Info.Metadata.VirtualLength) - 4096);
+        (selection.Count == 1 && !selection[0].IsDirectory ? selection[0].Length : RawHexLength) - 4096);
     public string ContextStatus => $"{Title} | {Info.Metadata.VirtualLength:N0} bytes | {Volume?.FileSystem ?? "No filesystem"} | {selection.Count} selected | Sector {Info.Metadata.SectorSize} B | {EditingState} | Source read-only";
+    private CdTrack? HexTrack => SelectedNode?.Kind == "Hex" ? null
+        : SelectedNode?.Track ?? (Volume is null ? null : CdTracks.FirstOrDefault(track => track.VolumeId == Volume.Id));
+    private long RawHexLength => HexTrack is { } track ? track.SectorSize * (long)track.SectorCount
+        : Info.Metadata.HexLength ?? Info.Metadata.VirtualLength;
     [ObservableProperty] private VolumeInfo? volume;
     [ObservableProperty] private StructureNode? selectedNode;
     [ObservableProperty] private string currentPath = "/";
-    [ObservableProperty] private string status = "Ready — read-only";
+    [ObservableProperty] private string status = "Ready";
     [ObservableProperty] private string error = "";
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string previewText = "Select a file for bounded, non-executing preview.";
@@ -158,10 +165,12 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         if (Volume is not null) { await NavigateAsync("/"); }
     }
 
-    private StructureNode DirectoryNode(VolumeInfo volume, string path)
+    private StructureNode DirectoryNode(VolumeInfo volume, string path, CdTrack? track = null)
     {
         if (directories.TryGetValue((volume.Id, path), out StructureNode? existing)) { return existing; }
-        var result = new StructureNode(path == "/" ? $"{volume.FileSystem} — {volume.Label} /" : path.Split('/').Last(), "Folder", volume.Id, path,
+        string title = track is not null ? TrackTitle(track)
+            : path == "/" ? $"{volume.FileSystem} — {volume.Label} /" : path.Split('/').Last();
+        var result = new StructureNode(title, track is null ? "Folder" : "Optical", volume.Id, path,
             async node =>
             {
                 try
@@ -173,7 +182,8 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
                 }
                 catch (OperationCanceledException) { return false; }
                 catch (Exception ex) { Error = ex.Message; return false; }
-            });
+            })
+        { Track = track };
         directories.Add((volume.Id, path), result);
         return result;
     }
@@ -230,6 +240,11 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
     private async Task SelectNodeAsync(StructureNode? node)
     {
         if (node is null || disposed) { return; }
+        if (node.Track is { } track)
+        {
+            await SelectTrackNodeAsync(node, track);
+            return;
+        }
         if (node.VolumeId is not null && node.Path is not null)
         {
             await NavigateToVolumeAsync(Info.Volumes.First(v => v.Id == node.VolumeId), node.Path);
@@ -237,6 +252,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         }
         else if (node.Kind == "Hex")
         {
+            SelectedNode = node;
             SelectEntries([]);
             HexOffset = 0;
             await HexAsync();
@@ -303,7 +319,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
     {
         if (entry?.IsLink == true)
         {
-            Error = "Links are not followed or executed in the read-only explorer.";
+            Error = "SectorWorks does not follow links in image filesystems.";
             return Task.CompletedTask;
         }
         return entry is { IsDirectory: true } ? NavigateAsync(entry.Path) : PreviewAsync();
@@ -372,8 +388,9 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         int version = selectionVersion;
         await RunOperationAsync(async token =>
         {
-            PreviewResult result = await explorer.ReadHexAsync(Info.Id, entry is null ? null : Volume?.Id,
-                entry?.Path, HexOffset, token);
+            PreviewResult result = entry is null && HexTrack is { } track && explorer is ICdTrackSource source
+                ? await source.ReadTrackHexAsync(Info.Id, track.Number, HexOffset, token)
+                : await explorer.ReadHexAsync(Info.Id, entry is null ? null : Volume?.Id, entry?.Path, HexOffset, token);
             token.ThrowIfCancellationRequested();
             if (version != selectionVersion) { return; }
             HexText = $"{result.Description}\nOffset: {HexOffset:N0} bytes\n\n{result.Text}";
@@ -487,6 +504,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         }
         text.AppendLine("\nCAPABILITIES — SELECTED VOLUME / IMAGE STACK");
         WorkspaceCapabilities c = SelectedCapabilities;
+        Capability audio = SelectedCdTrack?.Playback ?? c.PlayAudioTrack;
         foreach ((string name, Capability cap) in new (string, Capability)[]
         {
             ("Browse", c.Browse), ("Extract", c.Extract), ("Preview", c.Preview), ("Validate", c.Validate),
@@ -494,7 +512,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
             ("Delete files", c.DeleteFiles), ("Rename files", c.RenameFiles),
             ("Create directories", c.CreateDirectories), ("Edit metadata", c.EditMetadata),
             ("Save as new image", c.SaveAs), ("Commit in place", c.CommitInPlace),
-            ("Rebuild", c.Rebuild), ("Audio playback", c.PlayAudioTrack),
+            ("Rebuild", c.Rebuild), ("Audio playback", audio),
             ("Preserve bootability", c.PreserveBootability), ("Preserve exact layout", c.PreserveExactLayout)
         })
         {
@@ -510,6 +528,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
     {
         if (disposed) { return; }
         disposed = true;
+        StopAudioForWorkspace();
         lifetime.Cancel();
         lifetime.Dispose();
     }

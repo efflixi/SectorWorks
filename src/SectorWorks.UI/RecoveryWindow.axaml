@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SectorWorks.UI.ViewModels"
+        xmlns:core="using:SectorWorks.Core"
+        x:Class="SectorWorks.UI.RecoveryWindow" x:DataType="vm:RecoveryViewModel"
+        Title="SectorWorks — Interrupted Commit Recovery" Width="850" Height="600"
+        MinWidth="620" MinHeight="420" WindowStartupLocation="CenterOwner">
+  <Grid Margin="12" RowDefinitions="Auto,*,Auto,Auto,Auto,Auto" RowSpacing="8">
+    <TextBlock Text="Interrupted commits — inspect before cleanup. The source image is never restored or overwritten here."
+               TextWrapping="Wrap" />
+    <ListBox Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" AutomationProperties.Name="Interrupted transactions">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="core:RecoveryItem">
+          <TextBlock Text="{Binding SourcePath}" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <TextBox Grid.Row="2" Text="{Binding SelectionDetails}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="140" AutomationProperties.Name="Recovery transaction details" />
+    <TextBox Grid.Row="3" Text="{Binding Warnings}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="100" Foreground="{DynamicResource WorkbenchWarning}" AutomationProperties.Name="Recovery warnings" />
+    <StackPanel Grid.Row="4">
+      <TextBox Text="{Binding Error}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="100" Foreground="{DynamicResource WorkbenchError}" AutomationProperties.Name="Recovery error" />
+      <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+      <ProgressBar Height="3" IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+    </StackPanel>
+    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+      <Button Content="Verify and clean artifacts…" Command="{Binding CleanCommand}" />
+      <Button Content="Keep artifacts and close" Click="KeepArtifacts" IsDefault="True" />
+    </StackPanel>
+  </Grid>
+</Window>

@@ -1,21 +1,40 @@
 # Phase 1 read-only storage
 
+## November 17 scope/closeout status
+
+See the [accepted 1.0 scope and exit audit](1.0-scope-closeout.md). Phase 2B/2C/2D
+and Phase 3 are COMPLETE / OWNER ACCEPTED UNDER THE REVISED 1.0 SCOPE. Qualified
+readers, structural legacy/list writers and the exact native passive NTFS3.1
+0x1400/cleanLFS1.1 writer are retained; unsupported states stay read-only with
+all existing guards. Further modern-state qualification is DEFERRED POST-1.0
+under P1.NTFS.MODERN.1–.6; authentic historical authoring remains P1.NTFS.1–.6.
+Physical ARM64 is NOT VERIFIED — DEFERRED POST-1.0 BY OWNER under separate
+P1.ARM64.LINUX/P1.ARM64.WINDOWS tasks. Earlier dated/current-state descriptions
+below retain their original evidence envelope, not superseded completion gates.
+
+
+
 This document describes the retained reader pipeline. Phase 2's separate
 overlay and Save As writer are documented in [staged editing](staged-editing.md);
 read support here never implies write qualification.
 
+Current closeout: Phase 2D completed nine bounded reader workflow rows with
+66/66 focused passes each on Linux/Windows x64, plus full Tower before/after
+source hashes and 1,235,021 bytes of selected extraction/native comparisons.
+Private extracted outputs were removed. Revised 1.0 platform/review gates close under the November17 decision; this
+is not whole-volume health or authentic historical-media qualification.
+See [final evidence and retained blockers](platform-status.md#final-global-session-corrective-snapshot).
+
 ## Implemented Phase 2C NTFS reader subset and open qualification
 
 On **2026-10-15** the owner authorized Phase 2C and the synchronized roadmap/
-specification change before Phase 3. **Bounded reader implemented; remaining
-1.0 verification/review gates open, not phase complete; stop for owner review.**
+specification change before Phase 3. **Bounded reader implemented; Phase2C accepted complete under the revised
+1.0 scope on November17; physical ARM64 remains deferred/not verified.**
 The owner subsequently deferred authentic NT4/Windows 2000/XP-created-media
 qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
 [checklist](../checklist.txt). These are not passed tests or 1.0 blockers;
 VM-authored fixtures suffice, without vintage hardware. Automated tests, safety
-bounds, source integrity and general platform verification remain required;
-macOS is excluded from general platform verification as a standing
-unsupported, build-only target (2026-10-16).
+bounds, source integrity and general platform verification remain required.
 Implemented-subset evidence is recorded below,
 not full version/media qualification. The retained reader
 baseline below still describes prior evidence. Targets are separate bounded
@@ -46,23 +65,25 @@ reading an attribute list, replay/reset a log, repair metadata or remove budgets
 Checklist **2C.1-2C.7** requires legal normal/malformed fixtures, accurate synthetic/
 observed provenance, browse/preview/hex/search/extraction with independent comparisons
 and unchanged source hashes, existing-writer regressions and per-volume caps.
-Latest focused **49/49 (35 attribute-list + 14 version/layout/service)** covers
+At the historical Phase 2C stop, **49/49 (35 attribute-list + 14 version/layout/service)** covered
 named-list guard, GPT mixed-volume isolation, modern/legacy extension identity
 and zero-length nonresident index-bitmap
-coverage on current code. Full verification passed **1001 tests/one Windows-only
+coverage on that source snapshot. Full verification passed **1001 tests/one Windows-only
 skip, 1002 total**. Four cases were added after that run's build:
-current inventory is 1006 including the skip, not a claimed full 1005-pass result.
-Final repeat all-six self-contained publish/local Linux AppImage passes on
-latest source with legal notices retained. No versioned release/
+that snapshot's inventory was 1006 including the skip, not a claimed full 1005-pass result.
+Final repeat all then-configured self-contained publish/local Linux AppImage passes on
+that final Phase 2C source with legal notices retained. No versioned release/
 GitHub publication changed.
 Cross-builds are not physical compatibility. Individual
 implemented/verified subitems are tracked in the checklist; authentic legacy
-qualification is deferred to **P1.NTFS**, while remaining platform and 1.0
-full-phase gates stay open.
+qualification is deferred to **P1.NTFS**. Revised1.0 phase gates are accepted
+complete; physical ARM64 qualification is NOT VERIFIED and deferred to P1.ARM64.
 Newly readable legacy/attribute-list variants stay noneditable until Phase 3
 **3.0.1-3.0.5** staged/Save As/new-output writer qualification, before **3.7**
-direct commit. Existing qualified Phase 2B editing and incomplete **2B.6**
-Windows-authored-media/security-reference/LFS 2.0 gates are preserved.
+direct commit. Existing qualified editing and strict unsupported-state refusal
+are preserved; further default-TxF/LFS2 qualification in **2B.6** is explicitly
+deferred under P1.NTFS.MODERN, while bounded native-passive outputs pass. The
+Windows codec reference separately passed under **2D.2**.
 
 Tower's approximately 8.42 GB raw NTFS 3.0 image remains outside the repository
 and must not be copied, modified or distributed. Initial rejection concerns
@@ -70,7 +91,7 @@ the live directory attribute list at MFT 26 referencing indexing extension 8336;
 the native index warning is now independently diagnosed under **2C.6/2C.V5**.
 ntfs-3g 2022.10.3 limits whole non-BITMAP attribute reads to 65536 bytes;
 Tower's in-bounds contiguous index is 344064 bytes. Initial in-place enumeration
-now succeeds for 905 directories/16199 files, zero directory failures, writing
+succeeded in the initial Phase 2C probe for 905 directories/16199 files, zero directory failures, writing
 false, unchanged source size/mtime. Counts use retained hidden/system/metafile
 enumeration filters, not all on-disk entries. Three complete explicit-path
 streams match independent `ntfscat` hashes, and service ReadyReadOnly preview/
@@ -78,7 +99,8 @@ hex/search works with enumerated ordinary entries. Initial hidden/system
 `boot.ini` service selection failed under unchanged filters; no filter UX change
 was made. No owner-image full source hash, extraction or content persistence
 has been performed in this evidence.
-The final latest-source owner probe repeats the same bounded results.
+The final Phase 2C owner probe repeated the same bounded results; subsequent
+Phase 2D source-hash/selected-extraction closure is summarized at the top.
 Resident index-root compression flags represent default directory compression;
 compressed file data remains denied. Empty nonresident index streams are
 handled. These results do not certify health, whole-image hashes or extracted data.
@@ -183,7 +205,7 @@ no opened adapter/volume, so it contributes no browse/extract/preview capability
   Rock Ridge keeps its existing SUSP-aware metadata path.
 * UDF volume recognition sequences are reported, but UDF browsing is not
   implemented and no extra dependency was added. An ISO/UDF bridge exposes
-  only the independently recognized ISO view. BIN/CUE/CD-DA remain Phase 6.
+  only the independently recognized ISO view. BIN/CUE/CD-DA remain Phase 5.
 
 All reader paths described here are read-only. Neither detection nor the
 dependency's writer APIs alone enable editing. The separately qualified Phase 2
@@ -245,7 +267,7 @@ The supplied image is ignored locally and is not redistributed as a golden;
 regressions use newly authored synthetic data rather than its contents.
 The owner has made 360K and 720K retro-PC floppies explicit priorities. Preserve
 this existing 720K subset; dedicated 360K qualification and broader legacy
-variants are future Phase 7 item 7.10 work, not an expansion implemented here.
+variants are future Phase 6 item 6.10 work, not an expansion implemented here.
 
 Run, using the SDK selected by `scripts/common.sh`:
 

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using SectorWorks.Platform;
 
 namespace SectorWorks.Services;
 
@@ -12,7 +13,7 @@ public interface IExplorerLog
 public sealed class JsonExplorerLog(string? path = null) : IExplorerLog
 {
     private readonly string path = Path.GetFullPath(path ?? Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SectorWorks", "explorer.jsonl"));
+        WorkspaceDataFiles.ApplicationDataDirectory(), "explorer.jsonl"));
 
     public void Write(string stage, string path, string message, string level = "Information")
     {

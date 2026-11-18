@@ -1,5 +1,85 @@
 # Portable writer-matrix verification handoff
 
+## Accepted 1.0 scope — November 17, 2026
+
+**Phase 2 / 2B / 2C / 2D and Phase 3: COMPLETE / OWNER ACCEPTED UNDER THE
+REVISED 1.0 SCOPE.** The [owner-approved assignment](sectorworks_1_0_scope_change_and_phase_closeout_sol_prompt.txt)
+and [closeout audit](1.0-scope-closeout.md) supersede older blocked/pending
+summaries below; dated source/test/cleanup findings retain their original scope.
+
+All qualified FAT/NTFS functionality is retained, including structural legacy/list
+rows and native passive NTFS3.1: 512-byte sectors, 4096-byte clusters/index blocks,
+1024-byte MFT records, exactly `0x1400` flags, paired clean LFS1.1 pages and the
+exact empty repair/deleted-state predicate. Full record/allocation/security-
+reference preservation and every existing admission check remain intact.
+Default TxF-enabled/transaction-bearing and other unqualified states stay
+**read-only**, not unrestricted modern Windows writing.
+
+**DEFERRED POST-1.0:** [P1.NTFS.MODERN.1–.6](../checklist.txt) cover default
+TxF/CLFS/KTM checkpoint/active/prepared/in-doubt, TOPS/`$TXF_DATA`, unsupported
+repair/deleted, coherent detached LFS2/cache qualification and dependent writer
+rows. These are unresolved, not passed or impossible. Existing **P1.NTFS.1–.6**
+authentic historical qualification is preserved. Physical ARM64 is **NOT VERIFIED
+— DEFERRED POST-1.0 BY OWNER**, separately **P1.ARM64.LINUX** and
+**P1.ARM64.WINDOWS**; owner has hardware for later testing. Neither deferral gates
+1.0/phases; four-target builds/packages remain, cross-publish is not runtime proof,
+and macOS remains outside scope. Unrelated later-phase requirements stay open.
+
+No product code or test result is changed by this documentation closeout.
+[Existing exact-source evidence/packages](../artifacts/focused-ntfs-20261117/evidence-index.json)
+remain immutable; see the new [closeout index](../artifacts/scope-closeout-20261117/evidence-index.json).
+**STOP: Phase 4 is next available for owner authorization, not started or
+authorized here.** No new native/ARM64 experiment, external push, tag or release.
+
+## Historical implementation and evidence snapshots
+
+Earlier present-tense authority/completion statements below are dated records,
+not operative gates after the November 17 scope/acceptance decision.
+
+
+
+## Expanded and final-source follow-up (2026-11-16)
+
+Resumed current R4b GUI adds two exact independently verified NTFS outputs
+(56native commands), separate from the matrices below. All337 prior final-code
+manifest members match; no handoff or product algorithm changed. Full current
+Linux tests2387pass/one skip plus continued format/UI/contracts/copies pass.
+Resumed cleanup preserves exact compressed media and restore mappings. No
+current-Windows transaction/repair/LFS2 writer qualification follows.
+
+The retained 84-input/168-workflow protocol below is unchanged. A separate
+`scripts/expanded-writer-handoff.py` / `scripts/windows-expanded-writer-handoff.ps1`
+protocol uses schema 2 and `SECTORWORKS_EXPANDED_*`, exact 441-row validation and
+separate catalog/source seals. Windows commit orchestration additionally requires
+the sealed successful independent Save As report. A managed Windows pass is
+always pending until the exact returned images pass Linux native checks.
+
+Both expanded Windows selections pass independently: **441 Save As + 441 final
+committed outputs**, **3465 native commands per selection**, with every original
+sealed input unchanged. These frozen candidate sources precede final UI/journal
+integration; the final public-writer source receives complete local regression
+and fresh Windows checks separately. Do not combine snapshots as one run.
+
+The 21-row mixed supplement retains three exact composed disks per case: input,
+Save As and committed source. `scripts/verify-expanded-mixed.py` independently
+checks MBR bounds, clean/version fields, the explicitly dirty sibling, all bytes
+outside the primary, retained raw SI/security/filename values and native NTFS
+results. All **21 sets / 63 images** pass. Its guards reject missing/altered
+outputs, failed TRX, wrong source seal and unverified prerequisites.
+
+Final R3 follow-up also completes the retained 84-input protocol:168 writer and
+9 genuine two-commit growth cases pass, producing186 exact outputs verified by
+876 Linux commands. All84 input hashes remain unchanged. R4 product changes only
+application-data startup and reader diagnostic wording; its affected Linux and
+Windows suites pass separately, as recorded in the review. Expanded generated
+media trees were cleaned only after compact archive/member/restore verification.
+
+The [review](phase2d-phase3-review.md) and [ledger](phase2d-phase3-progress.md) track
+final-source follow-up and immutable decoded-member archive/restore mappings.
+Source/inputs/output archives contain generated media only; exact full-file
+hashes apply before and after independent inspection. Linux oracle tools remain
+test dependencies, not a Windows product runtime or mounting requirement.
+
 This opt-in test pipeline does **not** require Linux authoring/check utilities
 on Windows. It does not replace independent checks with managed reopen checks.
 Only legal repository goldens and disposable generated images are inputs.

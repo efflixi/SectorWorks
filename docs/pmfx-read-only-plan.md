@@ -1,22 +1,34 @@
-# Phase 7 PMFX read-only plan and feasibility evidence
+# Phase 6 PMFX read-only plan and feasibility evidence
+
+## Superseding scope/acceptance decision — November 17, 2026
+
+[The accepted 1.0 scope and exit audit](1.0-scope-closeout.md) closes revised
+Phase2/2B/2C/2D/3 gates on existing evidence and explicit owner acceptance.
+Remaining modern NTFS qualification is DEFERRED POST-1.0 to P1.NTFS.MODERN.1–.6;
+physical ARM64 is NOT VERIFIED — DEFERRED POST-1.0 BY OWNER, separately
+P1.ARM64.LINUX/P1.ARM64.WINDOWS. Four-target builds remain; owner has hardware
+for later testing. Prior dated blocked/pending descriptions below retain their
+historical scope, not current exit requirements. No Phase4 or new probes are
+authorized by this documentation task. Safety/media/manual-tunnel rules remain.
+
 
 ## Decision and scope
 
 On **2026-10-17**, the owner requested DiskGenius PMFX read-only browsing and
-extraction in **Phase 7, item 7.11**, for interoperability between DiskGenius
+extraction in **Phase 6, item 6.11**, for interoperability between DiskGenius
 at work and SectorWorks at home. This approves roadmap/documentation changes,
 **not implementation now**. PMFX is not a currently implemented or qualified
 product reader. The [checklist](../checklist.txt) remains authoritative;
 [technical specification section 6.2.2](specifications/Cross_Platform_Disk_Image_Workspace_Tech_Spec_v0.3.txt)
 records the scope amendment.
 
-**Phase 7 includes implementation, not just planning.** Its completion requires
+**Phase 6 includes implementation, not just planning.** Its completion requires
 PMFX images in the declared qualified subset to open directly in the normal
 SectorWorks application for browsing and extraction. A plan, detection-only
 result or external raw conversion does not satisfy this gate. Any unresolved
-reader blocker keeps Phase 7 incomplete unless the owner explicitly changes
+reader blocker keeps Phase 6 incomplete unless the owner explicitly changes
 the requirement. "Not implementation now" limits this documentation task,
-not the required Phase 7 deliverable.
+not the required Phase 6 deliverable.
 
 The deliverable is a bounded container reader exposing existing qualified
 partition/filesystem access through normal browse, preview, hex, filename search
@@ -167,7 +179,7 @@ without testing them. Python research used bounded `decompressobj()` output
 (block size +1), exact output length, `eof`, empty `unused_data` and empty
 `unconsumed_tail`. This is reference evidence, not a Python runtime dependency.
 Codec choice/provenance/licensing and these negative tests remain unresolved
-production gates under 7.11.1/7.11.4.
+production gates under 6.11.1/6.11.4.
 
 ## Public references and licensing
 
@@ -205,8 +217,8 @@ but choose it only after completing the codec/provenance evaluation.
 
 ## Implementation and qualification sequence
 
-The numbered tasks live in **7.11.1-7.11.8** in the checklist. Execution requires
-separate Phase 7 authorization.
+The numbered tasks live in **6.11.1-6.11.8** in the checklist. Execution requires
+separate Phase 6 authorization.
 
 1. **Scope and references:** review public-source licenses; define exact accepted
    field combinations and per-stack rows. Initial observed-subset targets are
@@ -254,9 +266,8 @@ separate Phase 7 authorization.
    raw/VHD/VHDX editing. Keep original owner hashes unchanged in any separately
    authorized in-place repeats, with no persisted content unless authorized.
 7. **Release gates:** run targeted and existing-reader/writer regressions,
-   all six cross-publishes, available Windows/Linux x64/ARM64 runtime workflows,
-   and large/sparse random-access memory/responsiveness checks. macOS remains
-   unsupported/build-only; no physical testing is scheduled or claimed.
+   all four supported cross-publishes, available Windows/Linux x64/ARM64 runtime workflows,
+   and large/sparse random-access memory/responsiveness checks.
    Publish exact supported rows, codec/fixture provenance, measured limits,
    unsupported reasons and concrete blockers, then stop for owner review.
 

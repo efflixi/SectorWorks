@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using SectorWorks.Core;
+using SectorWorks.Services;
 using SectorWorks.Storage;
 using static SectorWorks.StorageTests.StorageTests;
 
@@ -12,7 +13,7 @@ public sealed class LegacyFatTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void LegacyFloppyWithoutExtendedBpbUsesRootLabelAndRemainsReadOnly(bool signed)
+    public void LegacyFloppyWithoutExtendedBpbUsesRootLabelAndQualifiesOnlySaveAs(bool signed)
     {
         using var work = new WorkDirectory();
         string path = work.PathFor("legacy.img");
@@ -35,10 +36,61 @@ public sealed class LegacyFatTests
             Assert.Equal("legacy FAT test\n", text.ReadToEnd());
             Assert.Equal(!signed, session.Warnings.Any(warning => warning.Contains("without a 0x55AA", StringComparison.Ordinal)));
             Assert.False(fs.Capabilities.Modify.Available);
-            Assert.False(new RawFatImageWriter().Qualify(session).Available);
+            var writer = new RawFatImageWriter();
+            Assert.True(writer.Qualify(session).Available, writer.Qualify(session).Reason);
+            Assert.False(writer.QualifyCommitVolume(session, session.Volumes[0].Id).Available);
             Assert.Throws<NotSupportedException>(() => session.Device.Write(0, new byte[1]));
         }
         Assert.Equal(before, SHA256.HashData(File.ReadAllBytes(path)));
+    }
+
+    [Theory]
+    [InlineData(720, 9, 2, 2, false, true)]
+    [InlineData(1440, 9, 2, 3, true, true)]
+    [InlineData(1440, 9, 2, 3, true, false)]
+    [InlineData(2400, 15, 1, 7, false, true)]
+    [InlineData(2880, 18, 1, 9, false, true)]
+    [InlineData(2880, 18, 1, 9, false, false)]
+    [InlineData(3360, 21, 4, 3, false, true)]
+    [InlineData(5760, 36, 2, 9, false, true)]
+    public async Task FloppySaveAsPreservesBootRecordAndIndependentRootLabel(int sectors, int trackSectors,
+        int sectorsPerCluster, int sectorsPerFat, bool legacy, bool rootLabeled)
+    {
+        using var work = new WorkDirectory();
+        byte[] original = CreateLegacyFloppy(sectors, trackSectors, sectorsPerCluster, sectorsPerFat, legacy);
+        int rootOffset = 512 * (1 + 2 * sectorsPerFat);
+        int rootEntries = BinaryPrimitives.ReadUInt16LittleEndian(original.AsSpan(17));
+        if (!rootLabeled) { original.AsSpan(rootOffset + 32, 32).Clear(); }
+        string source = work.PathFor("source.img");
+        string output = work.PathFor("saved.img");
+        string content = work.PathFor("new.txt");
+        File.WriteAllBytes(source, original);
+        File.WriteAllText(content, "new bytes");
+        using var service = new ExplorerService(new ImageOpener(), stagingDirectory: work.PathFor("stage"));
+        WorkspaceInfo workspace = await service.OpenAsync(source);
+        Assert.True(workspace.Capabilities.SaveAs.Available, workspace.Capabilities.SaveAs.Reason);
+        Assert.Equal(!legacy && sectors == 2880, workspace.Capabilities.CommitInPlace.Available);
+        await service.StageAsync(workspace.Id, new(ImageChangeKind.AddFile, workspace.Volumes[0].Id, "/NEW.TXT", content));
+        await service.SaveAsAsync(workspace.Id, output);
+        VerifyOutput(File.ReadAllBytes(output));
+        Assert.Equal(original, File.ReadAllBytes(source));
+        if (workspace.Capabilities.CommitInPlace.Available)
+        {
+            await service.CommitAsync(workspace.Id);
+            VerifyOutput(File.ReadAllBytes(source));
+        }
+
+        void VerifyOutput(byte[] saved)
+        {
+            Assert.Equal(original.Length, saved.Length);
+            Assert.Equal(original.AsSpan(0, 512).ToArray(), saved.AsSpan(0, 512).ToArray());
+            ReadOnlySpan<byte> directory = saved.AsSpan(rootOffset, rootEntries * 32);
+            byte[][] labels = Enumerable.Range(0, rootEntries).Select(i => saved.AsSpan(rootOffset + i * 32, 32).ToArray())
+                .Where(entry => entry[0] is not (0 or 0xe5) && (entry[11] is 0x08 or 0x28)).ToArray();
+            if (rootLabeled) { Assert.Equal(original.AsSpan(rootOffset + 32, 32).ToArray(), Assert.Single(labels)); }
+            else { Assert.Empty(labels); }
+            Assert.True(directory.IndexOf("NEW     TXT"u8) >= 0);
+        }
     }
 
     [Theory]
@@ -66,37 +118,62 @@ public sealed class LegacyFatTests
         Assert.Throws<ImageFormatException>(() => new ImageOpener().OpenReadOnly(path));
     }
 
-    private static byte[] CreateLegacyFloppy()
+    [Fact]
+    public void WritableFloppyStillRejectsMultipleRootLabels()
     {
-        var image = new byte[720 * 1024];
+        using var work = new WorkDirectory();
+        byte[] image = CreateLegacyFloppy(2880, 18, 1, 9, legacy: false);
+        const int root = 19 * 512;
+        image.AsSpan(root + 32, 32).CopyTo(image.AsSpan(root + 64, 32));
+        string source = work.PathFor("ambiguity.img");
+        File.WriteAllBytes(source, image);
+        using IImageSession session = new ImageOpener().OpenReadOnly(source);
+        Capability capability = new DiskImageWriter().Qualify(session);
+        Assert.False(capability.Available);
+        Assert.Contains("Multiple FAT root volume-label", capability.Reason, StringComparison.Ordinal);
+    }
+
+    private static byte[] CreateLegacyFloppy(int sectors = 1440, int trackSectors = 9,
+        int sectorsPerCluster = 2, int sectorsPerFat = 3, bool legacy = true)
+    {
+        var image = new byte[sectors * 512];
         image[0] = 0xeb;
-        image[1] = 0x1c;
+        image[1] = legacy ? (byte)0x1c : (byte)0x3c;
         image[2] = 0x90;
         Encoding.ASCII.GetBytes("TESTDOS ").CopyTo(image, 3);
         Write16(image, 11, 512);
-        image[13] = 2;
+        image[13] = (byte)sectorsPerCluster;
         Write16(image, 14, 1);
         image[16] = 2;
-        Write16(image, 17, 112);
-        Write16(image, 19, 1440);
-        image[21] = 0xf9;
-        Write16(image, 22, 3);
-        Write16(image, 24, 9);
+        ushort rootEntries = sectors == 3360 ? (ushort)16 : sectors >= 2400 ? (ushort)224 : (ushort)112;
+        Write16(image, 17, rootEntries);
+        Write16(image, 19, (ushort)sectors);
+        image[21] = sectors == 720 ? (byte)0xfd : sectors <= 2400 ? (byte)0xf9 : (byte)0xf0;
+        Write16(image, 22, (ushort)sectorsPerFat);
+        Write16(image, 24, (ushort)trackSectors);
         Write16(image, 26, 2);
-        image.AsSpan(30, 60).Fill(0x7f);
-        image[512] = 0xf9;
+        if (legacy) { image.AsSpan(30, 60).Fill(0x7f); }
+        else
+        {
+            image[38] = 0x29;
+            "BOOTLABEL  "u8.CopyTo(image.AsSpan(43));
+            image[510] = 0x55;
+            image[511] = 0xaa;
+        }
+        image[512] = image[21];
         image[513] = image[514] = image[515] = 0xff;
         image[516] = 0x0f;
-        image.AsSpan(512, 1536).CopyTo(image.AsSpan(2048, 1536));
-        const int root = 7 * 512;
+        image.AsSpan(512, sectorsPerFat * 512).CopyTo(image.AsSpan((1 + sectorsPerFat) * 512));
+        int root = (1 + 2 * sectorsPerFat) * 512;
         Encoding.ASCII.GetBytes("HELLO   TXT").CopyTo(image, root);
         image[root + 11] = 0x20;
+        if (!legacy) { Write16(image, root + 24, 0x5021); }
         Write16(image, root + 26, 2);
         byte[] contents = Encoding.UTF8.GetBytes("legacy FAT test\n");
         BinaryPrimitives.WriteUInt32LittleEndian(image.AsSpan(root + 28), (uint)contents.Length);
-        contents.CopyTo(image, 14 * 512);
+        contents.CopyTo(image, root + rootEntries * 32);
         Encoding.ASCII.GetBytes("LEGACY     ").CopyTo(image, root + 32);
-        image[root + 32 + 11] = 0x28;
+        image[root + 32 + 11] = legacy ? (byte)0x28 : (byte)0x08;
         return image;
     }
 

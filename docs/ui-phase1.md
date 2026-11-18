@@ -1,14 +1,28 @@
 # Phase 1 read-only explorer UI
 
+## Superseding scope/acceptance decision — November 17, 2026
+
+[The accepted 1.0 scope and exit audit](1.0-scope-closeout.md) closes revised
+Phase2/2B/2C/2D/3 gates on existing evidence and explicit owner acceptance.
+Remaining modern NTFS qualification is DEFERRED POST-1.0 to P1.NTFS.MODERN.1–.6;
+physical ARM64 is NOT VERIFIED — DEFERRED POST-1.0 BY OWNER, separately
+P1.ARM64.LINUX/P1.ARM64.WINDOWS. Four-target builds remain; owner has hardware
+for later testing. Prior dated blocked/pending descriptions below retain their
+historical scope, not current exit requirements. No Phase4 or new probes are
+authorized by this documentation task. Safety/media/manual-tunnel rules remain.
+
+
 Historical Phase 1 evidence is retained below. Phase 2 adds capability-gated
 staging and Save As commands; see [staged editing](staged-editing.md) for current
 behavior. The original disabled-write descriptions below describe Phase 1,
 not a removal of Phase 2 functionality.
 
-Current Phase 2 Add/New Folder/Rename accept uppercase or lowercase DOS 8.3
-components and case-only renames. The browser, pending review and saved output
-retain their spelling; mixed case requiring long-name records is reported as
-unsupported rather than silently uppercased.
+The historical Phase 2 initial envelope accepted uppercase/lowercase DOS 8.3
+components and case-only renames. The qualified Phase 2B expansion also accepts
+LFN/mixed-case/NFC BMP names within its declared FAT/ordinary-NTFS subset;
+unsupported names are refused, never silently normalized. The browser, pending
+review and saved output retain qualified spelling. See
+[current naming and capability limits](staged-editing.md#current-phase-2b-envelope-and-mandatory-blocker).
 
 ## Boundary and composition
 
@@ -114,10 +128,12 @@ Alt+Up/Backspace parent, Enter open/preview or navigate a search result,
 Ctrl+F (also Command+F) focus search, Escape cancel. Standard tree, tab, grid and
 text-copy keyboard behavior is retained.
 
-Add, Replace, Delete, New Folder, Commit and Rebuild remain unavailable.
-Audio Player and Track Information are disabled Phase 6 reservations.
-ISO trees also have a clearly unavailable Phase 6 session/track reservation:
-an informational node with no volume/path, children or enumeration behavior.
+Add, Replace, Delete, New Folder, Commit and Rebuild were unavailable at the
+Phase 1 checkpoint; see the [current support matrix](support-matrix.md).
+Audio Player and Track Information remain disabled pending Phase 5. The ISO
+session/track reservation is an informational node with no volume/path,
+children or enumeration behavior. The app describes these limitations without
+displaying roadmap phase numbers.
 Image Map is visibly reserved, not implemented. Validation displays opening
 warnings and explicitly states that this is not a full filesystem validator
 or a bootability guarantee. Nothing executes image content.
@@ -251,15 +267,16 @@ is captured**, never the shared desktop or another application's content.
 ## Remaining validation and limits
 
 Native picker interaction, pointer-operated splitter dragging and exhaustive
-assistive-technology behavior still warrant human review. The automated physical
+assistive-technology behavior still require actual workflow verification.
+Use the verified Windows MCP for supported interactions; retain explicit gaps
+when a particular assistive tool or manual observation is still required. The automated physical
 smoke injects destination paths rather than operating a native picker.
 The automated UI work above ran on Linux x64 only. Separately, on 2026-10-14 the
 owner reported Phase 1 working on Linux x64, Windows x64 and Linux ARM64 on a
 Raspberry Pi 500; Windows 7 x64 also reportedly runs this build but is unsupported.
-macOS launch remained blocked for the unsigned distribution, including after an
-attempt to disable security; exact cause and tested architecture remain unknown.
-Windows ARM64, successful macOS execution and explicit Wayland coverage remain
-unverified. See [platform status](platform-status.md) for evidence boundaries.
+Windows ARM64 and explicit Wayland coverage remain unverified. Current Windows CLI evidence is not current GUI qualification; the
+Linux ARM64 gate also needs reproducible current-build/workflow evidence. See
+[platform status](platform-status.md#final-global-session-corrective-snapshot).
 
 The owner's missing-first-page report was reproduced and fixed on 2026-10-14:
 selecting the Hex View tab now executes the bounded hex read rather than merely

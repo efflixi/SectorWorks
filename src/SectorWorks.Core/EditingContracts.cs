@@ -31,6 +31,12 @@ public interface IImageEditingService
         IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default);
 }
 
+public interface IImageCommitService
+{
+    Task<CommitResult> CommitAsync(Guid workspaceId, IProgress<OperationProgress>? progress = null,
+        CancellationToken cancellationToken = default);
+}
+
 public sealed record StagedWriteOperation(ImageChangeRequest Request, Func<Stream>? OpenContent);
 
 public static class FatEditNames
@@ -94,8 +100,28 @@ public interface IStagedImageWriter
 {
     Capability Qualify(IImageSession image);
     Capability QualifyVolume(IImageSession image, string volumeId) => Qualify(image);
+    Capability QualifyCommitVolume(IImageSession image, string volumeId) =>
+        new(false, "This writer has no independently qualified source-commit capability.");
     void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken);
     void Apply(string copyPath, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken);
     void ValidateOutput(IImageSession source, IImageSession output,
         IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken);
 }
+
+/// <summary>Optical reconstruction is separate from applying edits to a disk copy.</summary>
+public interface IImageRebuildSource
+{
+    Capability RebuildCapability { get; }
+    IImageRebuildPlan PlanRebuild(IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken);
+}
+
+public interface IImageRebuildPlan
+{
+    long OutputLength { get; }
+    long AdditionalScratchBytes => 0;
+    RebuildMemberHashes? MemberHashes => null;
+    void Write(Stream output, IProgress<OperationProgress>? progress, CancellationToken cancellationToken, string? scratchDirectory = null);
+    void Validate(IReadOnlyFileSystem reopened, CancellationToken cancellationToken);
+}
+
+public sealed record RebuildMemberHashes(string Source, string Output);

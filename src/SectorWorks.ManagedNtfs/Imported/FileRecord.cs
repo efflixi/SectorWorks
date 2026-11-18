@@ -37,10 +37,10 @@ namespace SectorWorks.ManagedNtfs
         public FileRecord(int sectorSize)
             : base("FILE", sectorSize) {}
 
-        public FileRecord(int sectorSize, int recordLength, uint index)
+        public FileRecord(int sectorSize, int recordLength, uint index, bool useLegacyHeader = false)
             : base("FILE", sectorSize, recordLength)
         {
-            ReInitialize(sectorSize, recordLength, index);
+            ReInitialize(sectorSize, recordLength, index, useLegacyHeader);
         }
 
         public uint AllocatedSize { get; private set; }
@@ -109,7 +109,7 @@ namespace SectorWorks.ManagedNtfs
             return result;
         }
 
-        public void ReInitialize(int sectorSize, int recordLength, uint index)
+        public void ReInitialize(int sectorSize, int recordLength, uint index, bool useLegacyHeader = false)
         {
             Initialize("FILE", sectorSize, recordLength);
             SequenceNumber++;
@@ -117,11 +117,12 @@ namespace SectorWorks.ManagedNtfs
             AllocatedSize = (uint)recordLength;
             NextAttributeId = 0;
             _index = index;
+            LoadedIndex = index;
             HardLinkCount = 0;
             BaseFile = new FileRecordReference(0);
 
             Attributes = new List<AttributeRecord>();
-            _haveIndex = true;
+            _haveIndex = !useLegacyHeader;
         }
 
         /// <summary>

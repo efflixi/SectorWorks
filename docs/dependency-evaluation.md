@@ -1,5 +1,139 @@
 # Foundation storage dependency evaluation
 
+## Phase 5 optical and audio dependencies
+
+CUE parsing, sector mapping and staged-set validation are managed code over
+the existing reader/ISO builder. Playback dynamically uses Windows system
+waveform audio and Linux system ALSA (`libasound.so.2`); SectorWorks does not
+redistribute either audio library. This avoids shipping a native engine or
+new NuGet packages. Linux desktop audio requires a working default ALSA
+endpoint; this is qualified on the tested Linux x64/PipeWire host, not on
+every distribution or native ARM64. See the [backend checks](phase5-bin-cue.md#playback-backends).
+
+## Phase 4 optical implementation
+
+No new production package or native dependency. The pinned DiscUtils ISO
+reader remains the bounded fallback for supported non-rebuild layouts. A
+separate managed parser/rebuilder qualifies ISO path tables, directories,
+Rock Ridge and bounded El Torito layouts; UDF 1.02 uses bounded ROM-profile
+descriptors and recorded extents. Rock Ridge and UDF preservation are not
+inferred from the pinned builder. Development-only genisoimage/isoinfo,
+7-Zip and QEMU evidence is linked in the [Phase 4 report](phase4-optical-rebuild.md).
+
+## Accepted 1.0 scope — November 17, 2026
+
+**Phase 2 / 2B / 2C / 2D and Phase 3: COMPLETE / OWNER ACCEPTED UNDER THE
+REVISED 1.0 SCOPE.** The [owner-approved assignment](sectorworks_1_0_scope_change_and_phase_closeout_sol_prompt.txt)
+and [closeout audit](1.0-scope-closeout.md) supersede older blocked/pending
+summaries below; dated source/test/cleanup findings retain their original scope.
+
+All qualified FAT/NTFS functionality is retained, including structural legacy/list
+rows and native passive NTFS3.1: 512-byte sectors, 4096-byte clusters/index blocks,
+1024-byte MFT records, exactly `0x1400` flags, paired clean LFS1.1 pages and the
+exact empty repair/deleted-state predicate. Full record/allocation/security-
+reference preservation and every existing admission check remain intact.
+Default TxF-enabled/transaction-bearing and other unqualified states stay
+**read-only**, not unrestricted modern Windows writing.
+
+**DEFERRED POST-1.0:** [P1.NTFS.MODERN.1–.6](../checklist.txt) cover default
+TxF/CLFS/KTM checkpoint/active/prepared/in-doubt, TOPS/`$TXF_DATA`, unsupported
+repair/deleted, coherent detached LFS2/cache qualification and dependent writer
+rows. These are unresolved, not passed or impossible. Existing **P1.NTFS.1–.6**
+authentic historical qualification is preserved. Physical ARM64 is **NOT VERIFIED
+— DEFERRED POST-1.0 BY OWNER**, separately **P1.ARM64.LINUX** and
+**P1.ARM64.WINDOWS**; owner has hardware for later testing. Neither deferral gates
+1.0/phases; four-target builds/packages remain, cross-publish is not runtime proof,
+and macOS remains outside scope. Unrelated later-phase requirements stay open.
+
+No product code or test result is changed by this documentation closeout.
+[Existing exact-source evidence/packages](../artifacts/focused-ntfs-20261117/evidence-index.json)
+remain immutable; see the new [closeout index](../artifacts/scope-closeout-20261117/evidence-index.json).
+**STOP: Phase 4 is next available for owner authorization, not started or
+authorized here.** No new native/ARM64 experiment, external push, tag or release.
+
+## Historical implementation and evidence snapshots
+
+Earlier present-tense authority/completion statements below are dated records,
+not operative gates after the November 17 scope/acceptance decision.
+
+
+
+## November17 focused native NTFS correction
+
+The [focused diagnosis](focused-ntfs-diagnosis.md) supersedes historical blanket
+repair/deleted exclusions for one precisely bounded NTFS3.1 state: TxF and repair
+logging disabled (`0x1400`), clean LFS1.1, empty repair/deleted structures, and
+unchanged complete passive metadata records/allocation bytes. Portable five-
+operation staged editing, Save As and commit now work on that state. Native
+read-only/writable oracles and standard-user Windows GUI outputs pass; exact
+container/layout evidence is in the focused ledger. No Windows mounting,
+formatting, replay or repair is an application prerequisite. Default TxF-bearing
+and coherent LFS2 images remain outside write qualification. Physical ARM64 is
+**NOT VERIFIED — NONBLOCKING BY OWNER DECISION**; no physical pass is inferred.
+
+
+## November 16 bounded writer and native evidence
+
+**Resumed closeout update:** corrected elevated R2 completed two full133103616-
+byte captures and detached, with unchanged seed. Both mounted pages are2.0;
+both after-lock pages1.1. Microsoft documents
+[FSCTL_LOCK_VOLUME](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_lock_volume)
+as flushing caches and NTFS treating the volume as dismounted. The live capture
+is sequential; the exclusive flushed capture already changed version and cannot
+qualify unchanged-log2.0 writing. There are183 changed sectors mounted-to-locked
+and189 locked-to-detached, all mapped to observed allocated metadata streams;
+ordinary payload/bitmap/mirror agreement does not establish metadata quiescence.
+
+The fresh generated NoTxF R2 used documented format-time TXF:disable and
+NoRepairLogs, not a host policy change. It has no observed TxF log/TOPS/TXF_DATA,
+but retains RmMetadata/Repair:Config/Deleted. Native read-only CHKDSK succeeds;
+current product still refuses writes. These switches do not specify portable
+offline metadata preservation/update rules. R1 full-format refusal on a thin VHD
+remains failed evidence. The read-only
+[snapshot transaction status API](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_txfs_transaction_active)
+does not apply to arbitrary detached raw files or define writer updates.
+The both-client/prepared/in-doubt/TOPS/TXF_DATA, repair/deleted and independent
+LFS2/cache contracts remain missing. No further identical native probe or
+speculative writer expansion is justified. Details and primary references are
+in the current review and resumed native interpretation report. Historical
+pending-run/UAC-absence descriptions below retain their original scope.
+
+The [continuous assignment](sectorworks_phase_2d_and_phase_3_autonomous_sol_prompt.txt)
+authorizes the remaining bounded Phase 3 writer/UI/recovery work. The isolated
+MIT managed backend retains its replaceable boundary and unchanged signed reader
+packages. New repairs preserve SI48/SI72 and legacy/new FILE creation layouts,
+correct SI offset and quota/USN serialization, retain allocation identity when
+reinitializing new MFT records, and prevent a synthesized directory attribute
+from entering original SI bytes during timestamp restoration. The generated
+repair patch/manifest are reproducible; `record-repairs.py --verify` passes.
+
+Independent validation resolves bounded logical streams separately from physical
+extension ownership and allocation. Retained SI and original stored security
+bytes are compared without canonicalizing the input. Out-of-range FILETIMEs
+are refused before the adapter can normalize them. Exact subset, growth/failure
+coverage and native output results are recorded in the [review](phase2d-phase3-review.md).
+Formatting, dirty/ambiguous logs, unsupported attributes and all modern Windows
+transaction/log writer gates remain disabled.
+
+A new standard-user route queries complete detached generated CLFS copies using
+the documented `%BLF%\` relative-container prefix. Both TxF and KTM clients are
+observed; 16 restart/forward payload observations on retained Ordinary/Committed/
+RolledBack controls match the original raw bytes. Those are fresh observations
+of retained authoring, not fresh authoring or TxF recovery proof. Native Windows
+automatically adds authentication suffixes/`.cnpf` files to disposable copies;
+complete before/after files are retained, never stripped, patched or propagated
+back. R3–R8 access-denial/privilege-restoration evidence remains unchanged.
+
+The failed generated LFS capture contains complete mounted log-stream data and
+both actual RSTR 2.0 pages; detached output contains RSTR 1.1 pages. Its volume
+capture is short by 4096 bytes and lacks a successful lock/flush comparison.
+The corrected harness checks the exact opened volume's disk extent and enables
+bounded extended DASD tail reads. Standard-token compilation/early refusal pass;
+its new elevated run is deferred while the owner cannot approve UAC. Cache safety,
+prepared/in-doubt controls and persistent both-client/TOPS/`$TXF_DATA` update rules
+remain unproven. Native transport, checksums, empty state and detached version
+labels never substitute for those rules.
+
 ## Phase 2D bounded qualification authority, 2026-10-17
 
 Owner authorized closeout of retained Phase 2B current-Windows reference/media
@@ -12,6 +146,17 @@ Only a demonstrably safe bounded clean modern-log subset may qualify; dirty,
 ambiguous/recovery-needed logs remain refused without replay/reset/normalization
 or simply deleting validator gates. Infeasibility requires an explicit blocker/
 owner decision, not a read-only scope reduction.
+
+Current status after the owner-resumed corrective pass: the Windows BCL codec
+reference passed 271/271, bounded reader rows passed 66/66 on both Linux and
+Windows x64, and Tower source/content checks are complete within their declared
+scope. Retained generated-image Windows writer/runtime defects are fixed and
+verified. Windows-authored edited-output/TxF/CLFS and LFS 2.0/cache-safety gates
+remain blocked; current ARM64, GUI/platform and review gates remain incomplete.
+The runtime corrective batch stopped for owner review, not full Phase 2D completion.
+On October 21 the owner separately resumed the retained TxF/CLFS compatibility
+work; its first bounded investigation increment is recorded below. See
+[final corrective evidence](platform-status.md#final-global-session-corrective-snapshot).
 
 The bounded investigation has a concrete cache-safety obstacle, not merely a
 version-number check. Pinned ntfs-3g 2022.10.3
@@ -104,6 +249,360 @@ writers stay under remaining Phase 3 3.0/3.7. Earlier statements that Phase 3
 has never been authorized are historical: retain its October 16 backend delivery,
 without continuing it under 2D. See [closure ledger](support-matrix.md#phase-2d-retained-closure-ledger-2026-10-17).
 
+### Resumed TxF/CLFS structural investigation, 2026-10-21
+
+The owner explicitly resumed the remaining Windows-native transaction
+compatibility work after context recovery. This increment investigates the
+retained legal generated Windows fixture, adds refusal regressions and leaves
+**2D.3-2D.5 incomplete**. It grants no new writer capability, recovery/reset,
+owner-media access, remaining Phase 3 work or publication.
+
+[`inspect-clfs.py`](../scripts/inspect-clfs.py) is an opt-in, independent
+read-only observer of the known six-descriptor CLFS base-log envelope, outside
+the product dependency/publish graph. Input is a separately extracted generated
+base stream with an independently recorded SHA256, at most 128 KiB. It bounds
+descriptors, blocks, information arrays and UTF-16 names; checks the observed
+CRC32 calculation and sector-signature restoration; reports both metadata
+copies, logical streams and container numbers/sizes. It refuses damaged copies
+instead of silently selecting the other, never follows paths contained in the
+log, and verifies source identity/full hash again afterward. It does **not**
+validate complete CLFS recovery semantics or choose an authoritative copy.
+
+The format reference is pinned
+[libfsclfs research](https://github.com/libyal/libfsclfs/blob/5966065b505f70a2b4439ad8e7ebc546495ee87f/documentation/Common%20Log%20File%20System%20(CLFS).asciidoc),
+not a Microsoft on-disk contract. The implementation is original code based on
+bounded field observations; no library/source was imported or new dependency
+added. The reference remains external. Two discrepancies matter:
+
+- This fixture's stream/container array offsets resolve relative to the
+  metadata record, which begins 112 bytes into its block, whereas the research
+  table labels them block-relative. Using that label literally lands outside
+  the intended information records.
+- Raw LSN-like fields contain `0xffffffff00000000`; the reference's special-LSN
+  table instead lists `0x00000000ffffffff`. The observer reports raw fields
+  without assigning sentinel/clean-state meaning. Likewise the native
+  `$TXF_DATA` reference/flag interpretation still needs version-specific proof.
+
+On the retained generated stream, all four occupied base blocks match CRC32
+with their checksum field zeroed **before** fixup restoration. The two metadata
+copies at offsets **2048/33280** have raw dump counters **19/20**, the same store
+GUID, streams **0 physical / 1 TxfLog / 2 KtmLog**, and two **2097152-byte**
+containers with observed physical/logical IDs **0/0 and 1/1**. The counter is
+reported, not used to select a recoverable state. Equal base/flushed fields do
+not establish absence of client recovery obligations. These are observations
+on one generated Windows build, not generalized CLFS compatibility.
+
+`test-inspect-clfs.py` exercises synthetic normal/changed copies, both-copy
+CRC failure, torn signatures, descriptor/array/record/name bounds, overlapping
+records, source identity/hash changes and linked/nonregular files. Six added
+`NtfsWriteValidationTests` cases inject exact generated 56-byte `$TXF_DATA`
+values or zero-valued metadata into disposable ordinary goldens. They retain
+readable sentinel content while refusing raw writer qualification, service
+staging/Save As/commit and output publication, with full source hashes and
+handle release. They qualify refusal, never TxF writing.
+
+The next unresolved work is **both-client persistent recovery interpretation**:
+container/owner-page mapping, the TxF and KTM restart/checkpoint/transaction
+records, prepared/indoubt state and copy/active-range consistency. This needs
+independently known native transaction controls (ordinary operations, committed
+and rolled-back metadata-only transactions), followed by versioned
+TOPS/`$TXF_DATA` update/preservation rules. Native controls requiring attachment
+must use reviewed finite owner-launched scripts on new disposable virtual files;
+the existing standard SSH account must remain unelevated. A mounted runtime
+query alone cannot certify detached bytes. Clean detached LFS 1.1 evidence does
+not close the separate LFS 2.0/cache-safety requirement. Actual edited-output
+and required-stack/native-reopen qualification follow only after a defensible
+acceptance/update rule exists. No such rule has passed yet.
+
+The prepared [`windows-native-txf-controls.ps1`](../scripts/windows-native-txf-controls.ps1)
+provides the three bounded rename controls against copies of the exact sealed
+generated seed. Actual standard-user Windows validation passes PS5 parsing,
+API-declaration compilation and refusal before privileged work. At the initial
+handoff the controls remained unexecuted; [local owner-launch instructions](platform-status.md#prepared-native-controls-local-owner-launch-required)
+include the transferred script/helper hashes. No elevated SSH permission is
+needed or requested. Successful native control creation would still be input
+evidence for the remaining offline investigation, not product interoperability.
+
+The owner subsequently executed all three controls successfully. Exact output
+hashes, exclusive standard-account reads and **17 independent Linux native
+namespace/content/stream checks** now pass. Both active native transactions
+reported TOPS **100% free** while reporting **one running transaction**; their
+detached `$Tops:$T` stays all-zero. Committed and rolled-back renames leave
+changed root and new ordinary-file `$TXF_DATA`, independently byte-hash checked.
+This supplies the planned ordinary/committed/rolled-back contrast corpus and
+actual evidence against a free-TOPS inactivity shortcut. It does not establish
+prepared/indoubt handling, persistent recovery state or offline update rules.
+The full [native-control evidence](platform-status.md#owner-executed-native-txf-controls-2026-10-21)
+retains attached LFS 2.0 versus detached raw 1.1, both physical CLFS copies and
+the unchanged seed. No writer acceptance or log reset/replay is introduced.
+
+The owner then authorized continuing all three proposed investigation,
+acceptance/update-rule and conditional writer-verification steps without
+intermediate review stops. The conditional step still requires a defensible
+rule; this is not permission to infer quiescence from the contrast corpus.
+
+#### Container records and native read oracle preparation
+
+The observer now also accepts `--container` for **only** the observed,
+unrecycled logical-container-0 prefix of the generated **2 MiB** containers.
+It bounds physical blocks/records, restores sector tails, checks record lengths,
+alignment, stream-local virtual LSN progression and last-record markers, and
+reports opaque payload bytes/hashes and physical restart candidates. It rejects
+gaps with later nonzero data, owner-page/split/recycled layouts, unsupported
+continuations, malformed signatures and exhausted budgets. It never selects
+an active base copy or converts an observation into a product writer predicate.
+The container checksum field is **zero** in this corpus: sector signatures
+are not a checksum, and successful decoding is not complete CLFS integrity
+validation. A regression explicitly changes opaque payload bytes without
+claiming checksum detection.
+
+Six additional independent `ntfscat` extractions of MFT **34/35** match the
+earlier raw inventory hashes, with no native warning/error. The first containers
+have **4/9/8 blocks and 5/15/13 records** for Ordinary/Committed/RolledBack;
+all second containers are zero. The last physical TxF restart candidates have
+LSNs **0x600/0x1600/0x1400**, each with a **112-byte** client payload. KTM
+candidates have LSNs **0/0x1401/0** and the same **32-byte** payload hash.
+Raw base-stream field **80** matches these candidates in both metadata copies
+for all three controls. This is an empirical correlation, not authoritative
+copy/range selection, client checkpoint interpretation or prepared/indoubt
+qualification. Historical transaction records remain physically present after
+completion; enumerating all nonzero records as live would be incorrect.
+The synthetic observer suite now passes **17 tests**, separate from the earlier
+unchanged **1184-pass/one-skip** .NET verification snapshot.
+
+The next independent oracle uses Microsoft's
+[read-only log open](https://learn.microsoft.com/en-us/windows/win32/api/clfsw32/nf-clfsw32-createlogfile),
+[CLFS information](https://learn.microsoft.com/en-us/windows/win32/api/clfs/ns-clfs-cls_information),
+[restart reading](https://learn.microsoft.com/en-us/windows/win32/api/clfsw32/nf-clfsw32-readlogrestartarea)
+and [record scanning](https://learn.microsoft.com/en-us/windows/win32/api/clfsw32/nf-clfsw32-readlogrecord)
+APIs, plus [file TxF metadata queries](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_txfs_get_metadata_info).
+These define runtime queries, not an offline TxF payload/update contract.
+[`windows-native-clfs-oracle.ps1`](../scripts/windows-native-clfs-oracle.ps1)
+requests only existing read handles and captures returned LSNs, restart/record
+payloads, native errors and file transaction identifiers/states. Native context
+cleanup is required; Microsoft's
+[marshalling-area cleanup](https://learn.microsoft.com/en-us/windows/win32/api/clfsw32/nf-clfsw32-deletelogmarshallingarea)
+may flush pending I/O, so these live observations must not be described as
+immutable detached-source inspection. They run only inside fresh generated
+owner-local controls. No append, reset, repair or write-access retry exists.
+
+The opt-in R4 mode of the existing native control harness records the actual
+KTM transaction GUID and launches the observer in **30-second** child processes
+before/during/after each applicable control. The helper independently checks
+that the drive identifies the exact parent-owned virtual disk/partition.
+Its budgets are **64 KiB** marshalling blocks, two read buffers, four restart
+areas, **128** forward records, **16 KiB** per payload and **64 KiB** aggregate
+forward payload per stream. API access/sharing errors and terminal Win32 codes
+remain explicit evidence; they do not authorize altered ACLs or imply a
+complete scan. Prepared/indoubt controls and offline update semantics remain
+unqualified even if all native reads succeed.
+
+[`windows-native-txf-oracle-batch.ps1`](../scripts/windows-native-txf-oracle-batch.ps1)
+provides one owner-local launch for all three fresh R4 controls, preserving R3.
+Actual standard-account Windows PS5 parsing, both C# declaration compilations,
+synthetic native-payload copy/hash/LSN/budget checks, all three administrator
+guards and four transferred script hashes pass. This validation calls no
+native log/disk methods. An initial large-stdin transport timeout and file
+execution-policy refusal are retained as validation failures; final validation
+uses transferred-file parsing and in-memory guard execution without changing
+account or machine policy. Owner-launched child execution policy remains
+process-local, as in the earlier controls. At that preparation snapshot native
+R4 execution was **pending**; subsequent results and corrections follow below.
+[launch/evidence details](platform-status.md#native-clfs-read-oracle-r4-owner-local-launch)
+are separate from successful preparation.
+
+#### Native R4 results and corrected oracle
+
+The owner executed all three R4 controls successfully on October 21. All three
+exact detached VHDs and the unchanged Native-R2 seed match subsequent exclusive
+standard-account read hashes; independent Linux checks of the exact downloads
+pass. However, all **16 CLFS opens failed with Win32 error 2**: the harness
+incorrectly used `TxfLog` where the independently inventoried native filename is
+**`$TxfLog.blf`**. Control-authoring success never completed the missing oracle.
+The exact executed four-script snapshot and all failed-query reports are
+retained, not overwritten or retroactively described as successful reads.
+
+The file-metadata side of the oracle did succeed. In both active controls the
+native file query reports the exact KTM GUID recorded by `GetTransactionId`,
+file ID low part **1**, state **1**, and last LSN **0x603**. The same GUID occurs
+in the raw TxF records at payload offset **32**, including record **0x603**;
+the committed control also contains it in KTM records. After completion the
+file query reports state **0** and a zero locking GUID, while retaining file ID
+1 and last LSN **0x603** for commit / **0x1000** for rollback. Those latter two
+values match raw `$TXF_DATA` offsets **16/24** in this corpus. These are bounded
+correlations, not a complete versioned attribute schema or an offline predicate.
+The root query reports state 0 even while the child transaction is active;
+checking the root alone would therefore miss the known active control.
+
+The corrected helper retains every literal `$` and uses a checked drive-prefix
+constructor. A separate ABI review against the
+[Microsoft SDK declarations](https://github.com/microsoft/win32metadata/blob/main/generation/WinSDK/RecompiledIdlHeaders/shared/clfs.h)
+also corrected record types to **byte by reference** and the client filter to
+**3**. An older third-party header represented these differently. The native
+read methods use the SDK ABI, not the raw container header's 32-bit type word.
+
+[`windows-clfs-oracle-selftest.ps1`](../scripts/windows-clfs-oracle-selftest.ps1)
+then passed as the actual **standard** Windows account, inside a finite
+**45-second** child. It creates only a fresh user-local synthetic multiplexed
+log with two containers and two clients, writes known data/restart payloads
+through CLFS APIs, closes the writers and exercises the corrected read helper.
+Both clients return all **eight** exact known records, four latest/previous
+restart observations, their writer-returned LSNs and bytes, normal terminal
+codes **38** (forward EOF) / **6618** (previous-restart start), and clean native
+reader cleanup. The real TxF path constructor and byte-reference ABI also pass
+regression checks. This creates no TxF transaction, attaches no disk and
+modifies no pre-existing log. It is a positive API transport test, not TxF
+checkpoint/prepared/indoubt qualification.
+
+Independently downloaded logical prefixes reproduce all eight native records'
+LSNs, payload bytes/hashes, low data/restart type bits and previous/undo LSNs.
+Both base copies' raw fields **56/72/80** match the native base/last/restart LSNs
+in these controls. Crucially, raw field **64** differs from the native
+`LastFlushedLsn`: the older research label must not be used as that API field.
+The observer supports a bounded nonzero first virtual LSN, as seen when the
+second generic client first appends at physical offset **0x800**. It still
+does not select an active copy, authenticate a file or infer persistent safety.
+
+The generic native files exceed their reported logical sizes: BLF **73728**
+versus **65536** bytes; each container **2232320** versus **2097152** bytes.
+These extra regions are consistent with Microsoft's
+[CLFS authentication](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/clfs-authentication)
+and [stable-storage documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/clfs-stable-storage).
+Authentication can use system-specific keys and additional recovery files;
+portable acceptance must not assume that ordinary CRC/fixup checks cover it.
+The suffixes themselves are **not decoded or authenticated** here. Full source
+hashes and the exact unexplained lengths are retained. Only explicitly labeled
+diagnostic copies of the native-reported logical prefixes are compared; the
+complete extended files remain refused by the bounded raw observer. Base-log
+descriptor coverage now rejects trailing bytes instead of silently ignoring
+them, including an all-zero suffix. No authentication policy, code, signature
+or recovery file is changed, disabled or regenerated to qualify an input.
+
+The diagnostic suite now passes **19 Python tests**. The previously completed
+**1184-pass/one-skip** .NET run remains its original snapshot; no product
+runtime code changed or new full-solution execution is claimed here.
+
+The new **R5** owner-local batch preserves R3/R4 roots and uses the corrected
+reader. Its final coverage check requires two successful stream observations
+at every required stage; actual standard-account regressions reject the real
+R4 missing-query reports, accept known complete 16-query coverage and reject
+partial coverage. All five transferred scripts parse, both API declarations
+compile and all owner-only guards refuse the standard account. The owner then
+executed all three R5 controls successfully, but the final coverage assertion
+at line 26 correctly failed: **all 16 protected CLFS opens returned Win32
+error 5**, even inside that local administrator run. No CLFS information,
+restart or record query succeeded. The saved reports do not identify the
+specific native access restriction; changing permissions is not a supported
+conclusion. Exact VHD/seed exclusive hashes, **26** independent Linux stream/
+namespace/payload commands and native file-state/raw metadata comparisons pass.
+All three controls detached; retain the single-use evidence and do not rerun.
+See [R5 results](platform-status.md#owner-executed-r5-results-protected-log-access-denied).
+
+Read-only API review does not close the gap:
+[`TxfLogCreateRangeReadContext`](https://learn.microsoft.com/en-us/windows/win32/api/txfw32/nf-txfw32-txflogcreaterangereadcontext)
+and [`TxfLogReadRecords`](https://learn.microsoft.com/en-us/windows/win32/api/txfw32/nf-txfw32-txflogreadrecords)
+document replication/redo records, not a complete both-client recovery oracle.
+[`TXFS_QUERY_RM_INFORMATION`](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ns-winioctl-txfs_query_rm_information)
+documents a transaction count at query time, not detached persistent safety.
+These are scope findings, not executed alternative probes or a claim that no
+future solution exists. No write-access retry, privilege/ACL/authentication
+change, kernel driver or recovery/reset/repair was introduced.
+The subsequent bounded access investigation finds stored administrator-read
+allow ACEs in the generated metadata descriptors, without establishing effective
+live access or the specific denial cause. A separate R6 diagnostic now compares
+ordinary file opens with CLFS client opens on one fresh generated VHD. Actual
+standard-account parser/compilation/guard/coverage tests and **10** positive
+file/generic-log observations pass. Subsequent owner R6 execution records all
+18 operations: all eight attribute opens succeed, six metadata GENERIC_READ
+and both CLFS opens fail with error 5. Native handle IDs match the independent
+raw records; seven Linux stream/namespace/content commands and unchanged
+source/seed hashes pass. Backup/restore privileges are present but disabled
+in that owner token; no privilege or protected ACL changed. See
+[R6 executed results](platform-status.md#owner-executed-r6-results-attribute-access-is-not-data-access).
+
+Microsoft's [backup access model](https://learn.microsoft.com/en-us/windows/win32/fileio/file-security-and-access-rights)
+supports a candidate test with an existing granted backup privilege enabled.
+An explicit opt-in R7 script is prepared for an isolated owner-local child:
+before/with-backup opens, conditional existing bounded CLFS reader, restoration
+and exact-state verification, then detach/hash the fresh generated image.
+Actual standard-account parsing/compilation/five refusal cases pass, without
+native adjustment or disk/CLFS calls. Positive activation, restoration and
+protected-log access remained untested at that preparation snapshot; neither
+the documented mechanism nor a disabled privilege proves causation.
+No account privilege grant, restore-privilege activation, ACL/authentication
+change or safety-gate expansion is proposed. See
+[R7 source, limits and opt-in handoff](platform-status.md#r7-backup-read-candidate-explicit-owner-opt-in-required).
+The owner subsequently ran R7: the child failed its raw dictionary-result
+checker, while image detach and exclusive output/seed hashes pass. A recorded
+`Win32Error` key is not exposed through `PSObject.Properties` on native C#
+dictionaries. The failure reproduces as the standard account; no usable
+activation/restoration or native backup-read result was captured. The corrected
+R8 checker supports both native and JSON rows and preserves partial stages.
+Actual user-local native observations and **18** malformed result-shape cases
+pass; at preparation time positive backup/recovery/writer outcomes remained
+untested. See
+[R7 failure](platform-status.md#r7-owner-execution-failed-dictionary-result-check)
+and [R8 correction](platform-status.md#corrected-r8-backup-probe-owner-local-launch-required).
+The outstanding both-client persistent recovery/update rule still precedes
+conditional writer implementation and native edited-output verification.
+
+#### R8 negative access result and remaining proof gaps
+
+The owner then completed R8 successfully. All **36** native access observations
+are retained, and backup privilege is positively verified disabled/enabled/
+restored in the isolated child. Restore privilege remains disabled; the original
+queried token state matches after disposal. Before/with-backup access rows are
+identical: **10 successes and eight error-5 denials** per stage. Both protected
+CLFS opens remain denied, so the conditional native restart/record reader is
+not called. Exact output/seed exclusive hashes, successful handle/raw-record
+identities and **seven independent Linux reads** pass. See
+[executed R8 evidence](platform-status.md#owner-executed-r8-results-backup-restored-access-still-denied).
+This closes the bounded backup-candidate evaluation, without a protected-log
+read, causal diagnosis of the restriction or writer qualification.
+
+The following reference checks constrain further work:
+
+- Microsoft's [filesystem privilege documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/ifs/privileges)
+  describes backup ACL bypass and volume-management operations separately.
+  It does not establish that enabling another privilege grants these protected
+  log reads. R8 is evidence that backup alone is insufficient for the tested
+  open methods, not justification for enabling restore/debug/manage-volume
+  privileges, changing ACLs or broadening account permissions.
+- The public [TXF_LOG_RECORD_BASE](https://learn.microsoft.com/en-us/windows/win32/api/txfw32/ns-txfw32-txf_log_record_base)
+  is an **eight-byte replication header**, with two 16-bit fields and one
+  32-bit record length. A bounded comparison of all **81** physical TxF-client
+  payloads in the retained R3/R4/R5 observations finds **zero** matching that
+  documented record shape: treating their first bytes as this header gives
+  record type 0 and a mismatched length. This rejects that direct schema
+  substitution; it does not identify the persistent client format or exclude
+  a translation performed by the runtime API. Ignored reproduction evidence:
+  `public-replication-shape-comparison.json` in the investigation artifacts.
+- [TxfLogReadRecords](https://learn.microsoft.com/en-us/windows/win32/api/txfw32/nf-txfw32-txflogreadrecords)
+  returns redo/replication records. Microsoft's
+  [KTM log-stream model](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/using-log-streams-with-ktm)
+  stores transaction-manager state separately from resource-manager data and
+  recovers from their restart information. Together these documents do not
+  establish a detached both-client quiescence predicate, prepared/indoubt
+  interpretation or safe preservation/update of logs after ordinary edits.
+
+Remaining proof obligations are explicit: authoritative active-copy/live-range
+selection; versioned TxF and KTM checkpoint/transaction decoding independently
+validated against native states; prepared/indoubt refusal/recovery handling;
+authentication coverage; and a demonstrably safe offline metadata/log update
+or preservation rule. Known ordinary/commit/rollback payload correlations,
+zero TOPS, root state 0, successful privilege restoration or a clean detach
+do not discharge these obligations. Product edited-output/native reopen and
+LFS 2.0/cache-safety qualification remain downstream and incomplete.
+
+No justified replacement native access method or complete persistent format
+contract was found in this review. This is the current investigation blocker,
+not a claim that compatibility is impossible or a waiver of the 1.0 requirement.
+No further owner-local batch is prepared on speculation, and no writer gate,
+authentication, account privilege, kernel driver or recovery policy changes.
+
+Reproduction, exact source/stream hashes and current verification are in
+[platform evidence](platform-status.md#resumed-txfclfs-investigation-2026-10-21).
+
 Evaluated 2026-10-13 on the available Linux x64 host, SDK 10.0.402 / .NET 10.
 Scope: **historical foundation experiments only, before Phase 1**. At that
 evaluation point there were no product storage handlers or UI capabilities.
@@ -113,12 +612,12 @@ Do not substitute these direct-library experiments for product verification.
 
 ## Decision and provenance
 
-### Planned Phase 7 PMFX dependency evaluation, 2026-10-17
+### Planned Phase 6 PMFX dependency evaluation, 2026-10-17
 
-The owner added PMFX read-only browsing/extraction under checklist **7.11**,
+The owner added PMFX read-only browsing/extraction under checklist **6.11**,
 not implementation now. DiscUtils 0.16.13 has no PMFX handler; retain it for
 existing filesystem access behind a separate read-only container/device.
-The reader must be implemented and qualified inside SectorWorks during Phase 7
+The reader must be implemented and qualified inside SectorWorks during Phase 6
 before that phase can be complete; dependency evaluation alone is not delivery.
 No dependency/source import is selected or authorized by this planning update.
 The [PMFX research and delivery plan](pmfx-read-only-plan.md) records pinned
@@ -174,8 +673,7 @@ deferred authentic NT4/Windows 2000/XP-created-media qualification and dependent
 checks to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the [checklist](../checklist.txt).
 These are incomplete follow-ups, not 1.0 blockers. VM-authored fixtures suffice;
 vintage hardware is not required. Automated tests, bounds, source integrity and
-general platform verification remain required; macOS is excluded from general
-platform verification as a standing unsupported, build-only target (2026-10-16).
+general platform verification remain required.
 Implemented-subset results are now
 tracked in [platform status](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
 not full version/media qualification. Targets are
@@ -196,13 +694,13 @@ List/base/sequence/attribute and VCN checks reject malformed references and
 unsupported content. MFT bootstrap lists remain explicitly blocked: safe
 bootstrap mapping is not implemented. Resource caps and active-index/inactive-MFT
 rules are documented in [storage bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
-Full verification passed 1001/one Windows-only skip, 1002 total. Four cases added
+Historical Phase 2C full verification passed 1001/one Windows-only skip, 1002 total. Four cases added
 after that full run's build (named-list guard, mixed-volume isolation,
 modern/legacy extension identity and empty nonresident index bitmap) pass in
-the latest focused 49/49 run on current code (35 attribute-list,
-14 version/layout/service). Current inventory 1006 including the skip is not a
-claimed full 1005-pass run. Final repeat all-six
-self-contained publish/local Linux AppImage passes on latest source, as does
+that snapshot's final focused 49/49 run (35 attribute-list,
+14 version/layout/service). Its inventory of 1006 including the skip is not a
+claimed full 1005-pass run. Final repeat then-configured
+self-contained publish/local Linux AppImage passed on that source, as did
 the bounded owner read-only probe. Versioned
 releases/GitHub publication are unchanged. Cross-builds are not physical
 compatibility. Authentic historical media moves to **P1.NTFS**; remaining general
@@ -211,9 +709,9 @@ physical gates stay open. Stop for owner review.
 No authentic NT4 fixture exists. Synthetic version-field tests are regression
 inputs, not authentic legacy qualification. Legal synthetic fixtures, content
 hashes and service workflows pass for the bounded subset; authentic provenance
-remains incomplete under post-1.0 **P1.NTFS**. Full verification/platform and
-owner-image source-hash/extraction gates stay open under **2C.1-2C.7**,
-**2C.V1-2C.V8**, **2C.E1-2C.E6**.
+remains incomplete under post-1.0 **P1.NTFS**. Subsequent 2D.6/2D.7 closed the
+declared bounded reader/Tower source-content subitems; parent platform/review
+gates remain open, as recorded in the current summary above and checklist.
 Tower's approximately 8.42 GB raw NTFS 3.0 owner image stays outside the
 repository: do not copy, modify or distribute it. Initial rejection concerns
 the live directory attribute list at MFT 26 referencing indexing extension 8336;
@@ -224,9 +722,10 @@ not content/health certification; pinned references are in platform status.
 Newly readable attribute-list/legacy variants remain noneditable until Phase 3
 **3.0.1-3.0.5** qualifies staged editing, Save As and new-output NTFS writes
 before **3.7** direct commit. Preserve existing Phase 2B qualified editing and
-the required incomplete **2B.6** Windows-authored-media/security-reference and
-LFS 2.0/cached-metadata write gates. Reader acceptance cannot close them or
-demote NTFS writing to read-only 1.0 scope. No Phase 3 implementation follows.
+the required incomplete **2B.6** Windows-authored edited-output/TxF/CLFS and
+LFS 2.0/cached-metadata write gates. The Windows codec reference separately
+passed under 2D.2. Reader acceptance cannot close writer gates or demote NTFS
+writing to read-only 1.0 scope; remaining Phase 3 work is not authorized by it.
 See the [planned reader ledger](support-matrix.md#phase-2c-ntfs-reader-qualification-plan).
 
 Sources reviewed:
@@ -379,14 +878,17 @@ Independent `qemu-img`/`ntfsinfo`/`ntfscluster`/`ntfscat` checks pass. Six actua
 Mint/X11 NTFS workflows pass separately, with app-window screenshots, unchanged
 sources and independent native output-byte checks.
 
-Final repository verification passes **956 tests, one Windows-only skip,
+Historical Phase 2B repository verification passed **956 tests, one Windows-only skip,
 957 total**, locked restore, zero-warning/error Release build, formatting,
-resources and authoritative-copy comparisons. Six final cross-publishes and
+resources and authoritative-copy comparisons. The historical final cross-publishes and
 the Linux x64 AppImage pass architecture/legal/payload and Linux resource checks.
 These do not supply missing Windows-runtime or modern-log evidence.
 
-**Mandatory gaps remain:** actual Windows-authored media, Windows reference
-execution, and LFS 2.0/cached-metadata safety. No normal-Windows-media or full
+**At that Phase 2B snapshot, mandatory gaps were:** actual Windows-authored
+media, Windows reference execution, and LFS 2.0/cached-metadata safety. The
+reference subsequently passed under 2D.2; native author/source-readonly reopen
+also passed, but edited-output/TxF/CLFS and modern-log safety remain blocked.
+No normal-Windows-media or full
 Phase 2B completion claim follows. Clean LFS 1.1 has synthetic bounded
 restart-page coverage only; dirty/ambiguous/unsupported logs remain disabled,
 without replay or reset. Structural references are the
@@ -523,7 +1025,7 @@ interfaces and existing FAT/container behavior. Before enabling any writer:
 4. Review MIT notices/source distribution, assembly identity/signing and locked
    dependency packaging, then run the required Phase 2B NTFS operation/layout/
    container matrix and failure gates. Cross-publishes remain distinct from
-   physical Windows/ARM64/macOS evidence.
+   physical Windows/ARM64 evidence.
 
 No Phase 3 work or change to the NTFS 1.0 requirement follows from this report.
 Formatting and quota/SDDL presentation APIs remain separate evaluation surfaces;
@@ -594,18 +1096,23 @@ Fixture decompression and SHA256 hashing use streaming buffers (64 KiB for copy)
 | SquashFS | Reader + builder | Rebuild-oriented, not in-place mutable filesystem |
 | XFS / Btrfs | Source reader components exist | Not evaluated for writes or feature subsets; no support claim |
 | QCOW2, exFAT, APFS | No corresponding implementation identified in selected upstream library tree | Additional dependency or internal implementation required |
-| BIN/CUE, CD-DA | No complete required CUE/track/audio workflow established | Additional optical model/parser/audio backend needed in Phase 6 |
+| BIN/CUE, CD-DA | No complete required CUE/track/audio workflow established | Additional optical model/parser/audio backend needed in Phase 5 |
 
 All extra-format statements are **research only**, not executed capability tests
-or a Phase 7 implementation. Rock Ridge, El Torito, UDF, hybrid optical metadata,
+or a Phase 6 implementation. Rock Ridge, El Torito, UDF, hybrid optical metadata,
 and boot preservation are not exercised by the simple ISO golden.
 
 ## Significant-dependency risk/platform matrix
 
+The table retains the historical foundation evaluation envelope, not current
+platform qualification. Later Windows x64 codec/reader/generated-writer runtime
+results are recorded above and in [platform status](platform-status.md).
+Current Linux ARM64/Windows ARM64 evidence remains limited.
+
 | Dependency / version | License / maintenance evidence | Native / platform and error risk | Threading / large / sparse |
 |---|---|---|---|
-| DiscUtils Core, Streams, FAT, ISO9660, VHD, VHDX 0.16.13 | MIT; 2021 upstream/package baseline, maintenance risk high | Managed, no required native library. Linux x64 executed. Other five target RIDs unverified physically. Error taxonomy inconsistent as above | Mutable stream position/caches: assume instances **not thread safe**; serialize per instance. Streams/Int64 APIs; dynamic VHDX large-address probe passed, not all formats/features |
-| DiscUtils NTFS 0.16.13 | MIT; same maintenance baseline | Managed but Windows security APIs restrict format/ACL/write paths. Linux ordinary reads passed; Windows x64/ARM64, Linux ARM64, macOS x64/ARM64 unverified | Same isolation policy; only resident/nonresident ordinary-file read tested; compression/sparse semantics unverified |
+| DiscUtils Core, Streams, FAT, ISO9660, VHD, VHDX 0.16.13 | MIT; 2021 upstream/package baseline, maintenance risk high | Managed, no required native library. Linux x64 executed. Other then-configured target RIDs unverified physically. Error taxonomy inconsistent as above | Mutable stream position/caches: assume instances **not thread safe**; serialize per instance. Streams/Int64 APIs; dynamic VHDX large-address probe passed, not all formats/features |
+| DiscUtils NTFS 0.16.13 | MIT; same maintenance baseline | Managed but Windows security APIs restrict format/ACL/write paths. Linux ordinary reads passed; Windows x64/ARM64, Linux ARM64 unverified | Same isolation policy; only resident/nonresident ordinary-file read tested; compression/sparse semantics unverified |
 | .NET SDK 10.0.402 / runtime 10 | Microsoft .NET open-source MIT components plus applicable runtime notices; platform lifecycle owned by project foundation | Host/runtime has platform-specific native components; not a new storage-native dependency. Physical Linux x64 only here | Runtime streams/hashes used, not a guarantee that dependent libraries honor cancellation |
 | xUnit 2.9.3 + VS runner 4.0.1 (test-only) | Apache-2.0 in restored package metadata; established maintained projects, selected versions pinned | Managed tests/adapter; actual Linux x64 runner passes. Other RIDs not physically validated | Isolation: per-test disposable directories, no shared parser instances; not product large/sparse handling |
 | Microsoft.NET.Test.Sdk / TestHost / ObjectModel / CodeCoverage 18.11.0 (test-only) | MIT in package metadata; Microsoft test-platform project | Platform-specific test/coverage assets may exist; no coverage collector enabled here and not shipped in product. Linux x64 execution passed | Process/test orchestration only; not a storage parser |
@@ -621,7 +1128,7 @@ retained; this is an engineering review, not legal advice.
 
 The owner-approved 2026-10-15 roadmap targets 1.0 with qualified read-only
 VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS subsets where feasible. No writer or future
-writer milestone is required for these additions. Phase 7 reader evaluation,
+writer milestone is required for these additions. Phase 6 reader evaluation,
 fixtures/tests and concrete blocker reporting remain required; source-level
 claims above and detection-only do not establish browsing/extraction.
 Internal parsers, not native host mounting support, determine capability.
@@ -650,6 +1157,6 @@ Internal parsers, not native host mounting support, determine capability.
   implementation and independent qualification, not detection-only completion.
 - Additional libraries/internal work are needed for missing filesystems,
   exact optical structures/audio and comprehensive validation. Prefer managed
-  implementations; any native option requires all six OS/architecture reviews.
+  implementations; any native option requires all four supported OS/architecture reviews.
 - Keep trimming/AOT off until reflection/provider registration is evaluated.
   Dependency choice is provisional; no platform support follows from compilation.

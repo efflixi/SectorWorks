@@ -26,7 +26,7 @@ public class SourceWriteLockTests
     [Fact]
     public void ConcurrentWriterInAnotherProcessIsRejectedWithAnExplanatoryFailure()
     {
-        // fcntl byte-range advisory locks (used on Linux/macOS by FileStream.Lock) are
+        // Process-owned fcntl byte-range advisory locks are
         // owned per-process, not per-handle: a second lock attempt from the SAME
         // process trivially "succeeds" (POSIX semantics), so a meaningful exclusion
         // test requires a genuinely independent process. Windows' mandatory sharing

@@ -12,11 +12,11 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
         cancellationToken.ThrowIfCancellationRequested();
         IReadOnlyList<IStorageFile> files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open image — read-only",
+            Title = "Open image",
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("Disk and optical images") { Patterns = ["*.img", "*.ima", "*.raw", "*.vhd", "*.vhdx", "*.iso"] },
+                new FilePickerFileType("Disk and optical images") { Patterns = ["*.img", "*.ima", "*.raw", "*.vhd", "*.vhdx", "*.iso", "*.udf", "*.cue"] },
                 FilePickerFileTypes.All
             ]
         });
@@ -58,15 +58,20 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
         {
             ".vhd" => "vhd",
             ".vhdx" => "vhdx",
+            ".iso" => "iso",
+            ".udf" => "udf",
+            ".cue" => "cue",
             _ => "img"
         };
         IStorageFile? file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Save As New Image — existing files cannot be overwritten",
+            Title = extension == "cue" ? "Name the rebuilt CUE — a new .cue-set folder will be created"
+                : (extension is "iso" or "udf" ? "Rebuild to New Image" : "Save As New Image") + " — existing files cannot be overwritten",
             SuggestedFileName = suggestedName,
             DefaultExtension = extension,
             ShowOverwritePrompt = false,
-            FileTypeChoices = [new FilePickerFileType(extension == "img" ? "Raw disk image" : extension.ToUpperInvariant() + " disk image")
+            FileTypeChoices = [new FilePickerFileType(extension == "cue" ? "BIN/CUE set name" : extension is "iso" or "udf" ? extension.ToUpperInvariant() + " optical image"
+                : extension == "img" ? "Raw disk image" : extension.ToUpperInvariant() + " disk image")
                 { Patterns = ["*." + extension] }]
         });
         cancellationToken.ThrowIfCancellationRequested();
@@ -77,6 +82,7 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
     public async Task<string?> RequestNameAsync(string title, string initialName, CancellationToken cancellationToken = default)
     {
         var input = new TextBox { Text = initialName, PlaceholderText = "Image entry name" };
+        Avalonia.Automation.AutomationProperties.SetName(input, "Image entry name");
         var accept = new Button { Content = "Stage", IsDefault = true };
         var cancel = new Button { Content = "Cancel", IsCancel = true };
         var dialog = CreateDialog(title, new StackPanel
@@ -84,7 +90,7 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
             Spacing = 12,
             Children =
             {
-                new TextBlock { Text = "Enter one image entry name, not a path. Qualified FAT supports short names and long mixed-case/Unicode names in NFC BMP form; no emoji/surrogates, control characters, reserved device names, leading/trailing spaces, trailing dots or \" * / : < > ? \\ |. The complete image path must fit within 240 characters.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
+                new TextBlock { Text = "Enter one image entry name, not a path. The image format determines allowed names. Use NFC (composed) names without emoji/surrogates, control characters, reserved device names, leading/trailing spaces, trailing dots or \" * / : < > ? \\ |. The complete image path must fit within 240 characters.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
                 input,
                 new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, accept } }
             }

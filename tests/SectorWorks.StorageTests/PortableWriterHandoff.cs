@@ -37,7 +37,8 @@ internal static class PortableWriterHandoff
         return destination;
     }
 
-    internal static void Import(string root, string expectedCatalogHash, string row, string destination)
+    internal static void Import(string root, string expectedCatalogHash, string row, string destination,
+        int expectedCount = 84, int expectedSchema = 1, string expectedStatus = "linux-inputs-verified")
     {
         string catalogPath = Child(root, "catalog.json");
         if (!string.Equals(Hash(catalogPath), expectedCatalogHash, StringComparison.OrdinalIgnoreCase))
@@ -47,8 +48,8 @@ internal static class PortableWriterHandoff
         if (new FileInfo(catalogPath).Length > 1024 * 1024) { throw new InvalidDataException("Oversized catalog."); }
         Catalog catalog = JsonSerializer.Deserialize<Catalog>(File.ReadAllText(catalogPath), Json)
             ?? throw new InvalidDataException("Missing input catalog.");
-        if (catalog.Schema != 1 || catalog.Status != "linux-inputs-verified" || catalog.Inputs.Length != 84 ||
-            catalog.Inputs.Select(input => input.Row).Distinct(StringComparer.Ordinal).Count() != 84)
+        if (catalog.Schema != expectedSchema || catalog.Status != expectedStatus || catalog.Inputs.Length != expectedCount ||
+            catalog.Inputs.Select(input => input.Row).Distinct(StringComparer.Ordinal).Count() != expectedCount)
         {
             throw new InvalidDataException("Incomplete or duplicate input catalog.");
         }

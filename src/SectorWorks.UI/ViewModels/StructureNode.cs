@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SectorWorks.Core;
 
 namespace SectorWorks.UI.ViewModels;
 
@@ -36,6 +37,10 @@ public sealed partial class StructureNode : ViewModelBase
     public string? VolumeId { get; }
     public string? Path { get; }
     public string? Description { get; init; }
+    public CdTrack? Track { get; init; }
+    public bool IsAudioTrack => Track?.IsAudio == true;
+    public bool IsDataTrack => Track is { IsAudio: false };
+    [ObservableProperty] private bool isPlayingTrack;
     public StructureNode? Parent { get; private set; }
     public Geometry Icon => Icons.Get(Kind);
     public ObservableCollection<StructureNode> Children { get; } = [];

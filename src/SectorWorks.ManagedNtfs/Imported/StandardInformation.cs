@@ -50,21 +50,21 @@ namespace SectorWorks.ManagedNtfs
 
         public int ReadFrom(byte[] buffer, int offset)
         {
-            CreationTime = ReadDateTime(buffer, 0x00);
-            ModificationTime = ReadDateTime(buffer, 0x08);
-            MftChangedTime = ReadDateTime(buffer, 0x10);
-            LastAccessTime = ReadDateTime(buffer, 0x18);
-            FileAttributes = (FileAttributeFlags)EndianUtilities.ToUInt32LittleEndian(buffer, 0x20);
-            MaxVersions = EndianUtilities.ToUInt32LittleEndian(buffer, 0x24);
-            Version = EndianUtilities.ToUInt32LittleEndian(buffer, 0x28);
-            ClassId = EndianUtilities.ToUInt32LittleEndian(buffer, 0x2C);
+            CreationTime = ReadDateTime(buffer, offset + 0x00);
+            ModificationTime = ReadDateTime(buffer, offset + 0x08);
+            MftChangedTime = ReadDateTime(buffer, offset + 0x10);
+            LastAccessTime = ReadDateTime(buffer, offset + 0x18);
+            FileAttributes = (FileAttributeFlags)EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x20);
+            MaxVersions = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x24);
+            Version = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x28);
+            ClassId = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x2C);
 
-            if (buffer.Length > 0x30)
+            if (buffer.Length - offset >= 0x48)
             {
-                OwnerId = EndianUtilities.ToUInt32LittleEndian(buffer, 0x30);
-                SecurityId = EndianUtilities.ToUInt32LittleEndian(buffer, 0x34);
-                QuotaCharged = EndianUtilities.ToUInt64LittleEndian(buffer, 0x38);
-                UpdateSequenceNumber = EndianUtilities.ToUInt64LittleEndian(buffer, 0x40);
+                OwnerId = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x30);
+                SecurityId = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x34);
+                QuotaCharged = EndianUtilities.ToUInt64LittleEndian(buffer, offset + 0x38);
+                UpdateSequenceNumber = EndianUtilities.ToUInt64LittleEndian(buffer, offset + 0x40);
                 _haveExtraFields = true;
                 return 0x48;
             }
@@ -74,21 +74,21 @@ namespace SectorWorks.ManagedNtfs
 
         public void WriteTo(byte[] buffer, int offset)
         {
-            EndianUtilities.WriteBytesLittleEndian(CreationTime.ToFileTimeUtc(), buffer, 0x00);
-            EndianUtilities.WriteBytesLittleEndian(ModificationTime.ToFileTimeUtc(), buffer, 0x08);
-            EndianUtilities.WriteBytesLittleEndian(MftChangedTime.ToFileTimeUtc(), buffer, 0x10);
-            EndianUtilities.WriteBytesLittleEndian(LastAccessTime.ToFileTimeUtc(), buffer, 0x18);
-            EndianUtilities.WriteBytesLittleEndian((uint)FileAttributes, buffer, 0x20);
-            EndianUtilities.WriteBytesLittleEndian(MaxVersions, buffer, 0x24);
-            EndianUtilities.WriteBytesLittleEndian(Version, buffer, 0x28);
-            EndianUtilities.WriteBytesLittleEndian(ClassId, buffer, 0x2C);
+            EndianUtilities.WriteBytesLittleEndian(CreationTime.ToFileTimeUtc(), buffer, offset + 0x00);
+            EndianUtilities.WriteBytesLittleEndian(ModificationTime.ToFileTimeUtc(), buffer, offset + 0x08);
+            EndianUtilities.WriteBytesLittleEndian(MftChangedTime.ToFileTimeUtc(), buffer, offset + 0x10);
+            EndianUtilities.WriteBytesLittleEndian(LastAccessTime.ToFileTimeUtc(), buffer, offset + 0x18);
+            EndianUtilities.WriteBytesLittleEndian((uint)FileAttributes, buffer, offset + 0x20);
+            EndianUtilities.WriteBytesLittleEndian(MaxVersions, buffer, offset + 0x24);
+            EndianUtilities.WriteBytesLittleEndian(Version, buffer, offset + 0x28);
+            EndianUtilities.WriteBytesLittleEndian(ClassId, buffer, offset + 0x2C);
 
             if (_haveExtraFields)
             {
-                EndianUtilities.WriteBytesLittleEndian(OwnerId, buffer, 0x30);
-                EndianUtilities.WriteBytesLittleEndian(SecurityId, buffer, 0x34);
-                EndianUtilities.WriteBytesLittleEndian(QuotaCharged, buffer, 0x38);
-                EndianUtilities.WriteBytesLittleEndian(UpdateSequenceNumber, buffer, 0x38);
+                EndianUtilities.WriteBytesLittleEndian(OwnerId, buffer, offset + 0x30);
+                EndianUtilities.WriteBytesLittleEndian(SecurityId, buffer, offset + 0x34);
+                EndianUtilities.WriteBytesLittleEndian(QuotaCharged, buffer, offset + 0x38);
+                EndianUtilities.WriteBytesLittleEndian(UpdateSequenceNumber, buffer, offset + 0x40);
             }
         }
 
@@ -113,6 +113,7 @@ namespace SectorWorks.ManagedNtfs
 
             NtfsStream siStream = file.CreateStream(AttributeType.StandardInformation, null);
             StandardInformation si = new StandardInformation();
+            si._haveExtraFields = file.Context.VolumeVersion != VolumeInformation.VersionNt4;
             si.CreationTime = now;
             si.ModificationTime = now;
             si.MftChangedTime = now;
@@ -137,7 +138,10 @@ namespace SectorWorks.ManagedNtfs
 
         internal static FileAttributeFlags SetFileAttributes(FileAttributes newAttributes, FileAttributeFlags existing)
         {
-            return (FileAttributeFlags)(((uint)existing & 0xFFFF0000) | ((uint)newAttributes & 0xFFFF));
+            // FileAttributes.Directory is synthesized from the FILE record by
+            // ConvertFlags. Do not introduce it into stored standard information
+            // when restoring timestamps or other public attributes.
+            return (FileAttributeFlags)(((uint)existing & 0xFFFF0010) | ((uint)newAttributes & 0xFFEF));
         }
 
         private static DateTime ReadDateTime(byte[] buffer, int offset)

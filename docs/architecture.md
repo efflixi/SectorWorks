@@ -1,5 +1,104 @@
 # Architecture
 
+## Phase 5 — multi-file optical sets and playback
+
+`ICdImageSession` exposes sessions, track geometry and bounded raw/audio views.
+The Storage CUE adapter resolves regular, unlinked companions and presents
+2048-byte user data to the existing optical reader. Services own the shared
+staging/history and multi-member source hashes; `IImageSetRebuildSource` plans
+only per-track ISO writes. The sealed output directory is independently
+reopened before the Platform no-replacement rename.
+
+`ICdTrackSource` gives the UI independent, read-only track streams. Services
+stream aligned PCM using `ICdAudioOutput` (Platform: Windows waveform audio
+or Linux ALSA). The workspace owns playback cancellation and never writes
+source audio, companion files or mixer settings. See the
+[Phase 5 report](phase5-bin-cue.md).
+
+## Phase 4 — independent optical rebuild boundary
+
+IImageRebuildSource supplies a bounded plan for a qualified standalone optical
+volume. Services reuses its overlay, undo/redo, import spool and source checks.
+IImageRebuildPlan estimates allocation, writes to an exclusively created
+temporary output and validates independently reopened metadata and content.
+The shared Save As entry calls this plan; the Phase 3 disk copy/commit and
+recovery paths remain separate. No optical source replacement is provided.
+See the [Phase 4 format envelope](phase4-optical-rebuild.md).
+
+## Accepted 1.0 scope — November 17, 2026
+
+**Phase 2 / 2B / 2C / 2D and Phase 3: COMPLETE / OWNER ACCEPTED UNDER THE
+REVISED 1.0 SCOPE.** The [owner-approved assignment](sectorworks_1_0_scope_change_and_phase_closeout_sol_prompt.txt)
+and [closeout audit](1.0-scope-closeout.md) supersede older blocked/pending
+summaries below; dated source/test/cleanup findings retain their original scope.
+
+All qualified FAT/NTFS functionality is retained, including structural legacy/list
+rows and native passive NTFS3.1: 512-byte sectors, 4096-byte clusters/index blocks,
+1024-byte MFT records, exactly `0x1400` flags, paired clean LFS1.1 pages and the
+exact empty repair/deleted-state predicate. Full record/allocation/security-
+reference preservation and every existing admission check remain intact.
+Default TxF-enabled/transaction-bearing and other unqualified states stay
+**read-only**, not unrestricted modern Windows writing.
+
+**DEFERRED POST-1.0:** [P1.NTFS.MODERN.1–.6](../checklist.txt) cover default
+TxF/CLFS/KTM checkpoint/active/prepared/in-doubt, TOPS/`$TXF_DATA`, unsupported
+repair/deleted, coherent detached LFS2/cache qualification and dependent writer
+rows. These are unresolved, not passed or impossible. Existing **P1.NTFS.1–.6**
+authentic historical qualification is preserved. Physical ARM64 is **NOT VERIFIED
+— DEFERRED POST-1.0 BY OWNER**, separately **P1.ARM64.LINUX** and
+**P1.ARM64.WINDOWS**; owner has hardware for later testing. Neither deferral gates
+1.0/phases; four-target builds/packages remain, cross-publish is not runtime proof,
+and macOS remains outside scope. Unrelated later-phase requirements stay open.
+
+No product code or test result is changed by this documentation closeout.
+[Existing exact-source evidence/packages](../artifacts/focused-ntfs-20261117/evidence-index.json)
+remain immutable; see the new [closeout index](../artifacts/scope-closeout-20261117/evidence-index.json).
+**STOP: Phase 4 is next available for owner authorization, not started or
+authorized here.** No new native/ARM64 experiment, external push, tag or release.
+
+## Historical implementation and evidence snapshots
+
+Earlier present-tense authority/completion statements below are dated records,
+not operative gates after the November 17 scope/acceptance decision.
+
+
+
+## Current commit/recovery integration (2026-11-16)
+
+Resumed verification changes no architecture or product code: all337 prior
+final-code manifest members match. Current R4b Windows GUI Save As/commit and
+restarted cleanup/refusal have exact independent output evidence. Removing the
+intentional stale test registration after archive/hash checks was task cleanup,
+not a relaxation of production recovery refusal. See the current review.
+
+The continuous assignment in [the owner prompt](sectorworks_phase_2d_and_phase_3_autonomous_sol_prompt.txt)
+authorizes the remaining Phase 3 increment despite retained independent Phase 2D
+blockers. Current implementation/evidence is tracked in the [review](phase2d-phase3-review.md)
+and [live ledger](phase2d-phase3-progress.md); older dated backend-only statements
+below describe their historical envelope.
+
+`IImageCommitService` is a separate Core boundary. `IStagedImageWriter.QualifyCommitVolume`
+defaults to denial; Save As eligibility alone grants no commit authority. The
+Explorer service combines exact-volume decisions and source-host restrictions,
+retaining its held-lock, hash-checked backup, copied staging, independent validation,
+atomic replacement and baseline/history refresh pipeline.
+
+`ICommitRecoveryService`/`RecoveryItem` cross the Core boundary; Services owns a
+bounded private application catalog and anchored artifact access. The real App
+startup checks that catalog before opening command-line images, while the Tools
+menu can reopen recovery after workspaces close. The recovery view model controls
+confirmation and error/pending state; views do not invoke storage primitives.
+Cleanup never restores or overwrites an image. Journal intent is a bounded audit
+summary of the active ordered plan, not a replay mechanism. Staged payload hashes
+are computed during immutable capture. See the [review](phase2d-phase3-review.md)
+for interruption boundaries, bounds and evidence limitations.
+
+Windows/Linux x64 and ARM64 are the only build/distribution targets as of the
+owner decision on 2026-11-16. The local Linux host remains the primary
+development/default test environment. Windows tests use the verified MCP
+[desktop/command workflow](windows-desktop-testing.md); infrastructure access
+does not qualify untested SectorWorks behavior.
+
 ## Phase 2D scope, 2026-10-17
 
 Owner-authorized 2D closes retained 2B ordinary-current-NTFS Windows reference/
@@ -23,8 +122,17 @@ actual Windows exit/timeout and strict UTF-8 metadata regressions.
 The initial 2D application change was a clearer existing log-refusal diagnostic,
 not modern-log or TxF capability broadening. The owner-resumed corrective pass
 also repairs commit resource ownership and log concurrency, without expanding
-the writer envelope. New Windows runtime failures and
-transaction-safety proof obligations remain [explicit blockers](platform-status.md#broader-windows-runtime-execution-failures-retained-not-a-platform-pass).
+the writer envelope. The final corrective pass resolved the retained Windows
+runtime defects on qualified generated rows. Windows-authored TxF/CLFS and
+LFS 2.0/cache-safety proof obligations, current ARM64 and GUI/platform/review
+gates remain [explicit blockers](platform-status.md#final-global-session-corrective-snapshot).
+
+The October 21 owner-resumed TxF/CLFS investigation adds an opt-in
+[`inspect-clfs.py`](../scripts/inspect-clfs.py) diagnostic, outside the product
+graph/publish payload. It reads only sealed extracted generated base logs,
+reports bounded structural observations and never supplies a writer-acceptance
+predicate. Existing Storage/Services writer gates remain unchanged. See
+[current scope/evidence](platform-status.md#resumed-txfclfs-investigation-2026-10-21).
 
 Commit suspends the original read-only session before taking a source write
 lock, streams a hash-checked recovery backup through the locked handle, and
@@ -73,14 +181,12 @@ Phase 2B Save-As-qualified; rebuild and audio remain later-phase work. See
 
 The owner authorized the Phase 2C roadmap/specification change and reader work
 on **2026-10-15**, before Phase 3. The bounded reader is implemented;
-**remaining 1.0 verification/review gates stay open, not phase complete**.
+**revised 1.0 reader/verification/review gates are accepted complete on November17**.
 The owner subsequently deferred authentic NT4/Windows 2000/XP-created-media
 qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6** in the
 [checklist](../checklist.txt); these are not 1.0 blockers or passed tests.
 VM-authored fixtures suffice, without vintage hardware. Automated tests, bounds,
-source integrity and general platform checks remain required; macOS is
-excluded from general platform checks as a standing unsupported, build-only
-target (2026-10-16). Stop for owner review.
+source integrity and general platform checks remain required. Stop for owner review.
 Reader evidence is tracked in
 [platform status](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15),
 not full version/media or writer qualification.
@@ -112,18 +218,24 @@ staging/Save As denial, malformed references and GPT FAT/NTFS capability isolati
 Resource caps and bitmap-driven
 live-index traversal are documented in [storage bounds](storage-phase1.md#resource-cancellation-and-concurrency-policy).
 The completed full verification and four later-case count chronology are
-recorded in platform status. Final repeat all-six publish/local AppImage and the
+recorded in platform status. Final repeat then-configured publish/local AppImage and the
 bounded owner read-only probe pass on latest source. These are not physical
 compatibility or release publication. Authentic historical-media qualification
-is deferred to P1.NTFS; remaining 1.0 full-phase gates stay open.
-Per-volume writer qualification remains independent: newly readable legacy/
-attribute-list variants stay noneditable, while existing qualified Phase 2B
-FAT/NTFS workflows and mixed-volume isolation must regress unchanged.
+is deferred to P1.NTFS; revised1.0 full-phase gates are accepted complete. Physical
+ARM64 and further modern NTFS qualify only in their deferred sibling backlogs.
+Per-volume writer qualification remains independent. At the Phase 2C reader
+checkpoint, newly readable variants stayed noneditable. The current bounded
+structural writer expansion is separately qualified as described above; existing
+FAT/ordinary NTFS workflows and mixed-volume isolation remain required regressions.
 Phase 3 **3.0.1-3.0.5** must qualify their staged/Save As/new-output NTFS writer
 rows before **3.7** direct commit. The 2026-10-16 Phase 3 session did not
-attempt 3.0.1-3.0.5; these rows remain blocked/non-editable.
-Phase 2B's actual Windows-media/security-reference and LFS 2.0/cache-safety
-write gates remain incomplete in **2B.6**, not scope-demoted by reader expansion.
+attempt 3.0.1-3.0.5; the November16 assignment now qualifies its bounded
+structural rows without broadening modern transaction/log acceptance.
+Phase2B's bounded native passive outputs are verified separately from readers.
+Further default-TxF/CLFS and LFS2/cache writer qualification remains incomplete
+but explicitly deferred under **P1.NTFS.MODERN**, not passed by reader expansion. The
+Windows codec reference is complete under **2D.2**; reader success alone did not
+close that separate reference task or the remaining writer requirements.
 
 Authentic NT4 provenance is absent; synthetic version-field tests are not
 authentic legacy qualification. Tower's external owner image must not be
@@ -135,6 +247,12 @@ See [planned reader gates](support-matrix.md#phase-2c-ntfs-reader-qualification-
 and checklist **2C.1-2C.7**, **2C.V1-2C.V8**, **2C.E1-2C.E6**.
 
 ## Phase 3 direct-commit architecture (implemented 2026-10-16)
+
+**Historical backend description.** The shared eligibility gate and absent
+UI/startup integration described in this dated record are superseded by the
+current independent qualification methods, UI and bounded recovery catalog at
+the top of this document. Retained locking/finalization evidence remains valid
+within its original scope.
 
 `SectorWorks.Storage/DirectCommitTransaction.cs` adds container/filesystem-
 agnostic primitives (`SourceWriteLock`, `CommitJournal`, `CommitBackup`,
@@ -229,11 +347,11 @@ Storage remain UI-independent, and UI still has no direct Storage reference.
 
 ## Explorer and storage boundaries
 
-Planned Phase 7 **7.11** adds a distinct PMFX read-only container handler and
+Planned Phase 6 **6.11** adds a distinct PMFX read-only container handler and
 bounded random-access block device ahead of the existing partition/filesystem
 layers and shared explorer operations. Owner approval on 2026-10-17 is for
 roadmap/documentation only. No PMFX production types or dependencies exist yet.
-Phase 7 must deliver direct PMFX opening/browsing/extraction inside SectorWorks;
+Phase 6 must deliver direct PMFX opening/browsing/extraction inside SectorWorks;
 an external converter or future implementation plan cannot satisfy completion.
 Keep decoding, table/fragment validation and cache ownership in Storage, behind
 existing contracts; do not leak format/library types to Services/UI, mount

@@ -1,6 +1,155 @@
 # Support matrix
 
-## Phase 2D retained closure ledger, 2026-10-17
+## Phase 5 BIN/CUE capabilities
+
+| CUE layout | Read / playback | Modified output |
+| --- | --- | --- |
+| Dedicated MODE1/2048 file with qualified non-boot ISO | Browse, extract and inspect track bytes | Validated new BIN/CUE folder; fixed track size |
+| Separate-file multi-data or mixed-mode set | Browse supported data; play supported CD-DA | Rebuild qualified data tracks; preserve other members and cue bytes |
+| MODE1/2352 or ordinary MODE2/2352 Form 1 | Bounded data-track browse/extract and raw track access | Rebuild a qualified non-boot ISO track at the same length, with one data track per member and no extra data indexes; preserve other tracks |
+| BINARY or MOTOROLA audio-only | Direct signed 16-bit stereo PCM; recognized program areas | No audio modifications |
+| UDF-only or ISO/UDF inside supported CUE data track | Bounded browse/extract | UDF-bearing tracks stay read-only |
+
+No BIN/CUE source commit, CD burning, subchannel decoding or general boot/layout
+claim. See [Phase 5](phase5-bin-cue.md) for exact gates, backend requirements
+and evidence. Existing Phase 4 standalone ISO/UDF support is separate.
+
+The [second compatibility follow-up](../Existing_File_Compatibility.md) also
+accepts one-digit CUE track and index numbers without changing the sheet.
+Raw rebuild qualification checks consecutive stored sector addresses and
+EDC/ECC throughout the edited track. It preserves addresses and copies
+untouched audio/index ranges exactly, with ordinary XA Form 1 subheaders only.
+Unknown protection, sidecars, Form 2, and opaque XA subheaders still block
+rebuild. No repair of mismatching checksums is performed.
+
+## Phase 4 optical capabilities
+
+Qualified images rebuild to a validated new file, never to their source.
+The [Phase 4 report](phase4-optical-rebuild.md) lists exact format and
+preservation predicates, limits and platform evidence. Unsupported boot,
+hybrid, opaque and divergent-namespace layouts stay read-only.
+
+The [compatibility follow-up](../Existing_File_Compatibility.md) qualifies
+standalone ISO zero trailers and narrowly recognized descriptor version stamps.
+Rebuild retains the trailer length and descriptor bytes; nonzero untracked data
+and unknown descriptor fields still block it. Hybrid disk and optical views are
+validated separately. A rejected disk map no longer hides an otherwise valid
+optical filesystem, but neither view can be edited. A valid disk filesystem can
+also open as Raw when a conflicting optical signature does not validate; that
+conflict keeps writing disabled.
+
+Rebuild can preserve safe existing ASCII aliases and partial directory extents
+whose unused allocation bytes are all zero. Newly authored names still use the
+normal namespace rules. A bounded CD-XA label and ordinary Form 1 directory
+metadata can be retained; XA interleaving, file numbers and opaque producer
+fields are not reconstructed. Sector layout reference: [ECMA-130](https://ecma-international.org/publications-and-standards/standards/ecma-130/).
+
+The [third compatibility pass](../Existing_File_Compatibility.md) adds these
+bounded variants for standalone ISO and otherwise qualified ISO-in-CUE:
+
+- Contiguous, byte-identical copies of the primary descriptor. Every copy is
+  regenerated at its original descriptor address; different primary views are
+  not merged.
+- Empty recording dates (all six calendar bytes zero, with a valid UTC offset);
+  original date bytes are retained, and the browser shows no date.
+- Document identifier fields that resolve to ordinary root files or carry
+  recognized inline publisher/copyright text. Referenced files keep their root
+  identifier; unresolved or ambiguous references stay read-only.
+- Ordinary inline Apple Finder metadata and narrowly recognized Personal RomMaker
+  and Personal Disc Scribe stamps. Associated files/resource forks, opaque
+  system areas and unverified checksums are still not rebuilt.
+
+None of these changes qualifies additional ISO/UDF bridges or enables optical
+source commit. CloneCD subchannel sidecars and UltraISO binary metadata remain
+read-only. Descriptor semantics: [ECMA-119](https://ecma-international.org/publications-and-standards/standards/ecma-119/).
+
+The fourth compatibility pass accepts a uniquely case-matched BIN companion
+beside its CUE sheet on Linux. Exact spelling wins; links and multiple fallback
+matches are refused. Rebuilt sets retain the original CUE text and use its
+declared member spelling. Recognized sidecar files still block rebuilding.
+
+Standalone ISO and otherwise qualified raw ISO-in-CUE can retain more legacy
+root and single-volume descriptor conventions, blank recording-date fields,
+and different visibility bits on a directory's listing and self records.
+Complete path tables may have trailing zero bytes. A bounded mkisofs mastering
+record is retained in its original position; its verified descriptor
+fingerprint is recalculated only for qualified ordinary unshared files.
+
+FAT32 permits a stale or uninitialized **backup** FSInfo hint if both copies
+agree outside the hint bytes, boot sectors match, and the primary hints and FAT
+allocation qualify independently. Output summary copies must match, and their
+other bytes must remain unchanged. This does not enable repair of stale primary
+counts or unqualified filesystem writes.
+
+## Accepted 1.0 scope — November 17, 2026
+
+**Phase 2 / 2B / 2C / 2D and Phase 3: COMPLETE / OWNER ACCEPTED UNDER THE
+REVISED 1.0 SCOPE.** The [owner-approved assignment](sectorworks_1_0_scope_change_and_phase_closeout_sol_prompt.txt)
+and [closeout audit](1.0-scope-closeout.md) supersede older blocked/pending
+summaries below; dated source/test/cleanup findings retain their original scope.
+
+All qualified FAT/NTFS functionality is retained, including structural legacy/list
+rows and native passive NTFS3.1: 512-byte sectors, 4096-byte clusters/index blocks,
+1024-byte MFT records, exactly `0x1400` flags, paired clean LFS1.1 pages and the
+exact empty repair/deleted-state predicate. Full record/allocation/security-
+reference preservation and every existing admission check remain intact.
+Default TxF-enabled/transaction-bearing and other unqualified states stay
+**read-only**, not unrestricted modern Windows writing.
+
+**DEFERRED POST-1.0:** [P1.NTFS.MODERN.1–.6](../checklist.txt) cover default
+TxF/CLFS/KTM checkpoint/active/prepared/in-doubt, TOPS/`$TXF_DATA`, unsupported
+repair/deleted, coherent detached LFS2/cache qualification and dependent writer
+rows. These are unresolved, not passed or impossible. Existing **P1.NTFS.1–.6**
+authentic historical qualification is preserved. Physical ARM64 is **NOT VERIFIED
+— DEFERRED POST-1.0 BY OWNER**, separately **P1.ARM64.LINUX** and
+**P1.ARM64.WINDOWS**; owner has hardware for later testing. Neither deferral gates
+1.0/phases; four-target builds/packages remain, cross-publish is not runtime proof,
+and macOS remains outside scope. Unrelated later-phase requirements stay open.
+
+No product code or test result is changed by this documentation closeout.
+[Existing exact-source evidence/packages](../artifacts/focused-ntfs-20261117/evidence-index.json)
+remain immutable; see the new [closeout index](../artifacts/scope-closeout-20261117/evidence-index.json).
+**STOP: Phase 4 is next available for owner authorization, not started or
+authorized here.** No new native/ARM64 experiment, external push, tag or release.
+
+
+
+## November17 focused native NTFS correction
+
+The [focused diagnosis](focused-ntfs-diagnosis.md) supersedes historical blanket
+repair/deleted exclusions for one precisely bounded NTFS3.1 state: TxF and repair
+logging disabled (`0x1400`), clean LFS1.1, empty repair/deleted structures, and
+unchanged complete passive metadata records/allocation bytes. Portable five-
+operation staged editing, Save As and commit now work on that state. Native
+read-only/writable oracles and standard-user Windows GUI outputs pass; exact
+container/layout evidence is in the focused ledger. No Windows mounting,
+formatting, replay or repair is an application prerequisite. Default TxF-bearing
+and coherent LFS2 images remain outside write qualification. Physical ARM64 is
+**NOT VERIFIED — DEFERRED POST-1.0 BY OWNER**; see P1.ARM64.LINUX/P1.ARM64.WINDOWS. No physical pass is inferred.
+
+
+## Current bounded writer capabilities
+
+| Subset | Modify / validated Save As | Source commit |
+| --- | --- | --- |
+| Existing qualified FAT12/16/32 and ordinary NTFS rows | Retained; final Windows regression and independent exact-output checks pass | Retained independent decision |
+| Bounded NTFS 1.2/3.0/3.1 ordinary + resident/nonresident moved-data, split-data and moved-root-index lists | Qualified 441-row Linux/Windows selections, enabled | Separately qualified 441-row selections, enabled |
+| Readable default TxF/transaction-bearing, dirty/ambiguous NTFS or LFS2/cache layouts | Read-only; modern-state qualification deferred to P1.NTFS.MODERN | Unavailable |
+| Native passive NTFS3.1 exact0x1400/cleanLFS1.1/empty repair-deleted state | Qualified five-operation Save As;15 unique disk/layout rows | Separately qualified;60 native volume oracles/standard-user Windows output checks |
+| Intentionally unqualified NTFS 1.2 reader fixture, MFT-bootstrap lists and unknown allocation/security/metadata | Unavailable | Unavailable |
+
+The expanded set has 21 metadata/version features × 21 container/layout/physical
+rows: **420 new** plus **21 retained ordinary 3.1**. It uses logical sectors 512,
+clusters/index blocks 4096 and MFT records 1024; VHDX separately covers physical
+512/4096. Each raw, fixed/dynamic VHD and fixed/dynamic VHDX row covers filesystem-only,
+primary MBR and GPT. NTFS 1.2 requires empty `$Quota`, no `$Extend`, 48-byte SI,
+per-file security and the qualified reserved-record/header subset. Existing
+resource/path/allocation/security/log bounds remain. Generic structure predicates
+and independent output checks apply; fixture provenance is not a filename whitelist.
+
+<a id="phase-2d-retained-closure-ledger-2026-10-17"></a>
+
+## Historical Phase 2D retained closure ledger, 2026-10-17
 
 Owner authorized bounded closeout, not a new capability claim. Historical
 2B/2C statuses remain incomplete until the following evidence genuinely passes:
@@ -27,7 +176,7 @@ Tower needs complete source hashes and representative selected content/extractio
 not exhaustive health certification; original stays external/uncopied/unchanged.
 P1.NTFS historical authoring remains deferred; bootstrap lists unsupported.
 ARM64 2D.8c is unavailable/blocked, not waived by an unspecified latest-build
-owner report. macOS remains unsupported/build-only with no physical checks.
+owner report.
 See [current 2D evidence](platform-status.md#phase-2d-preflight-and-closeout-2026-10-17).
 
 The owner subsequently resumed the recommended Windows runtime corrective
@@ -41,7 +190,7 @@ Verified 2D closures so far: Windows codec **271/271**; bounded reader
 local-only Tower full source hashes/selected extraction/content comparisons.
 These close the corresponding bounded 2C reader/Tower subitems, not the parent
 platform/review gates. Full Linux verification is **1136 passes/one Windows-only
-skip**, with all six publishes/local Linux AppImage passing. Historical test
+skip**, with all then-configured publishes/local Linux AppImage passing. Historical test
 counts remain dated evidence, not sums added to these totals.
 
 Windows-native author/source-readonly reopen pass on a disposable fixture,
@@ -70,21 +219,25 @@ LFS 2.0/cache-safety, GUI or ARM64 qualification. Source/media manifests and
 compact byte-exact archives are in the
 [final corrective record](platform-status.md#final-global-session-corrective-snapshot).
 The final Linux complete suite passes **1178/one Windows-only skip**, with
-zero build warnings/errors and all-six publishes/local AppImage passing.
-The corrective batch is stopped for owner review; TxF/LFS/current-Windows-
-authored interoperability and unavailable ARM64 stay incomplete.
+zero build warnings/errors and then-configured publishes/local AppImage passing.
+That corrective snapshot stopped for review. The 2026-11-16 assignment resumes
+implementation under expanded authority; TxF/LFS/current-Windows-authored
+interoperability and unavailable ARM64 remain incomplete.
 
 This matrix describes the implemented reader subset, not blanket support for
-every variant, feature or corrupt image. Partial Phase 2B staged editing/Save As is
+every variant, feature or corrupt image. Revised Phase 2B staged editing/Save As is
 qualified separately below. Phase 3 direct commit is now implemented and
 verified for every row that was already Phase 2B Save-As-qualified (see the
-ledger below); newly readable Phase 2C NTFS legacy/attribute-list rows remain
-non-editable (direct commit disabled) pending separate 3.0.1-3.0.5 writer
-qualification. Rebuild (Phase 4/6/7) remains disabled.
+ledger below). The current bounded legacy/list expansion at the top of this
+document adds separately qualified structural rows. Unsupported features and
+modern Windows transaction/log states remain noneditable. Optical rebuild is
+available for Phase 4 qualified layouts; Phase 5 optical expansion and Phase 6
+additional formats remain separate.
 Phase 2C implements a separately bounded NTFS reader subset with targeted
 evidence below; authentic historical-media qualification is deferred to post-1.0
-**P1.NTFS.1-P1.NTFS.6** in the [checklist](../checklist.txt), while remaining
-1.0 verification/review gates stay open.
+**P1.NTFS.1-P1.NTFS.6** in the [checklist](../checklist.txt). Revised1.0
+verification/review gates are accepted complete; modern NTFS and physicalARM64
+follow-ups are separately deferred under P1.NTFS.MODERN/P1.ARM64.
 Reader safety limits and detailed exclusions are documented
 in [storage implementation](storage-phase1.md) and [explorer operations](explorer-operations.md).
 
@@ -98,14 +251,15 @@ in [storage implementation](storage-phase1.md) and [explorer operations](explore
 | ISO9660 | Volume and descriptor metadata | Ordinary files/directories |
 | Joliet | Extension selected by descriptor escape sequence | Unicode filenames, ordinary files/directories |
 | Rock Ridge | Ordinary supported SUSP metadata | Ordinary files/directories; no relocated/multi-extent/interleaved layouts |
-| ISO/UDF bridge | UDF recognition noted | Independently recognized ISO view only |
-| UDF-only | Detection, unsupported-browsing warning | Unavailable |
+| ISO/UDF bridge | Detect both sets of descriptors; independently reconcile supported namespace trees | Bounded UDF 1.02 plus ISO views when qualified; ISO-only fallback when safe |
+| UDF-only | Detection and bounded UDF 1.02 ROM-profile validation | Ordinary supported files/directories; unsupported layouts may be detection-only |
 | Differencing VHD/VHDX | Parent requirement diagnostic | Rejected; no automatic parent traversal |
 | Unknown raw layout | Metadata/virtual hex with explicit warning | Unavailable unless a supported filesystem is independently recognized |
-| BIN/CUE / CD-DA | Phase 6 reserved structure only | No parsing, browsing or audio playback |
+| BIN/CUE / CD-DA | Bounded CUE track geometry and raw program-area hex | Supported optical data-track browse/extract and direct CD audio playback |
 
-MBR extended-chain traversal, GPT backup-only recovery, VHDX active-log replay,
-filesystem repair and source-image write paths are unavailable.
+MBR extended-chain traversal, GPT backup-only recovery, VHDX active-log replay
+and filesystem repair are unavailable. Source commit is limited to the qualified
+disk rows below.
 
 ## Staged editing
 
@@ -113,24 +267,28 @@ See [staged editing](staged-editing.md) for the independently qualified
 Phase 2B FAT and managed NTFS subsets, Save As validation, resource limits and
 failure behavior. Reader support alone never implies editing support.
 Staging and Save As keep sources read-only. The separately authorized Phase 3
-backend supports direct commit for qualified rows with recorded Linux evidence;
-actual Windows source-locking failures remain unresolved. ISO rebuild,
-bootability and exact-layout preservation are not advertised.
+backend/UI supports direct commit for qualified rows with recorded Linux/Windows
+evidence; the Windows source-locking defects were repaired and verified. Phase 4
+qualified optical images rebuild to a new image. General bootability and
+exact-layout preservation are not guaranteed.
 
 | Stack | Stage add/replace/delete/rename/create directory | Save As new image |
 | --- | --- | --- |
 | Raw filesystem-only/primary MBR/GPT, qualified conventional FAT12/16/32 | Qualified short/LFN/mixed-case/NFC BMP subset | Validated same-layout raw copy |
 | Fixed/dynamic VHD, filesystem-only/primary MBR/GPT, qualified FAT | Qualified separately per variant/layout/filesystem | Validated same-variant VHD |
 | Fixed/dynamic VHDX, filesystem-only/primary MBR/GPT, qualified FAT | Qualified separately, 512/512 and 512/4096 | Validated same-variant VHDX |
-| 360K/720K or early-DOS FAT12 raw | Disabled; existing read-only compatibility retained | Disabled |
+| Bounded legacy FAT12 and conventional 360/720/1,200/1,680/2,880 KiB floppy geometries | Qualified where exact BPB, allocation, names and metadata pass | Validated same-size output; newly admitted floppy profiles stay Save As only |
 | FAT outside qualified naming/metadata/BPB/geometry bounds | Disabled; reader remains available where supported | Disabled |
-| Qualified ordinary NTFS 3.1 in raw/fixed-dynamic VHD/fixed-dynamic VHDX, filesystem-only/primary MBR/GPT | Qualified managed subset; Windows-media/LFS 2.0 gaps remain | Validated same-layout/variant copy |
+| Qualified ordinary NTFS 3.1 in raw/fixed-dynamic VHD/fixed-dynamic VHDX, filesystem-only/primary MBR/GPT | Qualified bounded ordinary/structural/native-passive subsets; unsupported modern states deferred | Validated same-layout/variant copy |
 | NTFS outside qualified metadata/security/log bounds | Disabled with concrete per-volume reason | Disabled |
-| ISO/Joliet/Rock Ridge/UDF | Disabled until Phase 4 | Disabled |
+| Supported ISO/Joliet/Rock Ridge/UDF/bridge | Qualified shared staging; unsupported variants read-only | Validated rebuild only; no in-place commit |
 
 The FAT writing envelope additionally requires 512-byte sectors, two mirrored FATs,
-extended BPB/signature, exact bounded-volume size and the correct absolute
-hidden-sector count (zero for filesystem-only images).
+an extended BPB/signature or a qualified legacy floppy BPB, exact bounded-volume
+size and the correct absolute hidden-sector count (zero for filesystem-only
+images). FAT boot and root-directory labels are preserved independently,
+including a missing or differing root label; ambiguous multiple root labels and
+unqualified FAT32 FSInfo/backup metadata still block writing.
 Read-only restrictions are explained by capabilities, not guessed from file
 extensions. DOS 8.3 basenames/extensions may independently be uppercase or
 lowercase; display case is preserved and lookup/conflicts are case-insensitive.
@@ -165,15 +323,20 @@ The owner reaffirmed NTFS writing as a 1.0 requirement. The subsequent
 [bounded managed investigation](dependency-evaluation.md#bounded-managed-ntfs-repair-investigation-2026-10-15)
 reached its stop point, then the owner authorized implementation/qualification.
 The [managed repair](dependency-evaluation.md#managed-ntfs-repair-implementation-and-qualification)
-now has native/Linux evidence, not complete ordinary Windows-media qualification.
+now has native/Linux and bounded native-Windows passive-subset evidence,
+not unrestricted ordinary Windows-media qualification.
 Writing accepts 512-byte logical sectors, matching primary/final backup boot
 records and original hidden sectors, clean volume/allocation metadata and
 supported basic ACL semantics. All eight cluster sizes 512 through 65536 have
 native raw-volume workflow evidence; the 21 container rows use 4096-byte clusters.
-Clean LFS 1.1 has synthetic restart-page evidence; actual Windows-authored media,
-Windows security-reference execution and LFS 2.0/cached-metadata safety remain
-unverified/blocked. Unsupported logs are not replayed, reset or normalized.
-NTFS formatting and all direct-source commit remain disabled.
+Clean LFS1.1 writer acceptance now has synthetic and exact native passive-subset
+output evidence. Windows codec/reference and bounded native edited-output
+interoperability pass. Default TxF/CLFS and LFS2/cache qualification remains
+unresolved and DEFERRED POST-1.0 to P1.NTFS.MODERN. Unsupported logs are never
+replayed, reset or normalized.
+NTFS formatting remains disabled. Current commit UI and bounded startup recovery
+are implemented; candidate, published R3 and corrected R4 Linux AppImage evidence
+and the completed resumed/focused Windows desktop checks are distinguished in the [current review](phase2d-phase3-review.md).
 
 For ISO9660/Joliet, bounded batch directory metadata avoids the pinned reader's
 repeated parent parsing without increasing parser budgets. Zero-length files
@@ -193,21 +356,18 @@ single-page files. Binary/text encoding does not gate hex display. Regression
 tests cover empty/short/exact-page/multipage files and late text-preview results;
 the supplied LEVEL01.OPL also passed local physical testing. See
 [platform status](platform-status.md) for evidence and the earlier owner-reported
-Linux x64, Windows x64 and Raspberry Pi 500 Linux ARM64 results. macOS is a
-standing unsupported, build-only target (2026-10-16 policy change); no macOS
-runtime testing is performed or planned. The earlier launch report predates
-this decision and has not been investigated further.
+Linux x64, Windows x64 and Raspberry Pi 500 Linux ARM64 results.
 
 ## Evidence and future work
 
-### Phase 7 PMFX read-only delivery plan
+### Phase 6 PMFX read-only delivery plan
 
-Owner-approved roadmap addition **2026-10-17**, checklist **7.11.1-7.11.8**.
+Owner-approved roadmap addition **2026-10-17**, checklist **6.11.1-6.11.8**.
 This is a required read-only addition, **not an implemented reader** or
-authorization to start Phase 7. It follows the 1.0 read-only/blocker-review
+authorization to start Phase 6. It follows the 1.0 read-only/blocker-review
 policy below. See [research and qualification steps](pmfx-read-only-plan.md)
 for observed fields, strict decoder completion, bounds, licensing and fixtures.
-Phase 7 must implement and qualify direct PMFX opening, browsing and extraction
+Phase 6 must implement and qualify direct PMFX opening, browsing and extraction
 inside SectorWorks before completion. Research/detection/external raw conversion
 or a future implementation plan is insufficient; unresolved required-reader
 blockers keep the phase incomplete unless the owner explicitly changes scope.
@@ -229,23 +389,21 @@ File extraction is required; image conversion is not implied.
 ### Phase 2C NTFS reader qualification plan
 
 Owner authorization **2026-10-15** adds Phase 2C before Phase 3 and approves the
-matching technical-specification roadmap change. **Implemented bounded subset;
-remaining 1.0 verification/review gates stay open, not phase complete**.
+matching technical-specification roadmap change. **Bounded reader implemented;
+Phase 2C COMPLETE / OWNER ACCEPTED UNDER THE REVISED 1.0 SCOPE** (November17).
 The owner subsequently moved authentic NT4/Windows 2000/XP-created-media
 qualification and dependent checks to post-1.0 **P1.NTFS.1-P1.NTFS.6**.
 These are incomplete follow-ups, not passed tests or 1.0 blockers. VM-authored
 media suffices; vintage hardware is unnecessary. Automated tests, safety bounds,
-source integrity and general platform checks remain required; macOS is
-excluded from general platform checks as a standing unsupported, build-only
-target (2026-10-16). This ledger separates qualification from reader
+source integrity and general platform checks remain required. This ledger separates qualification from reader
 evidence below. Preserve the existing reader and qualified Phase 2B
 writer rows above.
 
 | Version / authoring target | Bounded reader subset | Current evidence / gate | Newly readable editing |
 | --- | --- | --- | --- |
-| NTFS 1.2 / Windows NT 4.0 | Version-specific ordinary metadata/files/indexes and bounded supported attribute lists/extensions | Structural synthetic layout and shared-service tests pass; no authentic NT4 fixture exists; authentic qualification deferred to P1.NTFS | Disabled until Phase 3 3.0.1-3.0.5 |
-| NTFS 3.0 / Windows 2000 | Ordinary file/directory access including supported live index continuation records | Initial in-place Tower enumeration passes; full Tower read/integrity checks remain open; authentic authoring qualification deferred to P1.NTFS; native index warning is a tool-size limit | Disabled until Phase 3 3.0.1-3.0.5 |
-| NTFS 3.1 / Windows XP and later | Existing ordinary reads plus separately bounded attribute-list/extensions | Structural synthetic and new reader tests pass; authentic historical XP authoring/runtime qualification deferred to P1.NTFS, not blanket media support | Existing qualified Phase 2B subset retained; new variants disabled until 3.0.1-3.0.5 |
+| NTFS 1.2 / Windows NT 4.0 | Version-specific ordinary metadata/files/indexes and bounded supported attribute lists/extensions | Structural synthetic layout and shared-service tests pass; no authentic NT4 fixture exists; authentic qualification deferred to P1.NTFS | Bounded structural writer now qualified; exact current bounds above |
+| NTFS 3.0 / Windows 2000 | Ordinary file/directory access including supported live index continuation records | Bounded synthetic rows and Tower full-source hashes/selected extraction/native comparisons pass under 2D.6/2D.7, not whole-volume health; authentic historical authoring qualification deferred to P1.NTFS; native index warning is a tool-size limit | Bounded structural writer now qualified; exact current bounds above |
+| NTFS 3.1 / Windows XP and later | Existing ordinary reads plus separately bounded attribute-list/extensions | Structural synthetic and new reader tests pass; authentic historical XP authoring/runtime qualification deferred to P1.NTFS, not blanket media support | Existing subset retained; bounded structural legacy/list expansion qualified separately above |
 
 Per-version rows require exact feature/layout/provenance, bounded reference/VCN/
 extent validation, normal/malformed fixtures, shared browse/preview/hex/search/
@@ -265,7 +423,7 @@ qualifies the contained NTFS variant. Mixed-volume caps must remain independent.
 The approximately 8.42 GB raw Tower NTFS 3.0 owner image stays outside the
 repository; do not copy, modify or distribute it. Initial rejection involves
 the live directory attribute list at MFT 26 referencing indexing extension 8336.
-In-place reader results: NTFS 3.0, 905 directories/16199 files, zero
+Historical Phase 2C in-place reader results: NTFS 3.0, 905 directories/16199 files, zero
 directory failures, root 24 entries, writing false, unchanged source size/mtime.
 These counts follow retained hidden/system/metafile enumeration filters, not
 all on-disk entries. Three complete explicit-path streams match independent
@@ -273,16 +431,22 @@ all on-disk entries. Three complete explicit-path streams match independent
 ordinary entries. Initial hidden `boot.ini` service selection failed under
 unchanged filters. No owner extraction/content persistence or full-image hash
 was performed; no health certification follows.
-Latest focused **49/49 tests pass (35 attribute-list + 14 version/layout/service)**,
+That Phase 2C snapshot's final focused **49/49 tests passed (35 attribute-list + 14 version/layout/service)**,
 including named-list guard, mixed-GPT FAT/NTFS isolation, modern/legacy
 extension-header identity and empty nonresident index-bitmap tests.
 See [canonical verification chronology/logs](platform-status.md#phase-2c-authorization-and-initial-reader-evidence-2026-10-15)
-for the earlier full run and final focused coverage. Final repeat all-six
-self-contained publish/local Linux AppImage passes on latest source with legal
+for the earlier full run and final focused coverage. Final repeat then-configured
+self-contained publish/local Linux AppImage passed on that source with legal
 notices retained. The final owner-probe repeat passes the same bounded read-only
 checks; no full-image hash or extraction. Versioned releases
 were untouched and no GitHub publication occurred. This is cross-build evidence,
 not physical compatibility.
+
+Subsequent 2D.6/2D.7 verification closed the nine declared bounded reader rows
+(66/66 focused passes on each of Linux/Windows x64), full Tower before/after
+source hashes and 1,235,021 bytes of selected extraction/native comparisons.
+Private extracted outputs were removed; this does not certify all content or
+volume health. See [completed bounded Tower evidence](platform-status.md#completed-local-only-tower-sourcecontent-checks).
 Resident index-root default-compression flags and empty nonresident
 index streams are handled; compressed file content remains denied.
 The native index warning is diagnosed as ntfs-3g 2022.10.3's 65536-byte
@@ -293,9 +457,10 @@ No authentic NT4 or full Tower qualification is claimed.
 The exact implemented/verified subitems, bounded synthetic read-test exit
 **2C.E2**, preserved-writer/capability **2C.E3**, regression **2C.V4**,
 and native-warning **2C.V5** are checked; cross-build subwork **2C.V6a** is
-verified on final source. Parent **2C.V6** and remaining 1.0
-verification/platform/full-phase exit gates stay open. Authentic historical
-qualification is separately deferred under **P1.NTFS**, not a 1.0 blocker.
+verified on its final source. Parent **2C.V6**, **E5** and **E6** close under
+retained Linux/Windows x64 evidence, four publishes, reconciled documentation
+and November17 conditional owner acceptance. Physical ARM64 stays NOT VERIFIED
+and deferred under **P1.ARM64**; authentic historical qualification stays **P1.NTFS**.
 Newly readable attribute-list/legacy volumes remain noneditable until Phase 3
 qualifies staged operations/history, validated Save As and new-output NTFS
 writing under **3.0.1-3.0.5**, BEFORE **3.7** direct commit.
@@ -303,9 +468,10 @@ Only historical-OS-authored writer-media interoperability moves to
 **P1.NTFS.5**; required disposable version/layout/feature writer fixtures,
 independent safety checks and failure tests remain in **3.0.4** for 1.0.
 All existing qualified Phase 2B FAT/NTFS editing remains intact. Actual
-Windows-authored-media/security-reference and LFS 2.0/cached-metadata write
-gates remain incomplete and required under **2B.6**, not replaced by reader
-evidence or demoted to read-only release scope.
+bounded native passive Windows-authored output evidence separately passes
+**2B.6/2D.3–.5**; default-TxF/CLFS and LFS2/cache writer work is incomplete but
+explicitly DEFERRED POST-1.0 under **P1.NTFS.MODERN**, not replaced by reader proof. The Windows codec-reference subwork is
+complete under **2D.2**, not a remaining execution gap.
 
 Reader caps: initialized MFT 128 MiB; attribute list 1 MiB each/32 MiB aggregate;
 4096 entries and 256 extension records per file; extension reads 32 MiB/open;
@@ -318,7 +484,7 @@ reference resolution. See [detailed bounds](storage-phase1.md#resource-cancellat
 
 The roadmap targets 1.0. VMDK, VDI, QCOW2, DMG, ext2/ext3/ext4, exFAT,
 HFS+ and APFS target qualified **read-only subsets where feasible**, not
-implemented or blanket read support. Phase 7 must evaluate variants/features,
+implemented or blanket read support. Phase 6 must evaluate variants/features,
 obtain legal fixtures and test browsing/extraction. Detection-only is not those
 capabilities. Record exact limitations and concrete reader blockers for owner
 review; infeasibility does not silently delete a reader requirement.
@@ -340,8 +506,10 @@ determine application support. Record platform limitations only from evidence.
 `Qualified` means the bounded FAT subset described above, with independent
 operation/preservation checks, not every reader-supported variation.
 `Managed subset` means the bounded NTFS subset above, not all Windows media;
-mandatory Windows reference/LFS 2.0 qualification remains incomplete.
-Layouts must be structurally valid; **Phase 2B is not complete**.
+the Windows codec reference and bounded native passive-media writing are verified.
+Remaining default-TxF/CLFS and LFS2 qualification is DEFERRED POST-1.0 under
+P1.NTFS.MODERN.1–.6, not passed. Layouts must be structurally valid;
+**Phase 2B is COMPLETE / OWNER ACCEPTED UNDER THE REVISED 1.0 SCOPE**.
 
 | Container variant | Layout | FAT12 | FAT16 | FAT32 | Ordinary NTFS |
 | --- | --- | --- | --- | --- | --- |
@@ -370,7 +538,7 @@ independently checked rows (fixed/dynamic, three layouts, three FAT variants).
 Together with raw/VHD this is 63 FAT matrix rows. VHDX 4096/4096 is explicitly
 rejected; no 4Kn writer is qualified. The naming subset is defined in the
 [editing guide](staged-editing.md#current-phase-2b-envelope-and-mandatory-blocker).
-Sparse/compressed/encrypted/reparse/ADS/attribute-list
+Sparse/compressed/encrypted/reparse/ADS and unsupported attribute-list
 NTFS features, differencing parents, active-log replay and repair stay gated.
 Every newly enabled cell requires all five operations, history/discard,
 multi-volume isolation, metadata/allocation and unchanged-region checks, failure
@@ -381,8 +549,8 @@ The owner approved this documentation correction on 2026-10-15, including a
 separate **Phase 2B before Phase 3**, then authorized its implementation.
 The subsequent owner-authorized **Phase 2C** adds reader qualification before
 Phase 3, with separate writer prerequisites for its newly readable targets.
-The ledger reports actual partial delivery; the roadmap retains required
-NTFS work rather than treating evaluation as implementation.
+The ledger reports verified bounded delivery under the revised1.0 scope;
+P1.NTFS.MODERN retains unresolved further NTFS work rather than claiming it passed.
 The [checklist](../checklist.txt) is authoritative for task status and review gates;
 the [technical specification](specifications/Cross_Platform_Disk_Image_Workspace_Tech_Spec_v0.3.txt)
 section 6.6 records the same delivery policy.
@@ -391,20 +559,27 @@ section 6.6 records the same delivery policy.
 | --- | --- | --- | --- |
 | Qualified unpartitioned raw FAT12/16/32 | Phase 2 verified; Phase 2B broadens naming | **Qualified (Phase 3, 2026-10-16)** | Normally not needed; copy-and-apply Save As |
 | Conventional FAT12/16/32 with qualified LFN/mixed-case/Unicode | Phase 2B FAT delivered, bounded subset | **Qualified (Phase 3)** on qualified disk stacks | Normally not needed |
-| Raw primary MBR/GPT with qualified FAT or ordinary NTFS | FAT and managed NTFS subsets delivered; Windows-media gaps, items 2B.3/2B.6 | **Qualified (Phase 3)** | Normally not needed; preserve partition layout |
-| Fixed VHD and dynamic VHD, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS subsets per variant; Windows-media gaps, items 2B.4/2B.6 | **Qualified (Phase 3)** | Normally not needed; retain variant/virtual size |
-| Fixed VHDX and dynamic VHDX, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and managed NTFS per variant/sector subset; Windows-media gaps, items 2B.5/2B.6 | **Qualified (Phase 3)** | Normally not needed; validate container metadata/log state |
-| Ordinary NTFS in filesystem-only raw | Managed subset delivered; Windows reference/LFS 2.0 gaps, item 2B.6 | **Qualified (Phase 3)** | Normally not needed; formatting is separate |
-| Newly readable NTFS 1.2/3.0/3.1 legacy/attribute-list subsets across required disk stacks | Phase 2C bounded reads implemented; authentic historical-media qualification deferred to post-1.0 P1.NTFS; Phase 3 3.0.1-3.0.5 must still qualify staged editing/validated Save As/new-output NTFS writes before commit | **Blocked** -- 3.0.1-3.0.5 not started this session; direct commit stays unavailable | Normally not needed for qualified disk edits; preservation must be proved |
-| ISO 9660/Joliet/supported Rock Ridge | Phase 4 items 4.2/4.5 | Not an in-place filesystem-write target | Phase 4 validated rebuild; source replacement requires Phase 3 safeguards |
-| Declared UDF and ISO/UDF bridge subsets | Phase 4 item 4.6, including UDF reads beyond detection | Not an in-place filesystem-write target | Phase 4; preserve consistent bridge namespaces |
-| Qualified BIN/CUE data and mixed-mode layouts | Phase 6 items 6.8-6.9 | Not an in-place track-write target | Phase 6 validated new output sets; source-set replacement requires recovery safeguards |
-| Conventional 360K/720K FAT12 subsets | Phase 7 item 7.10 | Phase 7 item 7.10 using Phase 3 safeguards | Normally not needed for raw file edits; create/conversion separate |
+| Raw primary MBR/GPT with qualified FAT or ordinary NTFS | FAT and bounded NTFS subsets delivered; unsupported modern states P1.NTFS.MODERN | **Qualified (Phase 3)** | Normally not needed; preserve partition layout |
+| Fixed VHD and dynamic VHD, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and bounded NTFS subsets per variant; unsupported modern states P1.NTFS.MODERN | **Qualified (Phase 3)** | Normally not needed; retain variant/virtual size |
+| Fixed VHDX and dynamic VHDX, each filesystem-only/MBR/GPT + FAT/ordinary NTFS | FAT and bounded NTFS per variant/sector subset; unsupported modern states P1.NTFS.MODERN | **Qualified (Phase 3)** | Normally not needed; validate container metadata/log state |
+| Ordinary NTFS in filesystem-only raw | Bounded writer/native-passive evidence passed; remaining modern states deferred P1.NTFS.MODERN | **Qualified (Phase 3)** | Normally not needed; formatting is separate |
+| Bounded NTFS 1.2/3.0/3.1 legacy/attribute-list subsets across required disk stacks | **Qualified structural subset:**441 Linux and441 Windows staged/Save As rows, independently verified; exact bounds at the top of this document | **Qualified bounded subset:** separate441-row Linux/Windows commit selections and exact-byte native verification; unsupported modern Windows TxF/LFS2 stays read-only; P1.NTFS.MODERN deferred | Preservation validated; no NTFS formatting; authentic historical authoring remains P1.NTFS |
+| ISO 9660/Joliet/supported Rock Ridge | Phase 4 shared staging passes qualified layout rows | Unavailable | Validated new-image rebuild with qualified namespace and metadata preservation |
+| Declared UDF 1.02 and ISO/UDF bridge subsets | Phase 4 bounded read and staged editing | Unavailable | Verified new-image rebuild preserving consistent qualified views |
+| Qualified BIN/CUE data and mixed-mode layouts | Shared staging on the qualified MODE1/2048 ISO data-track subset | Unavailable | Validated separate new output sets; no source-set replacement |
+| Conventional 360K/720K FAT12 subsets | Phase 6 item 6.10 | Phase 6 item 6.10 using Phase 3 safeguards | Normally not needed for raw file edits; create/conversion separate |
 
 Disk coverage applies to structurally valid combinations with declared resource,
 sector-size and feature bounds, not every variation an upstream library recognizes.
 
-### Phase 3 direct-commit qualification (implemented 2026-10-16)
+<a id="phase-3-direct-commit-qualification-implemented-2026-10-16"></a>
+
+### Historical Phase 3 backend qualification (2026-10-16)
+
+The following dated record describes the original backend increment. Its shared
+qualification gate, absent UI/startup integration and unstarted legacy/list work
+are superseded by the current bounded implementation described above. Its
+original native/failure evidence remains historical evidence.
 
 Owner authorized Phase 3 on 2026-10-16 as a scoped child-chat session. The
 delivered increment is a container/filesystem-agnostic direct-commit pipeline
@@ -437,12 +612,6 @@ Known gaps, flagged for owner follow-up rather than silently resolved:
   the UI application host at launch.
 - No UI command/button is wired to `CommitAsync` yet; this is a backend-only
   delivery for now.
-- macOS locking uses an exclusive sidecar marker file (not `FileStream.Lock`,
-  which .NET does not support on macOS); this only prevents concurrent
-  SectorWorks writers, not arbitrary external writers, and is untested on
-  physical macOS hardware, since macOS is a standing unsupported, build-only
-  target (2026-10-16 policy change). Both Mac cross-publishes continue to build; no physical-compatibility
-  claim is made or planned.
 Each container/layout/filesystem row needs separate operation, allocation,
 metadata, source-integrity and failure evidence. FAT LFN support must preserve
 short aliases and display spelling; NTFS modification does not require or imply
@@ -454,18 +623,17 @@ An unsafe/unavailable writer remains blocked until verified or explicitly
 scope-approved by the owner with a named follow-up milestone. Save As-only scope
 is not an automatic exemption from a scheduled direct-commit requirement.
 Bootability and exact-layout preservation still require independent proof.
-Phase 7 item 7.1 and release closure accept the intentional 1.0 read-only
+Phase 6 item 6.1 and release closure accept the intentional 1.0 read-only
 boundary above without requiring future writers. Required reader blockers and
 required core/optical/retro writer gaps still require explicit owner review.
 
 ### Retro-floppy priorities
 
 360K (368640-byte conventional raw images) and 720K (737280 bytes) are explicit
-retro-computing priorities. The current 720K evidence covers the supplied Compaq
-FAT12 layout and synthetic legacy fixtures, not every 720K variant. Dedicated
-360K qualification and wider 720K/early-DOS compatibility are planned under
-Phase 7, item 7.10 of the [checklist](../checklist.txt). Existing read-only 720K
-support remains enabled; this future work is not a reason to remove it.
+retro-computing priorities. The compatibility follow-up verified selected
+generated 360K/720K and early-DOS BPB profiles for staging and validated Save As
+without replacing the boot sector. It did not qualify direct commit for these
+newly admitted profiles, blanket retro support or a full Phase 6.10 exit.
 
 Fixture coverage, ambiguous/missing BPBs, geometry/media-descriptor checks,
 independent extraction verification and preservation/write qualification are

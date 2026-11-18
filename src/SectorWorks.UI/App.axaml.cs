@@ -16,12 +16,17 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var window = new MainWindow();
-            var model = new MainWindowViewModel(new ExplorerService(), new AvaloniaPlatformDialogs(window),
-                new JsonLayoutStore(), new JsonPreferencesStore());
+            var recovery = new CommitRecoveryCatalog();
+            var model = new MainWindowViewModel(new ExplorerService(recoveryCatalog: recovery), new AvaloniaPlatformDialogs(window),
+                new JsonLayoutStore(), new JsonPreferencesStore(), recovery);
             window.DataContext = model;
             desktop.MainWindow = window;
-            window.Opened += (_, _) => model.OpenPathsCommand.Execute(
-                desktop.Args?.Where(p => !p.StartsWith("--", StringComparison.Ordinal)).ToArray() ?? []);
+            window.Opened += async (_, _) =>
+            {
+                if (await model.CheckRecoveryAsync()) { await window.OpenRecoveryAsync(); }
+                await model.OpenPathsCommand.ExecuteAsync(
+                    desktop.Args?.Where(p => !p.StartsWith("--", StringComparison.Ordinal)).ToArray() ?? []);
+            };
             desktop.Exit += (_, _) => model.Dispose();
         }
         base.OnFrameworkInitializationCompleted();

@@ -1,6 +1,6 @@
 namespace SectorWorks.Core;
 
-public enum WorkspaceState { Opening, ReadyReadOnly, Failed, Closed, ReadyWritable, Modified }
+public enum WorkspaceState { Opening, ReadyReadOnly, Failed, Closed, ReadyWritable, Modified, RebuildRequired }
 
 public sealed record Capability(bool Available, string Reason);
 
@@ -11,7 +11,7 @@ public sealed record WorkspaceCapabilities(Capability Browse, Capability Extract
         new Capability(true, "Ordinary file reads; unsupported per-file features are reported."),
         new Capability(true, "Bounded ordinary-file text/hex reads."),
         new Capability(false, "Full filesystem validation is not implemented."));
-    public Capability PlayAudioTrack { get; } = new(false, "CD-DA playback belongs to Phase 6.");
+    public Capability PlayAudioTrack { get; init; } = new(false, "CD-DA playback is not supported.");
     public Capability Modify { get; init; } = new(false, "This image stack is not qualified for staged writing.");
     public Capability AddFiles { get; init; } = new(false, "This image stack is not qualified for adding files.");
     public Capability ReplaceFiles { get; init; } = new(false, "This image stack is not qualified for replacing files.");
@@ -20,10 +20,10 @@ public sealed record WorkspaceCapabilities(Capability Browse, Capability Extract
     public Capability CreateDirectories { get; init; } = new(false, "This image stack is not qualified for creating directories.");
     public Capability EditMetadata { get; } = new(false, "Metadata changes are reserved but not implemented.");
     public Capability SaveAs { get; init; } = new(false, "This image stack is not qualified for Save As.");
-    public Capability CommitInPlace { get; init; } = new(false, "Safe direct commit belongs to Phase 3.");
-    public Capability Rebuild { get; } = new(false, "ISO rebuilding belongs to Phase 4; other rebuild workflows are not implemented.");
+    public Capability CommitInPlace { get; init; } = new(false, "Direct commit is unavailable for this image.");
+    public Capability Rebuild { get; init; } = new(false, "This optical layout is not qualified for reconstruction.");
     public Capability PreserveBootability { get; } = new(false, "No bootability preservation guarantee is established.");
-    public Capability PreserveExactLayout { get; } = new(false, "No image-writing or exact-layout preservation workflow is enabled.");
+    public Capability PreserveExactLayout { get; } = new(false, "Exact physical-layout preservation is not qualified; dynamic containers may reallocate storage.");
 }
 
 public sealed record VolumeInfo(
@@ -33,7 +33,10 @@ public sealed record VolumeInfo(
 public sealed record WorkspaceInfo(
     Guid Id, WorkspaceState State, ImageMetadata Metadata,
     IReadOnlyList<PartitionInfo> Partitions, IReadOnlyList<VolumeInfo> Volumes,
-    IReadOnlyList<string> Warnings, WorkspaceCapabilities Capabilities);
+    IReadOnlyList<string> Warnings, WorkspaceCapabilities Capabilities)
+{
+    public CdDisc? OpticalDisc { get; init; }
+}
 
 public sealed record SearchHit(string VolumeId, FileEntry Entry);
 public sealed record OperationProgress(string Stage, string Path, long BytesCompleted, int FilesCompleted);

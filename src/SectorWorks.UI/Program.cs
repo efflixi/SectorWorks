@@ -24,7 +24,7 @@ internal static class Program
                         throw new InvalidDataException("Missing or invalid vector icon: " + kind);
                     }
                 }
-                Console.WriteLine("SectorWorks Phase 1 UI resources verified: graphite theme and 20 vector geometries.");
+                Console.WriteLine("SectorWorks UI resources verified: graphite theme and 20 vector geometries.");
                 Console.WriteLine("No desktop started. Run SectorWorks.UITests for rendered layout and workflow verification.");
                 return 0;
             }

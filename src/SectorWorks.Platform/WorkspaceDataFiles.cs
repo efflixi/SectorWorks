@@ -5,6 +5,17 @@ public static class WorkspaceDataFiles
     private const UnixFileMode DirectoryMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode PayloadMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
 
+    public static string ApplicationDataDirectory()
+    {
+        // Resolving a first-run XDG directory must not depend on its already
+        // existing. Never fall back to a relative path in the working folder.
+        string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData,
+            Environment.SpecialFolderOption.DoNotVerify);
+        if (string.IsNullOrWhiteSpace(local) || !Path.IsPathFullyQualified(local))
+        { throw new IOException("A fully qualified local application-data directory is required."); }
+        return Path.Combine(local, "SectorWorks");
+    }
+
     public static void CreatePrivateDirectory(string path)
     {
         string fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));

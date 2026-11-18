@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Text;
 using DiscUtils.Iso9660;
 using SectorWorks.Core;
@@ -15,6 +16,8 @@ public sealed class ImageOpener : IImageOpener
     public IImageSession OpenReadOnly(string path, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (Path.GetExtension(path).Equals(".cue", StringComparison.OrdinalIgnoreCase))
+        { return CueImageSession.Open(path, cancellationToken); }
         var resources = new List<IDisposable>();
         var context = new ParserContext();
         try
@@ -41,57 +44,103 @@ public sealed class ImageOpener : IImageOpener
                         throw new ImageFormatException("Truncated filesystem boot sector.");
                     }
                 }
-                properties["Sector size"] = $"{device.LogicalSectorSize} bytes"
-                    + (format is "Raw" or "ISO" ? " (assumed; physical sector size unknown)" : "");
+                bool optical = format is "ISO" or "UDF";
                 properties["Access"] = "Read-only; no source writes, parent resolution, repair or log replay.";
-                IReadOnlyList<PartitionInfo> partitions = PartitionReader.Read(device, warnings, properties, cancellationToken);
+                ImageFormatException? partitionError = null;
+                IReadOnlyList<PartitionInfo> partitions;
+                try { partitions = PartitionReader.Read(device, warnings, properties, cancellationToken); }
+                catch (ImageFormatException error) when (optical)
+                {
+                    partitionError = error;
+                    partitions = [];
+                    warnings.Add("Optical system-area partition view rejected: " + error.Message);
+                }
                 var volumes = new List<ImageVolume>();
-                if (partitions.Count == 0)
+                ImageFormatException? opticalError = null;
+                if (optical)
+                {
+                    try
+                    {
+                        if (OpenOpticalFileSystem(device, context, warnings, cancellationToken, standaloneCompatibility: true) is { } fs)
+                        { AddOpenedVolume("volume-0", null, fs); }
+                    }
+                    catch (ImageFormatException error) { opticalError = error; }
+                }
+                else if (partitions.Count == 0)
                 {
                     AddVolume(device, null, "volume-0");
                 }
-                else
+                bool hasOpticalVolume = optical && volumes.Count != 0;
+                foreach (PartitionInfo partition in partitions)
                 {
-                    foreach (PartitionInfo partition in partitions)
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (partition.Table == "MBR" && partition.Type is "0x05" or "0x0F" or "0x85")
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        if (partition.Table == "MBR" && partition.Type is "0x05" or "0x0F" or "0x85")
-                        {
-                            continue;
-                        }
-                        var view = new PartitionBlockDevice(device, partition.Offset, partition.Length);
-                        resources.Add(view);
-                        AddVolume(view, partition, $"partition-{partition.Index}");
+                        continue;
                     }
+                    var view = new PartitionBlockDevice(device, partition.Offset, partition.Length);
+                    resources.Add(view);
+                    try { AddVolume(view, partition, $"partition-{partition.Index}"); }
+                    catch (ImageFormatException error) when (optical)
+                    {
+                        warnings.Add($"Optical system-area partition {partition.Index} filesystem rejected: {error.Message}");
+                    }
+                }
+                if (optical && !hasOpticalVolume)
+                {
+                    if (partitions.Count == 0 && partitionError is null)
+                    { AddVolume(device, null, "volume-0", diskOnly: true); }
+                    if (volumes.Any(v => v.FileSystem.Name is "FAT12" or "FAT16" or "FAT32" or "NTFS"))
+                    {
+                        format = "Raw";
+                        optical = false;
+                        warnings.Add("An optical signature did not validate; only the verified disk filesystem view is available. "
+                            + "Editing remains disabled with conflicting signatures.");
+                    }
+                    else if ((opticalError ?? partitionError) is { } error) { ExceptionDispatchInfo.Throw(error); }
                 }
                 if (volumes.Count == 0)
                 {
                     warnings.Add("No supported filesystem was opened. Unknown layouts remain available only as bounded read-only bytes.");
                 }
-                if (format == "ISO")
+                bool hybrid = optical && (partitions.Count > 0 || partitionError is not null);
+                int reportedSectorSize = optical ? OpticalLayout.SectorSize : device.LogicalSectorSize;
+                properties["Sector size"] = optical ? "2048-byte optical logical blocks; physical sector size unknown"
+                    : $"{device.LogicalSectorSize} bytes" + (format == "Raw" ? " (assumed; physical sector size unknown)" : "");
+                if (optical)
                 {
+                    if (partitions.Count != 0) { properties["Partition addressing unit"] = $"{device.LogicalSectorSize} bytes"; }
+                    if (hybrid)
+                    {
+                        properties["Optical system area"] = partitionError is null
+                            ? "Validated disk partition map alongside the optical filesystem; views are read-only."
+                            : "Disk partition map rejected; independently validated optical view only.";
+                    }
                     warnings.Add("Optical/boot metadata is descriptive only. Bootability and exact-layout preservation are not guaranteed.");
                 }
-                return new ImageSession(new(Path.GetFullPath(path), format, source.Length, device.Length,
-                    device.LogicalSectorSize, properties.AsReadOnly()), device, partitions,
+                var metadata = new ImageMetadata(Path.GetFullPath(path), format, source.Length, device.Length,
+                    reportedSectorSize, properties.AsReadOnly())
+                { HasOpticalPartitionLayout = hybrid };
+                return new ImageSession(metadata, device, partitions,
                     volumes.AsReadOnly(), warnings.AsReadOnly(), resources, context);
 
-                void AddVolume(IReadOnlyBlockDevice volumeDevice, PartitionInfo? partition, string id)
+                void AddVolume(IReadOnlyBlockDevice volumeDevice, PartitionInfo? partition, string id, bool diskOnly = false)
                 {
-                    IReadOnlyFileSystem? fs = null;
                     foreach (IReadOnlyFileSystemHandler fileSystemHandler in FileSystems)
                     {
-                        fs = fileSystemHandler.TryOpen(volumeDevice, context, warnings, cancellationToken);
-                        if (fs is not null)
+                        if (diskOnly && fileSystemHandler is OpticalFileSystemHandler) { continue; }
+                        if (fileSystemHandler.TryOpen(volumeDevice, context, warnings, cancellationToken) is { } fs)
                         {
-                            break;
+                            AddOpenedVolume(id, partition, fs);
+                            return;
                         }
                     }
-                    if (fs is not null)
-                    {
-                        resources.Add(fs);
-                        volumes.Add(new(id, partition, fs));
-                    }
+                }
+
+                void AddOpenedVolume(string id, PartitionInfo? partition, IReadOnlyFileSystem filesystem)
+                {
+                    resources.Add(filesystem);
+                    volumes.Add(new(id, partition, filesystem));
                 }
             }, cancellationToken);
         }
@@ -114,7 +163,7 @@ public sealed class ImageOpener : IImageOpener
             .Select(candidate => (candidate.Handler, candidate.Detection!)).First();
 
     internal static IReadOnlyFileSystem? OpenOpticalFileSystem(IReadOnlyBlockDevice device, ParserContext context,
-        List<string> warnings, CancellationToken token)
+        List<string> warnings, CancellationToken token, bool standaloneCompatibility = false)
     {
         var optical = new Dictionary<string, string>();
         bool iso = false;
@@ -165,14 +214,21 @@ public sealed class ImageOpener : IImageOpener
                     throw new ImageFormatException("El Torito catalog LBA is outside the optical image.");
                 }
                 optical["El Torito catalog LBA"] = catalog.ToString();
+                optical["El Torito platforms"] = ElToritoMetadata.Inspect(device, catalog);
                 optical["Bootability"] = "Catalog present; not a bootability/preservation guarantee.";
             }
             // UDF's volume recognition sequence may follow the ISO terminator.
         }
-        if (udf)
+        int recognition = OpticalRebuildDetection.FindUdfRecognition(device, token);
+        if ((iso || udf || recognition != 0)
+            && OpticalRebuildDetection.TryOpen(device, iso, recognition, optical, warnings, token, standaloneCompatibility) is { } qualified)
         {
-            warnings.Add("UDF volume recognition sequence detected. UDF browsing is not implemented; an ISO bridge is used only when present.");
-            optical["UDF"] = "Detected; browsing unavailable";
+            return qualified;
+        }
+        if (udf || recognition != 0)
+        {
+            warnings.Add("Unqualified UDF layout; UDF browsing is unavailable. The ISO view is used when supported.");
+            optical["UDF"] = "Detected; browsing unavailable for this layout";
         }
         if (iso)
         {

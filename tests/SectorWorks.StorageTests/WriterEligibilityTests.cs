@@ -107,6 +107,7 @@ public sealed class WriterEligibilityTests
         BinaryPrimitives.WriteUInt16LittleEndian(boot.AsSpan(17), ushort.MaxValue);
         BinaryPrimitives.WriteUInt32LittleEndian(boot.AsSpan(32), 262144);
         BinaryPrimitives.WriteUInt16LittleEndian(boot.AsSpan(22), 512);
+        boot[21] = 0xf8;
         boot[38] = 0x29;
         "SECTORWORKS"u8.CopyTo(boot.AsSpan(43));
         boot[510] = 0x55;
@@ -114,28 +115,31 @@ public sealed class WriterEligibilityTests
         var device = new ChunkLimitedDevice(boot, rejectMetadata);
         using var image = new LargeRootSession(device);
         Capability capability = new RawFatImageWriter().Qualify(image);
-        Assert.False(capability.Available);
-        Assert.InRange(device.LargestRead, 512, 65536);
-        if (!rejectMetadata) { Assert.Equal(512 + ushort.MaxValue * 32, device.BytesRead); }
+        Assert.True(capability.Available == !rejectMetadata, capability.Reason);
+        Assert.Equal(65536, device.LargestRootRead);
         Assert.True(image.Volumes[0].FileSystem.Capabilities.Browse.Available);
+        device.RejectMetadata = false;
         Assert.Empty(image.Volumes[0].FileSystem.ReadDirectory("/"));
     }
 
     private sealed class ChunkLimitedDevice(byte[] boot, bool rejectMetadata) : IReadOnlyBlockDevice
     {
-        public int LargestRead { get; private set; }
-        public int BytesRead { get; private set; }
+        public int LargestRootRead { get; private set; }
+        public bool RejectMetadata { get; set; } = rejectMetadata;
         public long Length => 134217728;
         public int LogicalSectorSize => 512;
         public int? PhysicalSectorSize => null;
         public int Read(long offset, Span<byte> buffer)
         {
-            LargestRead = Math.Max(LargestRead, buffer.Length);
-            if (buffer.Length > 65536) { throw new InvalidOperationException("Metadata read exceeds the device request budget."); }
-            if (offset != 0 && rejectMetadata) { throw new InvalidOperationException("Optional writer metadata is unavailable."); }
+            if (offset >= 1025 * 512)
+            {
+                LargestRootRead = Math.Max(LargestRootRead, buffer.Length);
+                if (buffer.Length > 65536) { throw new InvalidOperationException("Root directory read exceeds the device request budget."); }
+                if (RejectMetadata) { throw new InvalidOperationException("Optional writer metadata is unavailable."); }
+            }
             buffer.Clear();
             if (offset == 0) { boot.AsSpan(0, buffer.Length).CopyTo(buffer); }
-            BytesRead += buffer.Length;
+            if (offset is 512 or 262656) { new byte[] { 0xf8, 0xff, 0xff }.CopyTo(buffer); }
             return buffer.Length;
         }
         public ValueTask<int> ReadAsync(long offset, Memory<byte> buffer, CancellationToken cancellationToken = default) =>
@@ -148,9 +152,13 @@ public sealed class WriterEligibilityTests
         public ImageMetadata Metadata { get; } = new("large-root.img", "Raw", device.Length, device.Length, 512, new Dictionary<string, string>());
         public IReadOnlyBlockDevice Device => device;
         public IReadOnlyList<PartitionInfo> Partitions => [];
-        public IReadOnlyList<ImageVolume> Volumes { get; } = [new("volume", null, new GuardedFileSystem("FAT16", true))];
+        public IReadOnlyList<ImageVolume> Volumes { get; } = [new("volume", null, new FatFileSystem(device))];
         public IReadOnlyList<string> Warnings => [];
-        public void Dispose() => device.Dispose();
+        public void Dispose()
+        {
+            Volumes[0].FileSystem.Dispose();
+            device.Dispose();
+        }
     }
 
     private sealed class GuardedDevice(long length, byte[] boot) : IReadOnlyBlockDevice

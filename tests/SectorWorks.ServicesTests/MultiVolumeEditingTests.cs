@@ -213,6 +213,7 @@ public sealed class MultiVolumeEditingTests
         private readonly DiskImageWriter inner = new();
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public Capability QualifyVolume(IImageSession image, string volumeId) => inner.QualifyVolume(image, volumeId);
+        public Capability QualifyCommitVolume(IImageSession image, string volumeId) => inner.QualifyCommitVolume(image, volumeId);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
             inner.ValidateCapacity(image, operations, token);
         public void ValidateOutput(IImageSession source, IImageSession output, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>

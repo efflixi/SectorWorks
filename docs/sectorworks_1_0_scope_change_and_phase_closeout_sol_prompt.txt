@@ -1,0 +1,66 @@
+Apply an official owner-approved SectorWorks 1.0 scope change and reconcile phase completion. This is an instruction to update the project records and rules, not to begin another NTFS investigation.
+
+OWNER DECISION — NOVEMBER 17, 2026
+
+NTFS writing is not the program’s primary purpose for me. The remaining default Windows NTFS transaction/log issue must no longer hold up the rest of SectorWorks. Retain the implemented and independently verified bounded NTFS writer subset for 1.0. Defer the remaining unsupported NTFS states and their qualification to an explicitly tracked post-1.0 update.
+
+Defer physical Linux ARM64 and Windows ARM64 qualification to after 1.0 as well. I own ARM64 hardware and can test later; this is a priority decision, not a permanent lack of hardware or abandonment of ARM64 support. Physical ARM64 remains NOT VERIFIED and is not a 1.0 release or phase-completion gate.
+
+This message approves the scope change. If the only remaining obstacles to the affected Phase 2 milestones and Phase 3 are these newly deferred requirements and their corresponding review gates, I also approve closing those phases on the strength of the existing verified delivery. Do not request the same approval again. Do not mark unrelated unfinished requirements complete.
+
+1. READ CURRENT AUTHORITY AND USE THE EXISTING BACKLOG
+
+Read AGENTS.md and the current authoritative checklist, progress ledger, focused NTFS diagnosis, review/evidence index and support/platform rules. Follow existing Dropbox and workspace procedures.
+
+Locate the existing post-1.0 follow-up section and preserve its established structure and task IDs. The earlier checklist called one section “POST-1.0 UPDATE - AUTHENTIC LEGACY NTFS QUALIFICATION” with P1.NTFS tasks; use the actual current records rather than assuming their layout is unchanged. Add clearly named sibling sections or extend the existing post-1.0 structure as appropriate. Preserve the previously deferred authentic historical NTFS work.
+
+2. DEFINE THE REVISED 1.0 NTFS SCOPE PRECISELY
+
+Keep all previously qualified functionality and the newly verified Windows-authored passive subset. Describe that subset using the actual implementation and evidence: currently NTFS 3.1, the qualified geometry, exactly 0x1400 volume flags, clean LFS 1.1 restart pages and the bounded passive repair/deleted metadata state, with all existing safety checks retained.
+
+Explicitly state that default TxF-enabled/transaction-bearing Windows NTFS images and other unqualified states remain read-only. Do not advertise unrestricted modern Windows NTFS writing. Retain existing bounded reader support and previously verified writer coverage; this decision does not defer all NTFS functionality.
+
+Move the remaining default-TxF/CLFS/KTM inactive-state admission work, associated TOPS/$TXF_DATA/checkpoint obligations, coherent clean detached LFS 2.0 writing/cache qualification and any dependent unqualified modern NTFS writer rows to post-1.0. Retain unsupported repair/deleted states within the follow-up scope where applicable. Update every former 1.0 gate referring to these requirements so it agrees with this explicit deferral.
+
+The deferral changes scope and scheduling, not the technical findings. These items remain incomplete, unresolved and unqualified; they are not failed forever, impossible, passed, or safely writable by assumption. Do not relax the product’s admission checks or remove system metadata.
+
+3. MAKE BOTH DEFERRALS HARD TO LOSE
+
+Create stable, unchecked post-1.0 tasks with links from the original requirement IDs. Record the owner decision/date, current supported behavior, outstanding technical questions, evidence locations, known failed shortcuts and concrete acceptance criteria.
+
+For NTFS, preserve enough information to resume without repeating the completed access investigation: native transport is solved; state-zero root/free-TOPS shortcuts were falsified; inactive historical records are not automatically active transactions; the missing work concerns checkpoint selection and active/prepared/in-doubt state and references. Link existing diagnostics, fixtures/provenance, archives/restore maps and output validation evidence instead of duplicating large data.
+
+For ARM64, create separate Linux ARM64 and Windows ARM64 physical qualification tasks. Track actual reader, staged editing, Save As/commit, GUI/startup/recovery, runtime and packaging checks as applicable to each target. Mark physical results NOT VERIFIED — DEFERRED POST-1.0 BY OWNER. Keep cross-publish/build evidence distinct. Preserve existing ARM64 code and build/package support; do not expand 1.0 runtime claims or introduce new infrastructure solely for this deferral.
+
+These follow-ups must remain visible in the roadmap and future review checklist, with clear completion criteria. No delivery date or immediate implementation authorization is implied.
+
+4. UPDATE CURRENT RULES AND DOCUMENTATION CONSISTENTLY
+
+Update the authoritative checklist, AGENTS.md and applicable local instructions, architecture/specification copies, support/platform matrices, dependency/qualification notes, current progress ledger, review summary and current handoff. Follow existing rules for authoritative copies.
+
+Distinguish statuses consistently:
+- PASSED: verified functionality, with evidence.
+- DEFERRED POST-1.0: intentionally excluded from current exit criteria, with a stable backlog link.
+- NOT VERIFIED: physical ARM64 and other genuinely unexecuted checks.
+
+Use the checklist’s existing deferral notation rather than checking deferred tests as passed. Preserve immutable manifests, archived evidence and historical dated reports. Add a clearly dated superseding decision where necessary; remove contradictory current requirements without falsifying what was required or tested earlier. macOS remains outside the project’s supported scope.
+
+5. RECONCILE PHASE 2 AND PHASE 3 AND CLOSE THEM IF ELIGIBLE
+
+Audit the current exit criteria for Phase 2 and its applicable 2B/2C/2D milestones, and Phase 3, against the revised scope and retained evidence. Do not reopen already completed milestones or repeat all tests merely because the scope changed.
+
+Complete the documentation reconciliation and any small remaining authorized closeout work needed to make the status accurate. If the remaining requirements are all satisfied or explicitly deferred by this decision, mark the affected phases COMPLETE / OWNER ACCEPTED UNDER THE REVISED 1.0 SCOPE and record this message as the owner’s conditional acceptance. Replace stale current statements saying those phases are blocked solely by NTFS/ARM64.
+
+If a genuinely independent requirement still prevents completion, identify its exact checklist ID, missing result and why neither deferral covers it. Keep only that requirement open; do not invent new acceptance criteria or turn an unresolved historical tooling incident into a new product gate without evidence.
+
+6. VERIFY AND REPORT
+
+Run documentation/link/authoritative-copy consistency checks appropriate to these changes. Adjust any policy checks that still enforce the superseded scope, if necessary, without weakening unrelated safety checks. Preserve existing test results with their original source identities; do not claim a new full product test run unless one actually occurs. No new elevated Windows experiments or ARM64 tests are needed for this task.
+
+Finish with a concise summary of:
+- The accepted 1.0 NTFS scope.
+- The exact post-1.0 task IDs/locations for remaining NTFS and both ARM64 targets.
+- Phase 2/milestone and Phase 3 completion/acceptance status, plus any genuinely independent outstanding requirement.
+- The next roadmap phase available for owner authorization.
+
+Stop after this scope/documentation/phase-closeout task. The previous review requirement is satisfied conditionally for the affected phases as described above; it does not authorize implementation of Phase 4 or later, a public release, external push or tag.

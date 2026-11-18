@@ -7,9 +7,15 @@ using Attribute = SectorWorks.Storage.NtfsValidation.Attribute;
 namespace SectorWorks.Storage;
 
 internal sealed record NtfsReadInfo(string Version, bool HasAttributeLists);
+internal sealed record NtfsResolvedStream(uint Type, string Name, IReadOnlyList<Attribute> Extents,
+    IReadOnlyList<NtfsValidation.Run> Runs);
+internal sealed record NtfsResolvedFile(long Id, byte[] Bytes, IReadOnlyList<NtfsResolvedStream> Streams,
+    Attribute? AttributeList);
+internal sealed record NtfsResolvedMetadata(IReadOnlyDictionary<long, byte[]> PhysicalRecords,
+    IReadOnlyList<NtfsResolvedFile> Files);
 
 internal sealed class NtfsReadValidation(IReadOnlyBlockDevice device, int sector, int cluster,
-    int recordSize, int indexSize, CancellationToken token)
+    int recordSize, int indexSize, CancellationToken token, bool collectForWriter = false)
 {
     private sealed record Record(long Id, byte[] Bytes, List<Attribute> Attributes)
     {
@@ -30,6 +36,19 @@ internal sealed class NtfsReadValidation(IReadOnlyBlockDevice device, int sector
     private long _indexBudget = 128L * 1024 * 1024;
     private long _listBudget = 32L * 1024 * 1024;
     private bool _hasLists;
+    private readonly Dictionary<long, byte[]> _physical = [];
+    private readonly List<NtfsResolvedFile> _files = [];
+    private readonly HashSet<long> _ownedExtensions = [];
+
+    internal static NtfsResolvedMetadata ResolveForWriter(IReadOnlyBlockDevice device, byte[] boot,
+        int sector, int cluster, int recordSize, int indexSize, CancellationToken token)
+    {
+        var validator = new NtfsReadValidation(device, sector, cluster, recordSize, indexSize, token, collectForWriter: true);
+        _ = validator.ValidateCore(boot);
+        if (validator._physical.Any(p => U64(p.Value, 32) != 0 && !validator._ownedExtensions.Contains(p.Key)))
+        { throw new ImageFormatException("NTFS allocated extension has no uniquely resolved base owner."); }
+        return new(validator._physical, validator._files);
+    }
 
     internal static NtfsReadInfo Validate(IReadOnlyBlockDevice device, byte[] boot, int sector,
         int cluster, CancellationToken token)
@@ -71,11 +90,22 @@ internal sealed class NtfsReadValidation(IReadOnlyBlockDevice device, int sector
                 continue;
             }
             Record record = ParseRecord(id, bytes);
+            if (collectForWriter && (U16(record.Bytes, 22) & 1) != 0)
+            {
+                if (U16(record.Bytes, 16) == 0 || (U16(record.Bytes, 4) >= 48 && U32(record.Bytes, 44) != id))
+                { throw new ImageFormatException("NTFS allocated record has a zero sequence or mismatched MFT identity."); }
+                _physical.Add(id, record.Bytes);
+            }
             if ((U16(record.Bytes, 22) & 1) == 0 || U64(record.Bytes, 32) != 0)
             {
                 continue;
             }
             List<StreamAttribute> attributes = Resolve(record);
+            if (collectForWriter)
+            {
+                _files.Add(new(id, record.Bytes, attributes.Select(a => new NtfsResolvedStream(a.Type, a.Name,
+                    a.Extents.ToArray(), AttributeRuns(a, true))).ToArray(), record.Attributes.SingleOrDefault(a => a.Type == 0x20)));
+            }
             if (id == 3)
             {
                 StreamAttribute info = attributes.SingleOrDefault(a => a.Type == 0x70 && a.Name.Length == 0)
@@ -137,12 +167,15 @@ internal sealed class NtfsReadValidation(IReadOnlyBlockDevice device, int sector
         Record record = ParseRecord(id, raw);
         if (record.Reference != reference || (U16(record.Bytes, 22) & 1) == 0
             || U64(record.Bytes, 32) != owner.Reference
+            || (collectForWriter && U16(record.Bytes, 18) != 0)
             || (U16(record.Bytes, 4) >= 48 && U32(record.Bytes, 44) != id)
             || (U16(record.Bytes, 22) & 2) != (U16(owner.Bytes, 22) & 2)
             || record.Attributes.Any(a => a.Type == 0x20))
         {
             throw new ImageFormatException("NTFS extension has a stale reference, wrong owner/type, or nested attribute list.");
         }
+        if (collectForWriter && !_ownedExtensions.Add(id))
+        { throw new ImageFormatException("NTFS extension is claimed by multiple logical owners."); }
         return record;
     }
 

@@ -20,12 +20,16 @@
           <TreeView.ItemTemplate>
             <TreeDataTemplate x:DataType="vm:StructureNode" ItemsSource="{Binding Children}">
               <StackPanel Orientation="Horizontal" Spacing="5">
-                <PathIcon Data="{Binding Icon}" Width="16" Height="16" />
-                <TextBlock Text="{Binding Title}" />
+                <PathIcon Data="{Binding Icon}" Width="16" Height="16"
+                          Classes.audio="{Binding IsAudioTrack}" Classes.data="{Binding IsDataTrack}" />
+                <TextBlock Text="{Binding Title}" Classes.playing="{Binding IsPlayingTrack}" />
               </StackPanel>
             </TreeDataTemplate>
           </TreeView.ItemTemplate>
           <TreeView.Styles>
+            <Style Selector="PathIcon.audio"><Setter Property="Foreground" Value="{DynamicResource WorkbenchSuccess}" /></Style>
+            <Style Selector="PathIcon.data"><Setter Property="Foreground" Value="{DynamicResource WorkbenchAccent}" /></Style>
+            <Style Selector="TextBlock.playing"><Setter Property="FontWeight" Value="Bold" /><Setter Property="Foreground" Value="{DynamicResource WorkbenchSuccess}" /></Style>
             <Style Selector="TreeViewItem" x:DataType="vm:StructureNode">
               <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
             </Style>
@@ -60,6 +64,7 @@
           </Grid>
         </Border>
         <DataGrid x:Name="FileGrid" ItemsSource="{Binding Entries}" AutoGenerateColumns="False" IsReadOnly="True"
+                  DragDrop.AllowDrop="True"
                   SelectionMode="Extended" CanUserResizeColumns="True" CanUserSortColumns="True"
                   SelectionChanged="FilesSelected" DoubleTapped="FileActivated" Sorting="ColumnSorting"
                   AutomationProperties.Name="Files and directories">
@@ -137,9 +142,52 @@
             <TextBox x:Name="ValidationResult" Classes="technical" Text="{Binding Validation}" TextWrapping="Wrap" AcceptsReturn="True"
                      ScrollViewer.VerticalScrollBarVisibility="Auto" />
           </TabItem>
-          <TabItem Header="Audio Player" IsEnabled="False" ToolTip.Tip="CD-DA playback belongs to Phase 6." />
-          <TabItem Header="Track Information" IsEnabled="False" ToolTip.Tip="BIN/CUE track browsing belongs to Phase 6." />
-          <TabItem Header="Image Map" IsEnabled="False" ToolTip.Tip="Graphical image map is not implemented in Phase 1." />
+          <TabItem Header="Audio Player" IsEnabled="{Binding HasCdTracks}">
+            <ScrollViewer>
+              <StackPanel Margin="10,6" Spacing="6">
+                <TextBlock FontWeight="SemiBold" Text="{Binding AudioTrackTitle}" />
+                <TextBlock Text="{Binding AudioFormat}" Foreground="{DynamicResource WorkbenchMuted}" />
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                  <TextBlock Text="{Binding AudioElapsed}" VerticalAlignment="Center" AutomationProperties.Name="Playback elapsed" />
+                  <Slider Grid.Column="1" Minimum="0" Maximum="{Binding AudioDuration}" Value="{Binding SeekSeconds}"
+                          IsEnabled="{Binding CanSeekCd}" AutomationProperties.Name="Seek position (seconds)" />
+                  <Button Grid.Column="2" Content="Seek" Command="{Binding SeekCdCommand}" />
+                </Grid>
+                <WrapPanel Orientation="Horizontal" ItemSpacing="5">
+                  <Button Content="Previous" Command="{Binding PreviousCdCommand}" AutomationProperties.Name="Previous audio track" />
+                  <Button Content="Play" Command="{Binding PlayCdCommand}" />
+                  <Button Content="Pause" Command="{Binding PauseCdCommand}" />
+                  <Button Content="Stop" Command="{Binding StopCdCommand}" />
+                  <Button Content="Next" Command="{Binding NextCdCommand}" AutomationProperties.Name="Next audio track" />
+                </WrapPanel>
+                <Grid ColumnDefinitions="Auto,125,*" ColumnSpacing="8">
+                  <TextBlock Text="Volume" VerticalAlignment="Center" />
+                  <Slider Grid.Column="1" Minimum="0" Maximum="1" SmallChange="0.05" Value="{Binding VolumeLevel}"
+                          AutomationProperties.Name="Playback volume" />
+                  <TextBlock Grid.Column="2" Text="{Binding AudioStatus}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                </Grid>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="Track Information" IsEnabled="{Binding HasCdTracks}">
+            <DockPanel>
+              <Button DockPanel.Dock="Bottom" Content="Open Selected Track" Margin="5"
+                      Command="{Binding OpenCdTrackCommand}" CommandParameter="{Binding #TrackGrid.SelectedItem}" />
+              <DataGrid x:Name="TrackGrid" ItemsSource="{Binding CdTracks}" IsReadOnly="True" AutoGenerateColumns="False"
+                        AutomationProperties.Name="Disc tracks">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="38" />
+                  <DataGridTextColumn Header="Mode" Binding="{Binding ModeName}" Width="100" />
+                  <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" />
+                  <DataGridTextColumn Header="LBA" Binding="{Binding StartLba}" Width="65" />
+                  <DataGridTextColumn Header="Sectors" Binding="{Binding SectorCount}" Width="75" />
+                  <DataGridTextColumn Header="Bytes/sector" Binding="{Binding SectorSize}" Width="100" />
+                  <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="95" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </DockPanel>
+          </TabItem>
+          <TabItem Header="Image Map" IsEnabled="False" ToolTip.Tip="Graphical image maps are not available." />
           <TabItem Header="Pending Changes">
             <DockPanel>
               <StackPanel DockPanel.Dock="Top" Spacing="4">
@@ -149,7 +197,7 @@
                   <Button Content="Undo" Command="{Binding UndoCommand}" />
                   <Button Content="Redo" Command="{Binding RedoCommand}" />
                   <Button Content="Discard…" Command="{Binding DiscardCommand}" />
-                  <Button Content="Save As New Image…" Command="{Binding SaveAsCommand}" ToolTip.Tip="{Binding SaveAsReason}" />
+                  <Button Content="{Binding SaveAsLabel}" Command="{Binding SaveAsCommand}" ToolTip.Tip="{Binding SaveAsReason}" />
                 </StackPanel>
                 </ScrollViewer>
               </StackPanel>

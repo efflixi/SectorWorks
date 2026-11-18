@@ -1,0 +1,95 @@
+Resume SectorWorks for a final, focused NTFS diagnosis and implementation pass. The owner has spent roughly 20 hours on this issue and needs an explanation that leads to a fix or a defensible determination of the actual limitation. Another collection of captures ending with “still unqualified” does not satisfy this task.
+
+Use the existing Linux workspace, Windows laptop, SSH connection and Windows-MCP desktop connection. The laptop is online and its manually controlled tunnel is open. Do not spend time installing VS Code/Codex on Windows or moving the development environment.
+
+OWNER DECISIONS AND AUTHORITY
+
+- Physical ARM64 validation is NOT a release or phase-completion blocker. Keep Linux ARM64 and Windows ARM64 physical validation explicitly “NOT VERIFIED.” Cross-compilation, packaging or emulation must never be presented as physical verification. Keep support and its outstanding verification work documented.
+- Record this dated owner decision in the current checklist, progress ledger and review report, including affected exit criteria. Preserve historical evidence and dated reports; supersede their old blocking policy clearly. Do not silently remove the tests or mark them passed.
+- Existing authorization to finish Phase 2D and Phase 3 autonomously remains in force. Investigate, implement justified fixes, test and update documentation without routine approval requests. Native Windows NTFS support remains required; ARM64’s waiver does not waive NTFS safety.
+- Submit completed Phase 2D/3 work for owner review and acceptance. Do not start Phase 4 or later, publish releases, tag or push externally.
+
+1. USE THE OWNER’S TWO-HOUR UAC WINDOW FIRST
+
+The owner is available to approve legitimate UAC prompts for approximately TWO HOURS FROM WHEN YOU RECEIVE THIS PROMPT. Immediately record the start and approximate deadline in the owner’s local time, confirm Windows command and desktop access, and state the deadline in chat. UAC availability is the deadline; analysis and implementation can continue afterward.
+
+Read AGENTS.md and the current progress/evidence pointers first, but keep initial orientation brief. Locate the exact relevant code and prior results rather than rereading the entire project history. Follow existing Dropbox/workspace rules.
+
+Identify which genuinely new, discriminating experiments require elevation and prioritize them immediately. Aim to get the first necessary UAC prompt presented within the first 10–15 minutes, rather than using most of the window writing reports. Use a short native preflight to check actual administrator token, required privileges, tool availability, execution policy and generated-volume access before launching expensive work.
+
+Prepare finite, task-specific elevated batches with fixed scripts/arguments, exact scratch paths, bounded runtimes, logged child exit status and cleanup. Request the owner’s UAC interaction when needed; do not ask for separate approval for already authorized tests. Batch independent elevated experiments where practical, and use the remaining window for corrections or additional justified batches. One UAC approval does not authorize arbitrary future elevated commands.
+
+Do not weaken UAC, execution policy, ACLs or security settings; create privileged services, scheduled tasks or persistent command channels; or change the manually controlled tunnel. Do not reboot or alter Windows Update policy. If reboot becomes necessary, checkpoint and report that requirement.
+
+After the window, finish using retained evidence and work that needs no new elevation. If a UAC prompt is unanswered, report that specific dependency and continue independent work. Do not leave a privileged runner waiting indefinitely or mistake a wrapper’s success for successful native execution.
+
+2. DEFINE THE REAL FAILURE BEFORE MAKING MORE CAPTURES
+
+For each current NTFS blocker, produce a compact diagnostic entry identifying:
+
+- The smallest input image, precise on-disk state and requested operation.
+- The exact rejecting method/check and source location, or failing native API, arguments, return/error code and relevant privilege state.
+- Expected versus observed behavior.
+- Classification: access/orchestration failure; implementation defect; genuinely unsupported filesystem state; or conservative qualification rule with missing evidence.
+- The specific consistency invariant at risk, what evidence establishes that risk, and what remains an assumption.
+- A falsifiable hypothesis, its competing explanation, and the smallest experiment that distinguishes them.
+
+Trace the public writer admission checks through the actual metadata read/write paths. “Metadata exists,” “documentation is absent,” and “our validator refuses it” are not by themselves explanations of why an ordinary offline edit is unsafe. Conversely, successful mounting or a clean CHKDSK alone does not establish recovery safety.
+
+Audit the investigation itself: determine whether previous requirements demanded semantics unnecessary for the intended bounded clean offline subset. Do not assume every TxF/CLFS structure must be fully decoded before any ordinary operation can be supported. Establish precisely which structures need interpretation, preservation or updates, and why. Also do not assume untouched bytes are automatically safe: references, allocation and recovery state may create dependencies.
+
+3. ANSWER THESE SPECIFIC QUESTIONS
+
+A. LFS 2.0 and cached metadata
+Existing evidence places the 2.0-to-1.1 restart-page transition within the Windows lock/flush interval. The mounted capture was a sequential live read, not a coherent snapshot; the post-lock capture was already 1.1.
+
+Determine whether coherent, clean, detached Windows-authored images in our intended use actually retain LFS 2.0, and whether LFS 2.0 support is necessary for the required ordinary offline workflow. Separate “a version is present” from “recovery is pending.” Identify the actual admission/replay assumptions in SectorWorks.
+
+If a new coherent snapshot or targeted trace is needed, explain which ambiguity it resolves and front-load its elevated acquisition. Do not repeat the same lifecycle capture without a changed hypothesis. If normalized/detached 1.1 images can satisfy a legitimate subset, state and implement its portable on-disk predicate; do not make Windows mounting, normalization, replay or repair a product prerequisite.
+
+B. TxF/CLFS/KTM
+Protected-path backup-privilege probes already failed after verified privilege activation. The detached-copy route already solved native transport and produced matching payloads. Do not repeat those completed access experiments without a concrete new reason.
+
+Identify exactly which persistent transaction states prevent ordinary edits and which product invariants depend on TOPS, $TXF_DATA or both CLFS clients. Distinguish active/prepared/in-doubt state from inactive historical structures. Use retained known-state controls first. Create new controls only when they distinguish a specific competing explanation.
+
+Do not infer semantic correctness from payload agreement. Equally, do not make complete support for all transactional recovery states a prerequisite unless the intended subset cannot exclude those states reliably.
+
+C. Repair/deleted metadata and the reduced native control
+The quick-format NoTxF control was natively clean and lacked the observed TxF logs/data, but retained $RmMetadata, $Repair:$Config and $Deleted and was refused.
+
+Trace the precise refusal. For add, replace, delete, rename and create-directory, establish which metadata has to change and why. Test whether these structures are passive in a bounded clean state, contain dependencies ordinary edits invalidate, or expose a concrete missing implementation. This control is a particularly useful way to separate TxF complexity from an overly broad exclusion.
+
+Do not remove system metadata or format it away to manufacture a pass. If a hypothesis requires an experimental admission-check change, isolate it to a research harness or explicit test-only configuration operating on disposable copies. Passing an experimental bypass does not automatically authorize a production admission change.
+
+4. RUN EXPERIMENTS THAT CAN CHANGE THE DECISION
+
+Use positively identified generated disks and disposable derivatives only. Keep immutable pre-operation inputs and their hashes. Never target the laptop’s real volumes or owner media.
+
+For candidate fixes, examine metadata and allocation changes as well as user payloads. Capture state before native mounting/checking; record any native replay, repair, normalization or other mutation, keeping those derivatives separate. Validate the exact outputs through appropriate independent Windows checks and application workflows. Check operation-specific namespace, file identity, content, metadata, restart/reopen and recovery behavior.
+
+If normal reopening repairs an output, determine what was repaired and why. Treat automatic repair as evidence to investigate, not a clean writer result. Use interruption/recovery tests where the proposed rule actually depends on those states.
+
+Start with the smallest case. Run broad image/layout regression matrices after establishing a candidate explanation and fix, rather than spending the UAC window repeating qualified rows. Preserve existing staged editing, Save As, commit, recovery and source-preservation guarantees.
+
+Native Windows tools may be independent test oracles. SectorWorks must retain its internal portable implementation and must not depend on host mounting, replay, CHKDSK or repair to produce valid output.
+
+5. IMPLEMENT AND REACH AN HONEST DISPOSITION
+
+If the cause is an implementation bug or an unnecessarily broad predicate, implement the smallest defensible correction, meaningful regression coverage and required validation. State the exact supported subset and remaining exclusions. Do not merely write a proposed fix if implementation is feasible within the authorized scope.
+
+For each blocker, finish with:
+- FIXED AND VERIFIED: cause, changed code/predicate, supported states and independent evidence.
+- DEMONSTRATED LIMITATION: exact reproducible obstruction, why it conflicts with current requirements, and the smallest alternative that would resolve it. Distinguish “incompatible with our present constraints” from “NTFS makes this impossible.”
+- UNRESOLVED, only if genuinely necessary: the precise missing fact, why each targeted experiment failed to establish it, and the specific external evidence or capability needed.
+
+This is intended to be the last open-ended investigation. Pursue competing explanations to a decision and implement fixes instead of proposing another generic research round. However, do not claim impossibility because documentation is unavailable, time has elapsed, a safety gate fires, or our evidence is incomplete. Do not invent certainty to satisfy the requested finality.
+
+6. PRESERVE PROGRESS AND CLOSE OUT
+
+Checkpoint after each significant result so a VS Code crash does not lose the investigation. Keep raw outputs and large payloads in files, with concise chat updates. Preserve failed experiments and distinguish observations from inferences.
+
+Produce one concise decision report with a row per blocker: cause, decisive evidence, code fix or exact limitation, validation, and effect on Phase 2D/3 completion. Include explicit ARM64 “NOT VERIFIED — NONBLOCKING BY OWNER DECISION.”
+
+Archive and verify evidence before removing only positively identified task-owned scratch files; detach generated disks, stop owned processes and close finite privileged helpers. Follow project Dropbox rules.
+
+If required NTFS functionality is now qualified, finish remaining authorized Phase 2D/3 closeout and present the result for owner acceptance. If not, explain the exact remaining technical obstacle and the concrete decision it requires. Do not finish with only “still blocked,” another vague list of unknowns, or a request to repeat already completed testing.

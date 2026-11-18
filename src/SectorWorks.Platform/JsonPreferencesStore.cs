@@ -14,8 +14,7 @@ public sealed class JsonPreferencesStore : IPreferencesStore
     private readonly string path;
 
     public JsonPreferencesStore(string? path = null) =>
-        this.path = path ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SectorWorks", "preferences.json");
+        this.path = path ?? Path.Combine(WorkspaceDataFiles.ApplicationDataDirectory(), "preferences.json");
 
     public ApplicationPreferences Load()
     {

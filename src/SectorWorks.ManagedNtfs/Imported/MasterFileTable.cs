@@ -110,9 +110,11 @@ namespace SectorWorks.ManagedNtfs
         private Stream _recordStream;
 
         private File _self;
+        private readonly INtfsContext _context;
 
         public MasterFileTable(INtfsContext context)
         {
+            _context = context;
             BiosParameterBlock bpb = context.BiosParameterBlock;
 
             _recordCache = new ObjectCache<long, FileRecord>();
@@ -290,13 +292,13 @@ namespace SectorWorks.ManagedNtfs
                 _recordStream.SetLength(newEndIndex * RecordSize);
                 for (long i = index; i < newEndIndex; ++i)
                 {
-                    FileRecord record = new FileRecord(_bytesPerSector, RecordSize, (uint)i);
+                    FileRecord record = new FileRecord(_bytesPerSector, RecordSize, (uint)i, _context.VolumeVersion < VolumeInformation.VersionXp);
                     WriteRecord(record);
                 }
             }
 
             FileRecord newRecord = GetRecord(index, true);
-            newRecord.ReInitialize(_bytesPerSector, RecordSize, (uint)index);
+            newRecord.ReInitialize(_bytesPerSector, RecordSize, (uint)index, _context.VolumeVersion < VolumeInformation.VersionXp);
 
             _recordCache[index] = newRecord;
 
@@ -312,7 +314,7 @@ namespace SectorWorks.ManagedNtfs
         {
             _bitmap.MarkPresent(index);
 
-            FileRecord newRecord = new FileRecord(_bytesPerSector, RecordSize, (uint)index);
+            FileRecord newRecord = new FileRecord(_bytesPerSector, RecordSize, (uint)index, _context.VolumeVersion < VolumeInformation.VersionXp);
             _recordCache[index] = newRecord;
             newRecord.Flags = FileRecordFlags.InUse | flags;
 
@@ -376,7 +378,7 @@ namespace SectorWorks.ManagedNtfs
                 }
                 else
                 {
-                    result = new FileRecord(_bytesPerSector, RecordSize, (uint)index);
+                    result = new FileRecord(_bytesPerSector, RecordSize, (uint)index, _context.VolumeVersion < VolumeInformation.VersionXp);
                 }
 
                 _recordCache[index] = result;

@@ -9,7 +9,23 @@ namespace SectorWorks.Storage;
 public sealed class DiskImageWriter : IStagedImageWriter
 {
     private readonly RawFatImageWriter _fat = new();
-    private readonly NtfsImageWriter _ntfs = new();
+    private readonly NtfsImageWriter _ntfs;
+
+    public DiskImageWriter() : this(includeNtfsCandidates: true, includeNtfsCommitCandidates: true) { }
+
+    // Explicit independent eligibility switches remain available to qualification
+    // tests. Public defaults enable the verified bounded 441-row NTFS subset.
+    internal DiskImageWriter(bool includeNtfsCandidates, bool includeNtfsCommitCandidates = false)
+        => _ntfs = new(includeNtfsCandidates, includeNtfsCommitCandidates);
+
+    public Capability QualifyCommitVolume(IImageSession image, string volumeId)
+    {
+        Capability editing = QualifyVolume(image, volumeId);
+        if (!editing.Available) { return editing; }
+        ImageVolume volume = FindVolume(image, volumeId);
+        using var bounded = new DiskVolumeSession(image, volume);
+        return volume.FileSystem.Name == "NTFS" ? _ntfs.QualifyCommit(bounded) : RawFatImageWriter.QualifyCommitProfile(bounded);
+    }
 
     public Capability Qualify(IImageSession image)
     {
@@ -33,7 +49,7 @@ public sealed class DiskImageWriter : IStagedImageWriter
                 ? _ntfs.Qualify(bounded, bounded.HiddenSectors)
                 : _fat.Qualify(bounded, bounded.HiddenSectors);
             return result.Available
-                ? new(true, "Qualified bounded " + volume.FileSystem.Name + " staged editing and validated disk-image Save As; no source commit or bootability guarantee.")
+                ? new(true, "Qualified bounded " + volume.FileSystem.Name + " staged editing and validated disk-image Save As; source commit has separate qualification. No bootability guarantee.")
                 : result;
         }
         catch (Exception error) when (error is IOException or ArgumentException or NotSupportedException or InvalidOperationException or OverflowException or UnauthorizedAccessException)
@@ -227,7 +243,7 @@ public sealed class DiskImageWriter : IStagedImageWriter
         {
             throw new NotSupportedException("Only raw, fixed/dynamic VHD and fixed/dynamic VHDX disk stacks are qualified.");
         }
-        if (image.Warnings.Count != 0)
+        if (image.Warnings.Count != 0 && !RawFatImageWriter.HasOnlyEarlyFloppyWarning(image))
         {
             throw new NotSupportedException("Disk structural warnings prevent writing; damaged backup GPT, hybrid/extended layouts and implicit repair are unsupported.");
         }
@@ -372,8 +388,8 @@ public sealed class DiskImageWriter : IStagedImageWriter
             var bounded = new PartitionBlockDevice(image.Device, volume.Partition?.Offset ?? 0,
                 volume.Partition?.Length ?? image.Device.Length);
             byte[] boot = Bounds.Read(bounded, 0, 512);
-            HiddenSectors = BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(28));
             long expected = (volume.Partition?.Offset ?? 0) / 512;
+            HiddenSectors = RawFatImageWriter.HiddenSectors(boot, volume.FileSystem, expected);
             if (HiddenSectors != expected)
             {
                 bounded.Dispose();

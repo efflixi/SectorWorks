@@ -56,7 +56,7 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
             ["Unsupported features"] = "Compressed, sparse, encrypted, reparse/link files and alternate data streams are not opened. MFT bootstrap attribute lists remain unsupported.",
             ["Cluster size"] = cluster.ToString(),
             ["NTFS version"] = info.Version,
-            ["Attribute lists"] = info.HasAttributeLists ? "Validated read-only; writing requires Phase 3 qualification." : "None detected.",
+            ["Attribute lists"] = info.HasAttributeLists ? "Validated by the read-only reader; staged writing is qualified separately per volume." : "None detected.",
         });
     }
 
@@ -142,7 +142,7 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
         }
         if (Name == "NTFS" && (attributes & (FileAttributes.Compressed | FileAttributes.SparseFile | FileAttributes.Encrypted)) != 0)
         {
-            throw new ImageFormatException("NTFS compressed, sparse and encrypted file contents are not supported in Phase 1.");
+            throw new ImageFormatException("Compressed, sparse, or encrypted NTFS file contents are not supported.");
         }
         // The pinned ISO extent stream seeks even when its length is zero.
         Stream content = _fileSystem is CDReader && _fileSystem.GetFileLength(parserPath) == 0

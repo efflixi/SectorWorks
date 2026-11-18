@@ -4,6 +4,20 @@ namespace SectorWorks.Storage;
 
 internal sealed partial class FatFileSystem
 {
+    internal byte[] CaptureRootLabel(CancellationToken token)
+    {
+        var labels = new List<byte[]>();
+        DirectoryEntries("/", _rootCluster, true, token, strictNames: true, volumeLabels: labels);
+        if (labels.Count > 1) { throw new ImageFormatException("Multiple FAT root volume-label entries are not qualified."); }
+        return labels.Count == 0 ? [] : labels[0];
+    }
+
+    internal void ValidateRootLabel(byte[] expected, CancellationToken token)
+    {
+        if (!expected.AsSpan().SequenceEqual(CaptureRootLabel(token)))
+        { throw new ImageFormatException("FAT output changed its root volume-label entry."); }
+    }
+
     internal sealed record PreservedEntry(string Path, byte[] ShortEntry, byte[][] LongEntries, byte[]? SpecialEntries,
         bool Renamed = false, bool Replaced = false, bool AliasMayChange = false);
 
@@ -109,6 +123,7 @@ internal sealed partial class FatFileSystem
 
     internal void ValidateSourcePreservation(FatFileSystem source, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token)
     {
+        ValidateRootLabel(source.CaptureRootLabel(token), token);
         Dictionary<string, PreservedEntry> expected = source.CapturePreservation(token);
         foreach (StagedWriteOperation operation in operations)
         {

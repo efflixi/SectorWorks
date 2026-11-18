@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using SectorWorks.Core;
 using SectorWorks.Platform;
+using SectorWorks.Storage;
 
 namespace SectorWorks.Services;
 
@@ -16,7 +17,7 @@ public sealed partial class ExplorerService
         {
             ArgumentNullException.ThrowIfNull(request);
             _ = GetVolume(lease, request.VolumeId);
-            RequireCapability(writer.QualifyVolume(lease.Image, request.VolumeId));
+            RequireCapability(QualifyEdit(lease.Image, request.VolumeId));
             if (request.Kind == ImageChangeKind.Metadata || !Enum.IsDefined(request.Kind))
             {
                 throw new NotSupportedException("Metadata changes are reserved; only add, replace, delete, rename and create directory are implemented.");
@@ -89,8 +90,11 @@ public sealed partial class ExplorerService
                         long importLength = new FileInfo(request.SourcePath).Length;
                         ImageVolume targetVolume = lease.Image.Volumes.Single(volume => volume.Id == request.VolumeId);
                         long volumeLength = targetVolume.Partition?.Length ?? lease.Image.Device.Length;
-                        long maximumFileLength = targetVolume.FileSystem.Name == "NTFS"
-                            ? volumeLength : Math.Min(uint.MaxValue, volumeLength);
+                        long maximumFileLength = lease.Image is IImageSetRebuildSource set
+                            ? set.Members.Single(m => m.RelativeName == set.MemberName(request.VolumeId)).Length
+                            : RebuildSource(lease.Image, request.VolumeId) is not null
+                                ? uint.MaxValue : targetVolume.FileSystem.Name == "NTFS"
+                                ? volumeLength : Math.Min(uint.MaxValue, volumeLength);
                         if (importLength > maximumFileLength)
                         {
                             throw new IOException("Imported file exceeds filesystem file-size or image-capacity limits.");
@@ -164,7 +168,20 @@ public sealed partial class ExplorerService
                 Func<Stream>? open = content is null ? null : content.OpenRead;
                 var operation = new StagedWriteOperation(request with { SourcePath = null }, open);
                 StagedWriteOperation[] operations = state.Operations.Take(state.Position).Append(operation).ToArray();
-                writer.ValidateCapacity(lease.Image, operations, cancellationToken);
+                if (lease.Image is IImageSetRebuildSource cueSet)
+                {
+                    _ = cueSet.PlanTrack(request.VolumeId,
+                        operations.Where(op => op.Request.VolumeId == request.VolumeId).ToArray(), cancellationToken);
+                    nextTree.EstimatedOutputBytes = lease.Image.Metadata.ContainerLength;
+                }
+                else if (RebuildSource(lease.Image, request.VolumeId) is { } rebuild)
+                {
+                    nextTree.EstimatedOutputBytes = rebuild.PlanRebuild(operations, cancellationToken).OutputLength;
+                }
+                else
+                {
+                    writer.ValidateCapacity(lease.Image, operations, cancellationToken);
+                }
                 cancellationToken.ThrowIfCancellationRequested();
                 state.Operations.RemoveRange(state.Position, state.Operations.Count - state.Position);
                 state.OperationContents.RemoveRange(state.Position, state.OperationContents.Count - state.Position);
@@ -222,7 +239,7 @@ public sealed partial class ExplorerService
         IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default) =>
         RunAsync(workspaceId, "SaveAs", lease =>
         {
-            RequireCapability(writer.Qualify(lease.Image));
+            RequireCapability(QualifyEdit(lease.Image));
             cancellationToken.ThrowIfCancellationRequested();
             string target = Path.GetFullPath(destination);
             if (target.Equals(Path.GetFullPath(lease.Image.Metadata.Path), StringComparison.OrdinalIgnoreCase))
@@ -234,6 +251,12 @@ public sealed partial class ExplorerService
             if (!Directory.Exists(directory)) { throw new DirectoryNotFoundException(directory); }
             progress?.Report(new OperationProgress("Verifying source baseline", target, 0, 0));
             VerifySource(lease, cancellationToken);
+            if (lease.Image is IImageSetRebuildSource cueSet)
+            { return RebuildCue(lease, cueSet, target, directory, progress, cancellationToken); }
+            if (RebuildSource(lease.Image) is { } rebuild)
+            {
+                return Rebuild(lease, rebuild, target, directory, progress, cancellationToken);
+            }
             long length = lease.Image.Metadata.ContainerLength;
             long requiredSpace = checked(length + lease.Image.Device.Length * 2);
             if (storageSpace.AvailableBytes(directory) < requiredSpace) { throw new IOException("Insufficient destination space for the image copy and bounded writer scratch space."); }
@@ -344,7 +367,8 @@ public sealed partial class ExplorerService
             }
         }, cancellationToken);
 
-    private static WorkspaceCapabilities WithEditing(WorkspaceCapabilities capabilities, Capability editing) =>
+    private static WorkspaceCapabilities WithEditing(WorkspaceCapabilities capabilities, Capability editing, Capability commit,
+        Capability? rebuild = null) =>
         capabilities with
         {
             Modify = editing,
@@ -354,22 +378,38 @@ public sealed partial class ExplorerService
             RenameFiles = editing,
             CreateDirectories = editing,
             SaveAs = editing,
-            CommitInPlace = CommitCapability(editing)
+            Rebuild = rebuild ?? capabilities.Rebuild,
+            CommitInPlace = commit
         };
 
-    // Phase 3: direct commit reuses the same validated staged-editing/Apply/ValidateOutput
-    // pipeline already qualified for Save As (Phase 2B), wrapped with locking, backup and a
-    // durable transaction journal. A row that is not Save-As qualified (Modify.Available is
-    // false, including Phase 2C read-only legacy/attribute-list NTFS variants) can never be
-    // direct-commit qualified either.
-    private static Capability CommitCapability(Capability editing) => editing.Available
-        ? new(true, "Qualified staged editing with locked, journaled, backed-up direct commit: " +
-            "source identity recheck, retained backup until validated reopen, atomic finalize, and interrupted-transaction recovery.")
-        : new(false, editing.Reason);
+    // Save As qualification is necessary, but never sufficient for source commit.
+    private static Capability CommitCapability(Capability qualified, string source)
+    {
+        if (!qualified.Available) { return qualified; }
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+        { return new(false, "Direct commit is qualified only on Windows and Linux."); }
+        try { ValidateCommitSource(source, Guid.Empty.ToString("N")); }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException)
+        { return new(false, "Commit is unavailable for this source path: " + error.Message); }
+        return new(true, "Qualified staged editing with locked, journaled, backed-up direct commit: "
+            + "source identity recheck, retained backup until validated reopen, atomic finalize, and interrupted-transaction recovery.");
+    }
+
+    private static void ValidateCommitSource(string source, string id)
+    {
+        CommitJournal.Validate(CommitJournal.PathFor(source, id), new(id, source,
+            CommitJournal.BackupPathFor(source, id), CommitJournal.StagingPathFor(source, id),
+            CommitStage.BackupTaken, DateTime.UtcNow));
+        CommitJournal.RejectLinks(source);
+        if ((File.GetAttributes(source) & FileAttributes.ReadOnly) != 0)
+        { throw new IOException("The source file is read-only; Save As remains separately available."); }
+        foreach (string path in new[] { CommitJournal.PathFor(source, id), CommitJournal.BackupPathFor(source, id), CommitJournal.StagingPathFor(source, id) })
+        { SafeExtractionTarget.ValidateRelativePath(Path.GetFileName(path)); }
+    }
 
     private static void VerifySource(SessionLease lease, CancellationToken token)
     {
-        if (lease.SourceHash is null || HashSourceFile(lease.Image.Metadata.Path, lease.Image.Metadata.ContainerLength, token) != lease.SourceHash)
+        if (lease.SourceHash is null || HashSourceImage(lease.Image, token) != lease.SourceHash)
         {
             throw new IOException("Source changed since opening; Save As was aborted. Reopen the source image.");
         }
@@ -403,7 +443,8 @@ public sealed partial class ExplorerService
             return new PendingImageChange(index + 1, operation.Request.Kind, operation.Request.VolumeId,
                 operation.Request.Path, operation.Request.NewName, content?.Length ?? 0);
         }).ToArray() ?? [];
-        return new EditingSnapshot(changes, state?.Position > 0, state is not null && state.Position < state.Operations.Count, lease.Image.Metadata.ContainerLength);
+        long estimate = state?.Current.EstimatedOutputBytes ?? lease.Image.Metadata.ContainerLength;
+        return new EditingSnapshot(changes, state?.Position > 0, state is not null && state.Position < state.Operations.Count, estimate);
     }
 
     private EditingState EnsureEditing(SessionLease lease, CancellationToken token)
@@ -413,7 +454,7 @@ public sealed partial class ExplorerService
         int count = 0;
         foreach (ImageVolume volume in lease.Image.Volumes)
         {
-            if (!writer.QualifyVolume(lease.Image, volume.Id).Available) { continue; }
+            if (!QualifyEdit(lease.Image, volume.Id).Available) { continue; }
             var nodes = new Dictionary<string, StagedNode>(StringComparer.OrdinalIgnoreCase);
             foreach (FileEntry entry in Walk(volume.FileSystem, "/", token))
             {

@@ -60,5 +60,7 @@ namespace SectorWorks.ManagedNtfs
         public ForgetFileFn ForgetFile { get; set; }
 
         public bool ReadOnly { get; set; }
+
+        public int VolumeVersion { get; set; } = VolumeInformation.VersionXp;
     }
 }

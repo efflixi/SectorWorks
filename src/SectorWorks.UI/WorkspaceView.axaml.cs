@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using SectorWorks.Core;
@@ -18,6 +19,8 @@ public sealed partial class WorkspaceView : UserControl
     {
         InitializeComponent();
         FileGrid.AddHandler(KeyDownEvent, FilesKeyDown, RoutingStrategies.Tunnel, handledEventsToo: true);
+        FileGrid.AddHandler(DragDrop.DragOverEvent, FilesDragOver);
+        FileGrid.AddHandler(DragDrop.DropEvent, FilesDrop);
         SearchList.AddHandler(KeyDownEvent, SearchKeyDown, RoutingStrategies.Tunnel, handledEventsToo: true);
         DataContextChanged += (_, _) => { SaveLayout(); RestoreLayout(); };
         DetachedFromVisualTree += (_, _) => SaveLayout();
@@ -159,6 +162,23 @@ public sealed partial class WorkspaceView : UserControl
     private void FileActivated(object? sender, TappedEventArgs args) => ActivateFile();
     private void OpenSelected(object? sender, RoutedEventArgs args) => ActivateFile();
     private void ActivateFile() => model?.ActivateCommand.Execute(FileGrid.SelectedItem as FileEntry);
+    private void FilesDragOver(object? sender, DragEventArgs args)
+    {
+        args.DragEffects &= model?.CanAdd == true && args.DataTransfer.Contains(DataFormat.File)
+            ? DragDropEffects.Copy : DragDropEffects.None;
+        args.Handled = true;
+    }
+
+    private async void FilesDrop(object? sender, DragEventArgs args)
+    {
+        FilesDragOver(sender, args);
+        if (args.DragEffects == DragDropEffects.Copy && model is { } workspace)
+        {
+            await workspace.ImportFilesAsync(() => Task.FromResult(
+                args.DataTransfer.TryGetFiles()?.Select(item => item is IStorageFile ? item.TryGetLocalPath() : null).ToArray() ?? []));
+        }
+    }
+
     private void FilesKeyDown(object? sender, KeyEventArgs args)
     {
         if (args.Key == Key.Enter) { ActivateFile(); args.Handled = true; }

@@ -19,7 +19,7 @@ The interface should feel:
 - Professional and technically capable.
 - Dense without becoming cluttered.
 - Familiar to users of file managers, IDEs, disk utilities, hex editors, and other professional tools.
-- Consistent across Windows, macOS, and Linux without requiring pixel-identical platform implementations.
+- Consistent across Windows and Linux without requiring pixel-identical platform implementations.
 - Suitable for long working sessions.
 
 The interface should prioritize useful information and workspace area over decorative elements.
@@ -243,10 +243,10 @@ The lower pane should be collapsible and vertically resizable.
 
 10. CD AUDIO PLAYBACK UI
 
-Implementation scope: Phase 6 - BIN/CUE and Optical Expansion, following checklist.txt.
+Implementation scope: Phase 5 - BIN/CUE and Optical Expansion, following checklist.txt.
 Phase 1 reserves the Audio Player and Track Information pane structure without
 implementing playback or BIN/CUE track browsing. The requirements below describe
-the Phase 6 interface, not Phase 1 acceptance criteria.
+the Phase 5 interface, not Phase 1 acceptance criteria.
 
 When the user selects a CD-DA audio track, the lower center pane should expose an integrated Audio Player.
 
@@ -397,7 +397,7 @@ Theme changes should alter colors rather than fundamentally changing the applica
 
 16. CROSS-PLATFORM UI POLICY
 
-The SectorWorks UI should maintain the same overall visual identity and workspace organization on Windows, macOS, and Linux.
+The SectorWorks UI should maintain the same overall visual identity and workspace organization on Windows and Linux.
 
 The application does not require pixel-identical rendering across platforms.
 
@@ -422,8 +422,6 @@ The following should remain conceptually consistent:
 - Information-density philosophy.
 
 The priority is consistent functionality and recognizable product identity, not forced platform uniformity.
-
-Owner-approved macOS support policy change, October 16, 2026: macOS is reclassified as an unsupported, build-only target per the technical specification section 4.2 amendment. The UI continues to build and run on macOS using the same shared Avalonia codebase, but no physical macOS rendering/workflow verification is performed or claimed. Documentation must not describe macOS UI behavior as tested or verified.
 
 
 17. INTERACTION PHILOSOPHY
@@ -458,13 +456,13 @@ Phase 1 interface should include:
 - Multiple image workspace tabs.
 - Image structure tree.
 - File and directory browser.
-- Reserved structure for the Phase 6 optical track browser, without BIN/CUE browsing.
+- Reserved structure for the Phase 5 optical track browser, without BIN/CUE browsing.
 - Image/partition/filesystem inspector.
 - Extract operation.
 - Properties display.
 - Basic file preview.
 - Hex view where implemented.
-- Reserved Audio Player and Track Information tabs for Phase 6, without playback.
+- Reserved Audio Player and Track Information tabs for Phase 5, without playback.
 - Search field or initial search framework.
 - Read-only capability indicators.
 - Status bar.
@@ -472,7 +470,7 @@ Phase 1 interface should include:
 Write-related commands may be displayed but disabled in Phase 1 where doing so helps establish the long-term interface layout.
 
 BIN/CUE browsing, mixed-mode track workflows, CD-DA streaming, audio backends,
-and functional playback controls belong to Phase 6 as defined in checklist.txt.
+and functional playback controls belong to Phase 5 as defined in checklist.txt.
 The optical/audio mockup remains the approved visual direction for that phase.
 
 
@@ -547,7 +545,7 @@ External/custom artwork should generally be limited to branding assets, includin
 - Website / repository branding
 - Optional About-screen artwork
 
-Brand assets should be prepared outside the application in a vector master format where possible and exported into the platform-specific formats and sizes required by Windows, macOS, and Linux.
+Brand assets should be prepared outside the application in a vector master format where possible and exported into the platform-specific formats and sizes required by Windows and Linux.
 
 Raster graphics may still be used when they represent actual content, previews, thumbnails, scanned artwork, or another element for which a vector icon is not appropriate.
 

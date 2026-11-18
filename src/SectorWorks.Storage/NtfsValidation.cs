@@ -153,7 +153,7 @@ internal static class NtfsValidation
             }
             if (type == 0x20 && !allowExtensions)
             {
-                throw new ImageFormatException("NTFS attribute-list/extension records are outside the Phase 2B writer subset; Phase 3 qualification is required.");
+                throw new ImageFormatException("This NTFS layout is not qualified for writing with attribute-list or extension records.");
             }
             if (nonresident)
             {
@@ -162,7 +162,7 @@ internal static class NtfsValidation
                 {
                     throw new ImageFormatException("Unsupported NTFS continuation/compression or inconsistent data length.");
                 }
-                _ = Runs(attribute, cluster, volumeLength, true, allowExtensions);
+                _ = Runs(attribute, cluster, volumeLength, true, allowExtensions, allowEmpty: true);
             }
             else
             {
@@ -201,7 +201,7 @@ internal static class NtfsValidation
     }
 
     internal static List<Run> Runs(byte[] attribute, int cluster, long volumeLength, bool allowSparse,
-        bool allowContinuation = false)
+        bool allowContinuation = false, bool allowEmpty = false)
     {
         int position = U16(attribute, 32);
         if (position < 64 || position >= attribute.Length)
@@ -218,7 +218,7 @@ internal static class NtfsValidation
             {
                 ulong first = allowContinuation ? U64(attribute, 16) : 0;
                 ulong last = U64(attribute, 24);
-                if (allowContinuation && clusters == 0 && first == 0 && (last == 0 || last == ulong.MaxValue)
+                if ((allowContinuation || allowEmpty) && clusters == 0 && U64(attribute, 16) == 0 && (last == 0 || last == ulong.MaxValue)
                     && U64(attribute, 40) == 0 && U64(attribute, 48) == 0 && U64(attribute, 56) == 0)
                 {
                     return runs;

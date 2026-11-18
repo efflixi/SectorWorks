@@ -18,10 +18,6 @@ public sealed partial class ExplorerService
         {
             Capability editing = writer.Qualify(lease.Image);
             RequireCapability(editing);
-            if (!CommitCapability(editing).Available)
-            {
-                throw new NotSupportedException("This image stack is not qualified for direct commit.");
-            }
             cancellationToken.ThrowIfCancellationRequested();
             string source = Path.GetFullPath(lease.Image.Metadata.Path);
             string directory = Path.GetDirectoryName(source)!;
@@ -45,7 +41,7 @@ public sealed partial class ExplorerService
             string transactionId = Guid.NewGuid().ToString("N");
             string journalPath = CommitJournal.PathFor(source, transactionId);
             string backupPath = CommitJournal.BackupPathFor(source, transactionId);
-            string staging = Path.Combine(directory, ".sectorworks-commit-" + transactionId + ".img");
+            string staging = CommitJournal.StagingPathFor(source, transactionId);
             bool stagingCreated = false;
             bool journalWritten = false;
             bool backupCreated = false;
@@ -58,9 +54,20 @@ public sealed partial class ExplorerService
             string sourceHash = lease.SourceHash ?? throw new IOException("Direct commit requires a source baseline.");
             string[] changedVolumes = operations.Select(operation => operation.Request.VolumeId)
                 .Distinct(StringComparer.Ordinal).ToArray();
+            foreach (string volumeId in changedVolumes)
+            { RequireCapability(CommitCapability(writer.QualifyCommitVolume(lease.Image, volumeId), source)); }
+            ValidateCommitSource(source, transactionId);
             var expected = changedVolumes.ToDictionary(volumeId => volumeId,
                 volumeId => Fingerprint(GetVolume(lease, volumeId).FileSystem, cancellationToken), StringComparer.Ordinal);
             int files = changedVolumes.Sum(volumeId => state.Current.Volumes[volumeId].Values.Count(node => !node.Entry.IsDirectory));
+
+            DateTime createdUtc = DateTime.UtcNow;
+            CommitIntent intent = CaptureCommitIntent(state, cancellationToken);
+            TransactionRecord Record(CommitStage stage) => new(transactionId, source, backupPath, staging, stage, createdUtc)
+            { SourceSha256 = sourceHash, SourceLength = length, Intent = intent };
+            // Refuse an oversized/invalid journal before releasing the reader,
+            // acquiring write access or creating any recovery artifact.
+            _ = CommitJournal.Serialize(journalPath, Record(CommitStage.BackupTaken));
 
             lease.Image.Dispose();
             try
@@ -68,11 +75,16 @@ public sealed partial class ExplorerService
                 progress?.Report(new OperationProgress("Acquiring exclusive lock", source, 0, 0));
                 writeLock = SourceWriteLock.Acquire(source);
                 writeLock.VerifySource(sourceHash, length, cancellationToken);
+                // Register while holding the source lock, before any backup or
+                // journal artifact is created. Catalog-only cleanup can take the
+                // same lock to distinguish a stopped transaction from a live one.
+                recoveryCatalog?.Track(transactionId, journalPath);
+                progress?.Report(new OperationProgress("Registered recovery", journalPath, 0, 0));
 
                 progress?.Report(new OperationProgress("Creating recovery backup", backupPath, 0, 0));
                 writeLock.CreateBackup(backupPath, sourceHash, length, cancellationToken);
                 backupCreated = true;
-                CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, staging, CommitStage.BackupTaken, DateTime.UtcNow));
+                CommitJournal.Write(journalPath, Record(CommitStage.BackupTaken));
                 journalWritten = true;
                 baseline = opener.OpenReadOnly(backupPath, cancellationToken);
 
@@ -81,7 +93,7 @@ public sealed partial class ExplorerService
                 stagingCreated = true;
                 writer.Apply(staging, operations, cancellationToken);
                 using (var output = new FileStream(staging, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { output.Flush(true); }
-                CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, staging, CommitStage.Staged, DateTime.UtcNow));
+                CommitJournal.Write(journalPath, Record(CommitStage.Staged));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report(new OperationProgress("Validating tree and SHA-256", staging, length, 0));
@@ -121,7 +133,7 @@ public sealed partial class ExplorerService
                         throw new InvalidDataException("Staged output metadata/preservation validation failed: " + error.Message, error);
                     }
                 }
-                CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, staging, CommitStage.Validated, DateTime.UtcNow));
+                CommitJournal.Write(journalPath, Record(CommitStage.Validated));
 
                 cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report(new OperationProgress("Rechecking source baseline", source, length, 0));
@@ -134,14 +146,16 @@ public sealed partial class ExplorerService
                 writeLock.ReplaceSource(staging);
                 finalized = true;
                 stagingCreated = false;
+                progress?.Report(new OperationProgress("Source replaced", source, outputLength, files));
                 // The source is now authoritative; a crash past this point must never restore the backup.
-                CommitJournal.Write(journalPath, new TransactionRecord(transactionId, source, backupPath, staging, CommitStage.Finalized, DateTime.UtcNow));
+                CommitJournal.Write(journalPath, Record(CommitStage.Finalized));
 
                 baseline.Dispose();
                 baseline = null;
                 File.Delete(backupPath);
                 CommitJournal.Delete(journalPath);
                 journalWritten = false;
+                recoveryCatalog?.Forget(transactionId);
 
                 log.Write("CommitValidated", source, $"Direct-committed {files} files; backup and journal removed after validated finalize.");
                 return new CommitResult(source, outputLength, files,
@@ -183,6 +197,14 @@ public sealed partial class ExplorerService
                     catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
                     {
                         log.Write("ResidualCommitBackup", backupPath, cleanup.Message, "Warning");
+                    }
+                }
+                if (!journalWritten && !finalized)
+                {
+                    try { recoveryCatalog?.Forget(transactionId); }
+                    catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
+                    {
+                        log.Write("ResidualRecoveryRegistration", journalPath, cleanup.Message, "Warning");
                     }
                 }
                 throw;

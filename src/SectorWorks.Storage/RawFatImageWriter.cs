@@ -9,6 +9,38 @@ public sealed class RawFatImageWriter : IStagedImageWriter
     public const long MaximumFatTableBytes = 8L * 1024 * 1024;
 
     public Capability Qualify(IImageSession image) => Qualify(image, 0);
+    public Capability QualifyCommitVolume(IImageSession image, string volumeId)
+    {
+        if (image.Volumes.Count != 1 || image.Volumes[0].Id != volumeId)
+        { return new(false, "The raw FAT commit writer requires its single qualified volume."); }
+        Capability result = Qualify(image);
+        return result.Available ? QualifyCommitProfile(image) : result;
+    }
+
+    internal static Capability QualifyCommitProfile(IImageSession image)
+    {
+        Capability supported = new(true, "Independently qualified FAT disk-stack commit pipeline.");
+        if (image.Volumes[0].FileSystem.Name != "FAT12") { return supported; }
+        byte[] boot = Bounds.Read(image.Device, 0, 512);
+        return image.Device.Length == 1_474_560 && HasExtendedBoot(boot, 38)
+            ? supported : new(false, "This FAT12 floppy profile supports validated Save As; direct commit is not qualified.");
+    }
+
+    internal static bool HasOnlyEarlyFloppyWarning(IImageSession image) => image.Metadata.Format == "Raw"
+        && image.Partitions.Count == 0 && image.Volumes is [{ FileSystem: FatFileSystem { IsEarlyFloppy: true } }]
+        && image.Warnings is [FatFileSystemHandler.EarlyFloppyWarning];
+
+    internal static uint HiddenSectors(byte[] boot, IReadOnlyFileSystem fs, long expected) =>
+        expected == 0 && fs is FatFileSystem { IsEarlyFloppy: true }
+            ? BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(28)) : BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(28));
+
+    private static bool HasExtendedBoot(byte[] boot, int offset) =>
+        boot[510] == 0x55 && boot[511] == 0xaa && boot[offset] == 0x29;
+
+    private static bool SupportedFloppyGeometry(byte[] boot, long length) =>
+        (length, BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(24)), BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(26)))
+        is (368_640, 9, 2) or (737_280, 9, 2) or (1_228_800, 15, 2) or (1_474_560, 18, 2)
+            or (1_720_320, 21, 2) or (2_949_120, 36, 2);
 
     public Capability Qualify(IImageSession image, uint expectedHiddenSectors)
     {
@@ -21,27 +53,32 @@ public sealed class RawFatImageWriter : IStagedImageWriter
 
     private static Capability QualifyCore(IImageSession image, uint expectedHiddenSectors)
     {
-        if (image.Warnings.Count != 0)
+        if (image.Warnings.Count != 0 && !HasOnlyEarlyFloppyWarning(image))
         {
             return new(false, "Images with detection or structural warnings remain read-only; no implicit repair or normalization is performed.");
         }
         if (image.Metadata.Format != "Raw" || image.Partitions.Count != 0 || image.Volumes.Count != 1)
         {
-            return new(false, "Phase 2 Save As supports only unpartitioned raw FAT images; other stacks remain read-only.");
+            return new(false, "The raw FAT writer requires one unpartitioned FAT volume.");
         }
         IReadOnlyFileSystem fs = image.Volumes[0].FileSystem;
         if (fs.Name is not ("FAT12" or "FAT16" or "FAT32"))
         {
-            return new(false, "This filesystem has no qualified Phase 2 writer. NTFS writes and ISO rebuild are not enabled.");
+            return new(false, "The raw FAT writer only supports FAT12, FAT16, and FAT32 volumes.");
         }
         byte[] boot = new byte[512];
         int read = image.Device.Read(0, boot);
-        int labelOffset = fs.Name == "FAT32" ? 66 : 38;
-        if (read != boot.Length || boot[510] != 0x55 || boot[511] != 0xaa
-            || boot[labelOffset] != 0x29 || BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(11)) != 512
-            || boot[16] != 2 || (fs.Name == "FAT32" && BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(40)) != 0))
+        bool fat32 = fs.Name == "FAT32";
+        bool floppy = fs.Name == "FAT12" && SupportedFloppyGeometry(boot, image.Device.Length);
+        bool legacy = floppy && expectedHiddenSectors == 0 && (fs is FatFileSystem { IsEarlyFloppy: true }
+            || boot[510] == 0x55 && boot[511] == 0xaa && boot[0] is 0xeb or 0xe9
+                && BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(14)) == 1
+                && BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(19)) != 0);
+        if (read != boot.Length || (!HasExtendedBoot(boot, fat32 ? 66 : 38) && !legacy)
+            || BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(11)) != 512
+            || boot[16] != 2 || (fat32 && BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(40)) != 0))
         {
-            return new(false, "Only conventional 512-byte-sector mirrored FAT with an extended BPB is qualified. Legacy floppy reads remain read-only.");
+            return new(false, "Writing requires mirrored 512-byte FAT with an extended BPB or a qualified legacy floppy BPB.");
         }
         long declaredFatSectors = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(22));
         if (declaredFatSectors == 0) { declaredFatSectors = BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(36)); }
@@ -51,18 +88,17 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         }
         uint sectors = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(19));
         if (sectors == 0) { sectors = BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(32)); }
-        if (checked((long)sectors * 512) != image.Device.Length || BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(28)) != expectedHiddenSectors
-            || (fs.Name == "FAT12" && (image.Device.Length != 1_474_560
-                || BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(24)) != 18
-                || BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(26)) != 2)))
+        if (checked((long)sectors * 512) != image.Device.Length || HiddenSectors(boot, fs, expectedHiddenSectors) != expectedHiddenSectors
+            || fs.Name == "FAT12" && !floppy)
         {
-            return new(false, "Only exact-sized bounded FAT volumes with the expected hidden-sector count are qualified (zero for filesystem-only raw images); FAT12 writes are limited to conventional 1,474,560-byte PC floppy layouts. 360K/720K and legacy variants remain read-only.");
+            return new(false, "FAT writing requires exact volume length, the expected hidden-sector count, and a qualified PC floppy geometry for FAT12.");
         }
-        if (!FatWriteMetadata.HasConventionalMetadata(image, boot, fs.Name == "FAT32"))
+        if (fat32 && !FatWriteMetadata.HasConventionalFat32Metadata(image, boot))
         {
-            return new(false, "FAT writing requires consistent root/boot volume labels and valid FAT32 FSInfo/backup boot metadata. No source repairs are performed.");
+            return new(false, "FAT32 FSInfo or backup boot metadata is inconsistent or unsupported. No source repairs are performed.");
         }
         if (fs is not FatFileSystem fat) { return new(false, "This filesystem reader is not qualified with the raw FAT writer."); }
+        _ = fat.CaptureRootLabel(default);
         fat.ValidateWritableAllocation();
         var pending = new Stack<(string Path, int Depth)>();
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -74,7 +110,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
             {
                 return new(false, "FAT tree exceeds the qualified traversal limits.");
             }
-            foreach (FileEntry entry in fs.ReadDirectory(item.Path))
+            foreach (FileEntry entry in fat.ReadDirectory(item.Path))
             {
                 if (++count > 100000 || entry.IsLink || !FatEditNames.IsSupportedName(entry.Name)
                     || entry.ShortName is null || !FatFileSystem.IsSafeAlias(entry.ShortName))
@@ -188,11 +224,13 @@ public sealed class RawFatImageWriter : IStagedImageWriter
     public void ApplyToStream(Stream stream, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
     {
         Dictionary<string, FatFileSystem.PreservedEntry> expected;
+        byte[] rootLabel;
         stream.Flush();
         using (var device = new StreamBlockDevice(stream, new ParserContext()))
         using (var reader = new FatFileSystem(device))
         {
             expected = reader.CapturePreservation(cancellationToken);
+            rootLabel = reader.CaptureRootLabel(cancellationToken);
         }
         foreach (StagedWriteOperation operation in operations)
         {
@@ -313,6 +351,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         using (var reader = new FatFileSystem(device))
         {
             reader.ValidateWritableAllocation(cancellationToken);
+            reader.ValidateRootLabel(rootLabel, cancellationToken);
             reader.ValidatePreservation(expected, cancellationToken);
         }
     }
@@ -334,6 +373,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
             throw new NotSupportedException("FAT metadata validation requires the qualified bounded FAT readers.");
         }
         saved.ValidateWritableAllocation(cancellationToken);
+        saved.ValidateRebuiltSummary(original);
         saved.ValidateSourcePreservation(original, operations, cancellationToken);
     }
 

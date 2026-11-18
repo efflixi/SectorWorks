@@ -62,9 +62,13 @@ internal sealed class VhdxContainerHandler : IReadOnlyContainerHandler
 
 internal sealed class IsoContainerHandler : IReadOnlyContainerHandler
 {
-    public FormatDetection? Detect(IReadOnlyBlockDevice source) =>
-        source.Length >= 32768 + 7 && Bounds.Read(source, 32768 + 1, 5).AsSpan().SequenceEqual("CD001"u8)
-            ? new("ISO", 80, true, "ISO9660 volume descriptor") : null;
+    public FormatDetection? Detect(IReadOnlyBlockDevice source)
+    {
+        if (source.Length < 32768 + 7) { return null; }
+        if (Bounds.Read(source, 32768 + 1, 5).AsSpan().SequenceEqual("CD001"u8))
+        { return new("ISO", 80, true, "ISO9660 volume descriptor"); }
+        return OpticalRebuildDetection.HasUdfStart(source) ? new("UDF", 80, true, "UDF recognition sequence") : null;
+    }
 
     public IReadOnlyBlockDevice OpenReadOnly(IReadOnlyBlockDevice source, ParserContext context,
         List<IDisposable> resources, Dictionary<string, string> properties) => source;

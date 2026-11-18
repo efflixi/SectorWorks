@@ -584,7 +584,7 @@ public sealed class NtfsStagedWorkflowTests(ITestOutputHelper outputLog)
         Assert.Equal("managed NTFS overlay\n"u8.ToArray(), RunNative("ntfscat", volumePath, "/Renamed λ directory/ADDED λ.txt"));
     }
 
-    private static byte[] RunNative(string command, params string[] arguments)
+    internal static byte[] RunNative(string command, params string[] arguments)
     {
         var start = new ProcessStartInfo(command) { RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (string argument in arguments) { start.ArgumentList.Add(argument); }
@@ -608,6 +608,7 @@ public sealed class NtfsStagedWorkflowTests(ITestOutputHelper outputLog)
         private readonly DiskImageWriter inner = new();
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public Capability QualifyVolume(IImageSession image, string volumeId) => inner.QualifyVolume(image, volumeId);
+        public Capability QualifyCommitVolume(IImageSession image, string volumeId) => inner.QualifyCommitVolume(image, volumeId);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
             inner.ValidateCapacity(image, operations, token);
         public void Apply(string path, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token)
@@ -624,7 +625,7 @@ public sealed class NtfsStagedWorkflowTests(ITestOutputHelper outputLog)
         }
     }
 
-    private sealed class FaultStream(Stream inner, string failure) : Stream
+    internal sealed class FaultStream(Stream inner, string failure) : Stream
     {
         public override bool CanRead => inner.CanRead;
         public override bool CanSeek => inner.CanSeek;

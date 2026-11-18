@@ -8,10 +8,13 @@ public sealed class FileBlockDevice : IReadOnlyBlockDevice
     private readonly SafeFileHandle _handle;
 
     public FileBlockDevice(string path, int logicalSectorSize = 512)
+        : this(File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.RandomAccess), logicalSectorSize) { }
+
+    internal FileBlockDevice(SafeFileHandle handle, int logicalSectorSize)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(logicalSectorSize);
-        _handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.RandomAccess);
-        Length = RandomAccess.GetLength(_handle);
+        _handle = handle;
+        try { ArgumentOutOfRangeException.ThrowIfNegativeOrZero(logicalSectorSize); Length = RandomAccess.GetLength(_handle); }
+        catch { handle.Dispose(); throw; }
         LogicalSectorSize = logicalSectorSize;
     }
 
@@ -154,7 +157,7 @@ internal sealed class ParserContext
     }
 }
 
-internal sealed class DeviceStream(IReadOnlyBlockDevice device, ParserContext? context = null) : Stream
+internal sealed class DeviceStream(IReadOnlyBlockDevice device, ParserContext? context = null, bool ownsDevice = false) : Stream
 {
     private long _position;
     public override bool CanRead => true;
@@ -192,6 +195,12 @@ internal sealed class DeviceStream(IReadOnlyBlockDevice device, ParserContext? c
             _ => throw new ArgumentOutOfRangeException(nameof(origin)),
         });
         return Position;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && ownsDevice) { device.Dispose(); }
+        base.Dispose(disposing);
     }
 
     public override void Flush() => throw new NotSupportedException("Read-only image.");

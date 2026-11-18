@@ -1,0 +1,150 @@
+SECTORWORKS — COMPLETE PHASE 2D AND THE REMAINDER OF PHASE 3
+OWNER AUTHORIZATION: CONTINUOUS AUTONOMOUS IMPLEMENTATION AND VERIFICATION
+
+Resume the existing SectorWorks project in the current VS Code workspace. Complete the retained Phase 2D work and the remainder of Phase 3 as one continuous autonomous assignment. Do the implementation, investigation, testing, repairs, documentation, and packaging needed to deliver a reviewable result.
+
+Do not stop at a plan or an investigation report when productive implementation or verification remains possible.
+
+1. AUTHORITY AND STOPPING POINT
+
+This instruction explicitly authorizes BOTH completion of Phase 2D AND all remaining Phase 3 work. It supersedes older instructions to stop for my review between those milestones, at earlier investigation checkpoints, or before beginning the remaining Phase 3 work.
+
+Do not ask me to approve routine implementation choices, dependency repairs, new diagnostics, test runs, generated test fixtures, necessary within-scope refactoring, or progression from Phase 2D to Phase 3. Exercise your engineering judgment and keep working.
+
+Perform and document the Phase 2D verification gate, but do not treat its historical owner-review stop as a reason to end this assignment. Continue directly into Phase 3 when prerequisites are satisfied.
+
+If a particular 2D requirement remains blocked after a serious best-effort investigation, preserve its incomplete status and its capability restrictions. This instruction explicitly permits independent Phase 3 work to proceed despite that retained blocker. It does NOT permit enabling a writer or commit row whose actual safety prerequisites are unsatisfied, marking the blocker passed, or declaring either phase complete prematurely.
+
+After completing Phase 3, prepare the full review package and STOP. The normal owner-review and acceptance requirement resumes at that point. Do not start Phase 4 or any other later-phase implementation until I explicitly accept the result and authorize it.
+
+If full completion is technically impossible, finish every independently achievable part of both phases before returning a candid partial-completion report. Exhaust reasonable alternatives rather than stopping at the first difficult issue. A truthful blocker report is acceptable after that effort; an invented success or weakened safety check is not.
+
+2. RECOVER CURRENT CONTEXT AND PRESERVE RECENT WORK
+
+Read the CURRENT AGENTS.md, rules.txt, complete checklist, technical/UI specifications, architecture, support matrix, staged-editing guide, dependency evaluation, fixture/platform evidence, and relevant source before changing behavior. Read the actual retained NTFS investigation results and harnesses, including the R3–R8 evidence, rather than relying on a conversation summary.
+
+Inspect repository status and retain unrelated owner work. Establish the current implementation and evidence baseline before selecting changes.
+
+The Windows-control setup, imported WinVOX Dropbox/project-cleanup rules, and complete removal of macOS support have just been completed. Verify their current state and preserve those changes:
+- Follow the current Dropbox stop/resume, workspace, scratch-output, and cleanup rules throughout this assignment.
+- macOS is no longer a supported or build-only target. Do not restore its builds, publishing targets, scripts, or support references.
+- Use the current Windows/Linux x64/ARM64 target set. Historical six-target evidence must remain historical evidence, not a reason to reintroduce macOS.
+- The existing direct-commit backend and the completed 2D.10 runtime repairs are delivered work. Inspect, regress, and extend them where necessary; do not start over or list superseded defects as current blockers.
+
+Record this expanded authorization in the relevant project guidance/checklist without erasing historical evidence or claiming my acceptance of unreviewed work.
+
+3. USE THE WINDOWS LAPTOP AUTONOMOUSLY
+
+You now have working SSH and Windows desktop MCP control. Use them for commands, transfers, screenshots, real UI operation, native authoring/checks, and repeatable test iterations. I expect you to conduct Windows testing yourself.
+
+The former owner-launch-only restriction on generated-media test scripts is superseded for this assignment. You may run the necessary Windows-native preparation, attachment, testing, reopening, and detachment of disposable generated virtual-disk files yourself, including necessary elevated execution through legitimate available mechanisms.
+
+Inspect the actual privilege/session capabilities; desktop MCP access alone does not prove administrative access. You may prepare or configure a reusable local elevated test runner if necessary to eliminate repeated manual script launches, keeping access limited to the established local control arrangement and the project testing purpose. Preserve standard-user application qualification separately.
+
+Use normal Windows elevation mechanisms; do not disable UAC or other machine security, weaken protected-system ACLs, or change authentication policy simply to work around denied access. Do not make the Linux SSH tunnel persistent: I deliberately prefer its visible terminal so I can terminate it easily. If I close the tunnel or otherwise withdraw desktop control, respect that and do not silently recreate it.
+
+If an indispensable credential, UAC action, or physical action is genuinely unavailable to you, complete the concrete setup first, identify the exact missing action, and bundle unavoidable intervention requests. Continue independent work while it is blocked. Do not repeatedly ask me to run individual diagnostic scripts.
+
+All destructive storage tests must use positively identified, disposable, generated image files. Do not operate on physical disks, my laptop's system volume, valuable originals, or unrelated personal files. Protect immutable fixtures and retained evidence. Use fresh copies and new run directories for single-use harnesses.
+
+Tower and other protected owner images retain their specific in-place read-only restrictions. Do not copy, mount, modify, transfer, package, or use them for writing. Prefer existing verified evidence when a repeated owner-image probe is unnecessary.
+
+4. FINISH PHASE 2D, WITH A SERIOUS NTFS EFFORT
+
+Use the current closure ledger to identify every genuinely incomplete requirement. Concentrate on:
+- Windows-native TxF/CLFS compatibility and a defensible offline preservation/update rule.
+- The separate LFS 2.0/cached-metadata safety requirement.
+- Windows-authored ordinary NTFS staged editing and Save As qualification across required container/layout/sector rows.
+- Real interactive Windows GUI verification.
+- Current Linux ARM64 evidence where hardware is actually available.
+- Final verification, support claims, documentation, and closeout evidence.
+
+Treat the NTFS work as an engineering investigation with implementation authority, not another preparation-only exercise. Research authoritative specifications, pinned source, relevant implementations, and native behavior as necessary. Develop and repair bounded diagnostic tools, create legal known-state controls, and implement justified fixes within the replaceable storage architecture without seeking approval for each increment.
+
+You may repair or replace isolated managed backend/security/parser portions when a concrete defect or missing capability justifies it. Record provenance, licensing, portability, and regression evidence. Avoid an unrelated dependency rewrite.
+
+For TxF/CLFS:
+- Read the retained negative results before choosing another probe. R8 positively verified backup privilege activation/restoration and still gained no protected-log read access. Repeating it unchanged is not a new strategy.
+- Distinguish file access, generic CLFS transport success, raw structural observations, transaction/recovery interpretation, and safe offline writer behavior. None alone establishes the others.
+- Use fresh known-state ordinary/committed/rolled-back controls, and prepared/in-doubt/recovery cases where necessary to support the claimed acceptance rule.
+- Establish the persistent semantics needed for both relevant clients and TOPS/$TXF_DATA handling, including the required preservation or update behavior, before accepting transaction-bearing media for editing.
+- Diagnose denied access without assuming that additional privilege necessarily resolves it. An alternate evidence route is acceptable when it establishes the same facts independently.
+- Do not strip transaction metadata or accept volumes merely because directories are empty, fields are zero, checksums agree, LSNs appear equal, or native tools call a volume clean.
+
+For LFS/cache safety:
+- Keep this proof separate from TxF/CLFS.
+- Account for the observed attached LFS 2.0 versus detached LFS 1.1 distinction. A detached version label is not sufficient evidence of safety.
+- Implement a bounded clean-volume writer subset only when its acceptance and update rules are defensible and independently verified.
+- Preserve refusal of dirty, ambiguous, unsupported, or recovery-needed states. Do not replay/reset logs, normalize metadata, or invoke repair as an unqualified workaround.
+
+Use Windows-native tools as independent authoring/validation oracles. Core SectorWorks image interpretation and editing must remain portable and independent of host mounting; a Windows-only mounted-volume writer is not a substitute for the required product implementation.
+
+If a route reaches a concrete dead end, document the evidence, change strategy, and continue other work. Do not spend the whole assignment repeating inaccessible probes while achievable UI/recovery work remains untouched.
+
+5. COMPLETE THE REST OF PHASE 3
+
+Audit every current Phase 3 item, including requirements obscured by checked backend-only entries.
+
+A. New NTFS writer qualification — 3.0.1 through 3.0.5
+Enumerate the required bounded NTFS 1.2/3.0/3.1 legacy/attribute-list rows and their valid raw/fixed-dynamic VHD/fixed-dynamic VHDX, filesystem-only/primary MBR/GPT and sector combinations.
+
+Implement and qualify all five file operations, directory behavior, names/capacity validation, shared staged content, Pending Changes, undo/redo/discard, and validated Save As for each newly writable subset BEFORE qualifying source commit for it.
+
+Verify allocation, MFT/mirror/index/attribute-list ownership and extents, security, timestamps, aliases and other retained metadata independently of tree/content hashes. Preserve unrelated volumes and opaque regions. Exercise resident/nonresident transitions, directory growth, near-full conditions, cancellation, malformed inputs, and I/O/flush/validation/race failures.
+
+A version-field mutation is not authentic legacy qualification. Authentic NT4/2000/XP-authored-media work remains under the already-approved post-1.0 deferral. Keep required bounded structural tests in scope, and retain explicit exclusions such as unsupported MFT-bootstrap attribute lists unless separately and genuinely qualified.
+
+B. Complete the user-facing commit workflow
+Wire the existing commit service into appropriate menus/toolbar/keyboard/UI state. Clearly distinguish Save As from committing to the source. Provide the required confirmation, progress, cancellation behavior, errors, backup/recovery information, and per-volume capability explanations.
+
+Retain source identity checks, locking, backup and journal creation, space checks, independent output verification, atomic finalization, history/session refresh, and unchanged-volume preservation. Do not weaken the verified Windows/Linux lifecycle to make UI integration easier.
+
+Exercise repeated commits, commits after Save As, workspace switching/closing, pending-state retention on failure, and rejection of unsupported sibling volumes.
+
+C. Integrate startup recovery
+Connect discovery to the real application lifecycle and implement a usable recovery interface. Choose and document bounded, reliable journal discovery locations; avoid arbitrary whole-disk scans.
+
+Validate journals and referenced paths as untrusted input. Preserve the safeguards preventing stale or altered recovery records from overwriting an externally changed image or undoing an already finalized commit. Report residual artifacts and cleanup failures accurately.
+
+Demonstrate recovery from a restarted real application, not only by calling library methods in tests.
+
+D. Complete per-stack commit qualification — 3.7
+Qualify each newly writable row only after its own staged/Save As/writer prerequisites pass. Keep Modify, Save As, and Commit capabilities independent and concrete.
+
+Regress previously qualified FAT and ordinary NTFS rows, dynamic growth, multiple volumes, source replacement, competing writers, retained metadata, and independent checks of the actual final committed bytes.
+
+Add meaningful failure coverage around staging, flush, validation, finalization, and bookkeeping. Include controlled actual process interruption on disposable media where practical; distinguish it from injected exceptions and do not claim power-loss guarantees from either.
+
+6. PLATFORM AND REAL UI EVIDENCE
+
+Use the live Windows desktop to verify the current published build's actual file picker, navigation, staging/history, Save As, commit, restart/recovery, errors, and disabled-capability behavior. Verify outcomes through the service/native checks as well as screenshots and visible state. Test Linux UI integration where applicable.
+
+Check only established available ARM64 environments. If current physical ARM64 access remains unavailable, record the exact missing evidence and continue independent work. Cross-publishing or emulation must never be labeled physical validation. Do not silently remove the requirement, invent a pass, or stop the whole assignment solely because the machine is unavailable.
+
+7. VERIFICATION, DOCUMENTATION, AND DELIVERY
+
+Keep progress updates concise and informative while working. Maintain a small live ledger of requirements, implementations, evidence, and remaining blockers so long-running investigations do not lose the main objective.
+
+Use repository-local restore/build/test/verify/publish workflows. Run targeted tests as you develop, then complete applicable final verification and Windows/Linux checks on the final application source. Record exact source revisions/hashes, commands, pass/fail/skip counts, tool versions, and the distinction between old and fresh evidence.
+
+Independently check generated outputs. Keep original-source integrity assertions separate from expected post-commit changes and from metadata changes caused by a native Windows reopen. Record the exact bytes being checked at each stage.
+
+Refresh the current four-target publishes and applicable Linux AppImage, with legal notices and generated-only fixtures. Produce clearly identified runnable review packages, not just source code or a report. Keep protected media, secrets, bulky temporary data, and test outputs out of packages and synchronized source storage according to AGENTS.md.
+
+Update the checklist, support matrix, editing/recovery guide, fixtures, platform/dependency/architecture documentation, README, and specification copies as applicable. Keep synchronized specification copies equal. Historical evidence should remain identifiable rather than being rewritten as if it came from this run.
+
+Do not classify an unresolved required capability as completed merely because it now fails safely. Keep unavailable features disabled with accurate reasons. Best effort authorizes reasonable engineering choices; it does not waive required delivery or reduce scope without my decision.
+
+Prepare one coherent final review report containing:
+- Separate Phase 2D and Phase 3 completion status against every remaining requirement.
+- Implemented behavior, repairs, and exact qualified NTFS/container/layout subsets.
+- Real Windows/Linux UI and native interoperability results.
+- Commit/recovery behavior and crash/failure evidence, including remaining limits.
+- Physical-platform gaps, unresolved blockers, and the alternatives already attempted.
+- Exact paths/links to runnable packages, reports, and reproducible verification evidence.
+- A short owner acceptance walkthrough focused on the workflows worth inspecting.
+
+Do not publish a release or tag one as part of this assignment. Follow the existing repository policy for local commits; do not infer external push authorization from this implementation request.
+
+Finish all achievable work, leave the repository and test systems in a documented, usable state, and STOP for my review. State clearly whether Phase 3 is complete or remains blocked. Do not begin Phase 4 until I explicitly accept and authorize the next phase.
+

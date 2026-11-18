@@ -159,6 +159,51 @@
              {
                  Guid newId = CreateNewGuid(context);
                  NtfsStream stream = newFile.CreateStream(AttributeType.ObjectId, null);
+--- namespace-baseline/Imported/FileRecord.cs
++++ repaired/Imported/FileRecord.cs
+@@ -37,10 +37,10 @@
+         public FileRecord(int sectorSize)
+             : base("FILE", sectorSize) {}
+ 
+-        public FileRecord(int sectorSize, int recordLength, uint index)
++        public FileRecord(int sectorSize, int recordLength, uint index, bool useLegacyHeader = false)
+             : base("FILE", sectorSize, recordLength)
+         {
+-            ReInitialize(sectorSize, recordLength, index);
++            ReInitialize(sectorSize, recordLength, index, useLegacyHeader);
+         }
+ 
+         public uint AllocatedSize { get; private set; }
+@@ -109,7 +109,7 @@
+             return result;
+         }
+ 
+-        public void ReInitialize(int sectorSize, int recordLength, uint index)
++        public void ReInitialize(int sectorSize, int recordLength, uint index, bool useLegacyHeader = false)
+         {
+             Initialize("FILE", sectorSize, recordLength);
+             SequenceNumber++;
+@@ -117,11 +117,12 @@
+             AllocatedSize = (uint)recordLength;
+             NextAttributeId = 0;
+             _index = index;
++            LoadedIndex = index;
+             HardLinkCount = 0;
+             BaseFile = new FileRecordReference(0);
+ 
+             Attributes = new List<AttributeRecord>();
+-            _haveIndex = true;
++            _haveIndex = !useLegacyHeader;
+         }
+ 
+         /// <summary>
+@@ -415,4 +416,4 @@
+             return MathUtilities.RoundUp(size + 4, 8); // 0xFFFFFFFF terminator on attributes
+         }
+     }
+-}
+\ No newline at end of file
++}
 --- namespace-baseline/Imported/FileSystemFactory.cs
 +++ repaired/Imported/FileSystemFactory.cs
 @@ -23,6 +23,7 @@
@@ -171,7 +216,7 @@
  {
 --- namespace-baseline/Imported/INtfsContext.cs
 +++ repaired/Imported/INtfsContext.cs
-@@ -29,7 +29,6 @@
+@@ -29,10 +29,11 @@
  
          NtfsOptions Options { get; }
  
@@ -179,6 +224,18 @@
          Stream RawStream { get; }
  
          bool ReadOnly { get; }
++
++        int VolumeVersion { get; }
+ 
+         ReparsePoints ReparsePoints { get; }
+ 
+@@ -40,4 +41,4 @@
+ 
+         UpperCase UpperCase { get; }
+     }
+-}
+\ No newline at end of file
++}
 --- namespace-baseline/Imported/Index.cs
 +++ repaired/Imported/Index.cs
 @@ -248,16 +248,7 @@
@@ -212,7 +269,53 @@
      /// Provides read-only access to the Master File Table of an NTFS file system.
 --- namespace-baseline/Imported/MasterFileTable.cs
 +++ repaired/Imported/MasterFileTable.cs
-@@ -416,13 +416,18 @@
+@@ -110,9 +110,11 @@
+         private Stream _recordStream;
+ 
+         private File _self;
++        private readonly INtfsContext _context;
+ 
+         public MasterFileTable(INtfsContext context)
+         {
++            _context = context;
+             BiosParameterBlock bpb = context.BiosParameterBlock;
+ 
+             _recordCache = new ObjectCache<long, FileRecord>();
+@@ -290,13 +292,13 @@
+                 _recordStream.SetLength(newEndIndex * RecordSize);
+                 for (long i = index; i < newEndIndex; ++i)
+                 {
+-                    FileRecord record = new FileRecord(_bytesPerSector, RecordSize, (uint)i);
++                    FileRecord record = new FileRecord(_bytesPerSector, RecordSize, (uint)i, _context.VolumeVersion < VolumeInformation.VersionXp);
+                     WriteRecord(record);
+                 }
+             }
+ 
+             FileRecord newRecord = GetRecord(index, true);
+-            newRecord.ReInitialize(_bytesPerSector, RecordSize, (uint)index);
++            newRecord.ReInitialize(_bytesPerSector, RecordSize, (uint)index, _context.VolumeVersion < VolumeInformation.VersionXp);
+ 
+             _recordCache[index] = newRecord;
+ 
+@@ -312,7 +314,7 @@
+         {
+             _bitmap.MarkPresent(index);
+ 
+-            FileRecord newRecord = new FileRecord(_bytesPerSector, RecordSize, (uint)index);
++            FileRecord newRecord = new FileRecord(_bytesPerSector, RecordSize, (uint)index, _context.VolumeVersion < VolumeInformation.VersionXp);
+             _recordCache[index] = newRecord;
+             newRecord.Flags = FileRecordFlags.InUse | flags;
+ 
+@@ -376,7 +378,7 @@
+                 }
+                 else
+                 {
+-                    result = new FileRecord(_bytesPerSector, RecordSize, (uint)index);
++                    result = new FileRecord(_bytesPerSector, RecordSize, (uint)index, _context.VolumeVersion < VolumeInformation.VersionXp);
+                 }
+ 
+                 _recordCache[index] = result;
+@@ -416,13 +418,18 @@
  
              // Need to update Mirror.  OpenRaw is OK because this is short duration, and we don't
              // extend or otherwise modify any meta-data, just the content of the Data stream.
@@ -232,7 +335,7 @@
                          s.Position = record.MasterFileTableIndex * RecordSize;
                          s.Write(buffer, 0, RecordSize);
                      }
-@@ -437,76 +442,7 @@
+@@ -437,76 +444,7 @@
  
          public ClusterMap GetClusterMap()
          {
@@ -310,6 +413,13 @@
          }
  
          private static void Wipe(Stream s)
+@@ -523,4 +461,4 @@
+             }
+         }
+     }
+-}
+\ No newline at end of file
++}
 --- namespace-baseline/Imported/NewFileOptions.cs
 +++ repaired/Imported/NewFileOptions.cs
 @@ -22,6 +22,8 @@
@@ -381,6 +491,16 @@
          public NtfsOptions Options { get; set; }
  
          public GetFileByIndexFn GetFileByIndex { get; set; }
+@@ -62,5 +60,7 @@
+         public ForgetFileFn ForgetFile { get; set; }
+ 
+         public bool ReadOnly { get; set; }
++
++        public int VolumeVersion { get; set; } = VolumeInformation.VersionXp;
+     }
+-}
+\ No newline at end of file
++}
 --- namespace-baseline/Imported/NtfsFileSystem.cs
 +++ repaired/Imported/NtfsFileSystem.cs
 @@ -25,8 +25,10 @@
@@ -403,7 +523,15 @@
                                           IDiagnosticTraceable
      {
          private const FileAttributes NonSettableFileAttributes =
-@@ -108,7 +110,6 @@
+@@ -97,6 +99,7 @@
+             File volumeInfoFile = GetFile(MasterFileTable.VolumeIndex);
+             _volumeInfo =
+                 volumeInfoFile.GetStream(AttributeType.VolumeInformation, null).GetContent<VolumeInformation>();
++            _context.VolumeVersion = _volumeInfo.Version;
+ 
+             // Initialize access to the other well-known metadata files
+             _context.ClusterBitmap = new ClusterBitmap(GetFile(MasterFileTable.BitmapIndex));
+@@ -108,7 +111,6 @@
                  _context.SecurityDescriptors = new SecurityDescriptors(GetFile(MasterFileTable.SecureIndex));
                  _context.ObjectIds = new ObjectIds(GetFile(GetDirectoryEntry(@"$Extend\$ObjId").Reference));
                  _context.ReparsePoints = new ReparsePoints(GetFile(GetDirectoryEntry(@"$Extend\$Reparse").Reference));
@@ -411,7 +539,7 @@
              }
  #if false
              byte[] buffer = new byte[1024];
-@@ -1040,11 +1041,7 @@
+@@ -1040,11 +1042,7 @@
                  _context.ReparsePoints.Dump(writer, linePrefix);
              }
  
@@ -424,7 +552,7 @@
  
              writer.WriteLine(linePrefix);
              GetDirectory(MasterFileTable.RootDirIndex).Dump(writer, linePrefix);
-@@ -1095,7 +1092,14 @@
+@@ -1095,7 +1093,14 @@
          /// </summary>
          /// <param name="path">The file or directory to inspect.</param>
          /// <returns>The security descriptor.</returns>
@@ -439,7 +567,7 @@
          {
              using (new NtfsTransaction())
              {
-@@ -1105,7 +1109,7 @@
+@@ -1105,7 +1110,7 @@
                      throw new FileNotFoundException("File not found", path);
                  }
                  File file = GetFile(dirEntry.Reference);
@@ -448,7 +576,7 @@
              }
          }
  
-@@ -1114,8 +1118,18 @@
+@@ -1114,8 +1119,18 @@
          /// </summary>
          /// <param name="path">The file or directory to change.</param>
          /// <param name="securityDescriptor">The new security descriptor.</param>
@@ -467,7 +595,7 @@
              using (new NtfsTransaction())
              {
                  DirectoryEntry dirEntry = GetDirectoryEntry(path);
-@@ -1313,10 +1327,10 @@
+@@ -1313,10 +1328,10 @@
          /// Sets the short name for a given file or directory.
          /// </summary>
          /// <param name="path">The full path to the file or directory to change.</param>
@@ -480,7 +608,7 @@
              {
                  throw new ArgumentException("Short name is not a valid 8.3 file name", nameof(shortName));
              }
-@@ -1345,6 +1359,11 @@
+@@ -1345,6 +1360,11 @@
                  FileNameNamespace givenNamespace = givenEntry.Details.FileNameNamespace;
                  File file = GetFile(givenEntry.Reference);
  
@@ -492,7 +620,7 @@
                  if (givenNamespace == FileNameNamespace.Posix && file.HasWin32OrDosName)
                  {
                      throw new InvalidOperationException("Cannot set a short name on hard links");
-@@ -1370,7 +1389,10 @@
+@@ -1370,7 +1390,10 @@
                      }
                  }
  
@@ -504,7 +632,7 @@
  
                  parentEntry.UpdateFrom(dir);
              }
-@@ -1412,19 +1434,35 @@
+@@ -1412,19 +1435,35 @@
          /// <param name="info">The standard file information.</param>
          public void SetFileStandardInformation(string path, WindowsFileInformation info)
          {
@@ -553,7 +681,7 @@
          }
  
          /// <summary>
-@@ -1496,12 +1534,7 @@
+@@ -1496,12 +1535,7 @@
              long firstSector,
              long sectorCount)
          {
@@ -567,7 +695,7 @@
          }
  
          /// <summary>
-@@ -1522,13 +1555,7 @@
+@@ -1522,13 +1556,7 @@
              long sectorCount,
              byte[] bootCode)
          {
@@ -582,7 +710,7 @@
          }
  
          /// <summary>
-@@ -1549,14 +1576,7 @@
+@@ -1549,14 +1577,7 @@
              long sectorCount,
              NtfsFormatOptions options)
          {
@@ -598,7 +726,7 @@
          }
  
          /// <summary>
-@@ -1569,12 +1589,7 @@
+@@ -1569,12 +1590,7 @@
              VolumeInfo volume,
              string label)
          {
@@ -612,7 +740,7 @@
          }
  
          /// <summary>
-@@ -1589,13 +1604,7 @@
+@@ -1589,13 +1605,7 @@
              string label,
              byte[] bootCode)
          {
@@ -627,7 +755,7 @@
          }
  
          /// <summary>
-@@ -1610,14 +1619,7 @@
+@@ -1610,14 +1620,7 @@
              string label,
              NtfsFormatOptions options)
          {
@@ -643,7 +771,7 @@
          }
  
          /// <summary>
-@@ -1684,23 +1686,12 @@
+@@ -1684,23 +1687,12 @@
                              }
                          }
  
@@ -669,7 +797,7 @@
                              childDirEntry.UpdateFrom(childDir);
  
                              // Update the directory entry by which we found the directory we've just modified
-@@ -2020,23 +2011,12 @@
+@@ -2020,23 +2012,12 @@
                  }
              }
  
@@ -695,7 +823,7 @@
                  result.UpdateFrom(file);
  
                  parentDirEntry.UpdateFrom(parentDir);
-@@ -2178,7 +2158,19 @@
+@@ -2178,7 +2159,19 @@
              }
          }
  
@@ -716,7 +844,7 @@
          {
              NtfsStream legacyStream = file.GetStream(AttributeType.SecurityDescriptor, null);
              if (legacyStream != null)
-@@ -2190,7 +2182,7 @@
+@@ -2190,9 +2183,13 @@
              return _context.SecurityDescriptors.GetDescriptorById(si.SecurityId);
          }
  
@@ -724,7 +852,13 @@
 +        private void DoSetSecurity(File file, PortableSecurityDescriptor securityDescriptor)
          {
              NtfsStream legacyStream = file.GetStream(AttributeType.SecurityDescriptor, null);
++            if (legacyStream == null && _context.VolumeVersion == VolumeInformation.VersionNt4)
++            {
++                legacyStream = file.CreateStream(AttributeType.SecurityDescriptor, null);
++            }
              if (legacyStream != null)
+             {
+                 SecurityDescriptor sd = new SecurityDescriptor();
 --- namespace-baseline/Imported/NtfsOptions.cs
 +++ repaired/Imported/NtfsOptions.cs
 @@ -39,6 +39,7 @@
@@ -1082,3 +1216,101 @@
              }
          }
  
+--- namespace-baseline/Imported/StandardInformation.cs
++++ repaired/Imported/StandardInformation.cs
+@@ -50,21 +50,21 @@
+ 
+         public int ReadFrom(byte[] buffer, int offset)
+         {
+-            CreationTime = ReadDateTime(buffer, 0x00);
+-            ModificationTime = ReadDateTime(buffer, 0x08);
+-            MftChangedTime = ReadDateTime(buffer, 0x10);
+-            LastAccessTime = ReadDateTime(buffer, 0x18);
+-            FileAttributes = (FileAttributeFlags)EndianUtilities.ToUInt32LittleEndian(buffer, 0x20);
+-            MaxVersions = EndianUtilities.ToUInt32LittleEndian(buffer, 0x24);
+-            Version = EndianUtilities.ToUInt32LittleEndian(buffer, 0x28);
+-            ClassId = EndianUtilities.ToUInt32LittleEndian(buffer, 0x2C);
++            CreationTime = ReadDateTime(buffer, offset + 0x00);
++            ModificationTime = ReadDateTime(buffer, offset + 0x08);
++            MftChangedTime = ReadDateTime(buffer, offset + 0x10);
++            LastAccessTime = ReadDateTime(buffer, offset + 0x18);
++            FileAttributes = (FileAttributeFlags)EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x20);
++            MaxVersions = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x24);
++            Version = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x28);
++            ClassId = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x2C);
+ 
+-            if (buffer.Length > 0x30)
++            if (buffer.Length - offset >= 0x48)
+             {
+-                OwnerId = EndianUtilities.ToUInt32LittleEndian(buffer, 0x30);
+-                SecurityId = EndianUtilities.ToUInt32LittleEndian(buffer, 0x34);
+-                QuotaCharged = EndianUtilities.ToUInt64LittleEndian(buffer, 0x38);
+-                UpdateSequenceNumber = EndianUtilities.ToUInt64LittleEndian(buffer, 0x40);
++                OwnerId = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x30);
++                SecurityId = EndianUtilities.ToUInt32LittleEndian(buffer, offset + 0x34);
++                QuotaCharged = EndianUtilities.ToUInt64LittleEndian(buffer, offset + 0x38);
++                UpdateSequenceNumber = EndianUtilities.ToUInt64LittleEndian(buffer, offset + 0x40);
+                 _haveExtraFields = true;
+                 return 0x48;
+             }
+@@ -74,21 +74,21 @@
+ 
+         public void WriteTo(byte[] buffer, int offset)
+         {
+-            EndianUtilities.WriteBytesLittleEndian(CreationTime.ToFileTimeUtc(), buffer, 0x00);
+-            EndianUtilities.WriteBytesLittleEndian(ModificationTime.ToFileTimeUtc(), buffer, 0x08);
+-            EndianUtilities.WriteBytesLittleEndian(MftChangedTime.ToFileTimeUtc(), buffer, 0x10);
+-            EndianUtilities.WriteBytesLittleEndian(LastAccessTime.ToFileTimeUtc(), buffer, 0x18);
+-            EndianUtilities.WriteBytesLittleEndian((uint)FileAttributes, buffer, 0x20);
+-            EndianUtilities.WriteBytesLittleEndian(MaxVersions, buffer, 0x24);
+-            EndianUtilities.WriteBytesLittleEndian(Version, buffer, 0x28);
+-            EndianUtilities.WriteBytesLittleEndian(ClassId, buffer, 0x2C);
++            EndianUtilities.WriteBytesLittleEndian(CreationTime.ToFileTimeUtc(), buffer, offset + 0x00);
++            EndianUtilities.WriteBytesLittleEndian(ModificationTime.ToFileTimeUtc(), buffer, offset + 0x08);
++            EndianUtilities.WriteBytesLittleEndian(MftChangedTime.ToFileTimeUtc(), buffer, offset + 0x10);
++            EndianUtilities.WriteBytesLittleEndian(LastAccessTime.ToFileTimeUtc(), buffer, offset + 0x18);
++            EndianUtilities.WriteBytesLittleEndian((uint)FileAttributes, buffer, offset + 0x20);
++            EndianUtilities.WriteBytesLittleEndian(MaxVersions, buffer, offset + 0x24);
++            EndianUtilities.WriteBytesLittleEndian(Version, buffer, offset + 0x28);
++            EndianUtilities.WriteBytesLittleEndian(ClassId, buffer, offset + 0x2C);
+ 
+             if (_haveExtraFields)
+             {
+-                EndianUtilities.WriteBytesLittleEndian(OwnerId, buffer, 0x30);
+-                EndianUtilities.WriteBytesLittleEndian(SecurityId, buffer, 0x34);
+-                EndianUtilities.WriteBytesLittleEndian(QuotaCharged, buffer, 0x38);
+-                EndianUtilities.WriteBytesLittleEndian(UpdateSequenceNumber, buffer, 0x38);
++                EndianUtilities.WriteBytesLittleEndian(OwnerId, buffer, offset + 0x30);
++                EndianUtilities.WriteBytesLittleEndian(SecurityId, buffer, offset + 0x34);
++                EndianUtilities.WriteBytesLittleEndian(QuotaCharged, buffer, offset + 0x38);
++                EndianUtilities.WriteBytesLittleEndian(UpdateSequenceNumber, buffer, offset + 0x40);
+             }
+         }
+ 
+@@ -113,6 +113,7 @@
+ 
+             NtfsStream siStream = file.CreateStream(AttributeType.StandardInformation, null);
+             StandardInformation si = new StandardInformation();
++            si._haveExtraFields = file.Context.VolumeVersion != VolumeInformation.VersionNt4;
+             si.CreationTime = now;
+             si.ModificationTime = now;
+             si.MftChangedTime = now;
+@@ -137,7 +138,10 @@
+ 
+         internal static FileAttributeFlags SetFileAttributes(FileAttributes newAttributes, FileAttributeFlags existing)
+         {
+-            return (FileAttributeFlags)(((uint)existing & 0xFFFF0000) | ((uint)newAttributes & 0xFFFF));
++            // FileAttributes.Directory is synthesized from the FILE record by
++            // ConvertFlags. Do not introduce it into stored standard information
++            // when restoring timestamps or other public attributes.
++            return (FileAttributeFlags)(((uint)existing & 0xFFFF0010) | ((uint)newAttributes & 0xFFEF));
+         }
+ 
+         private static DateTime ReadDateTime(byte[] buffer, int offset)
+@@ -152,4 +156,4 @@
+             }
+         }
+     }
+-}
+\ No newline at end of file
++}

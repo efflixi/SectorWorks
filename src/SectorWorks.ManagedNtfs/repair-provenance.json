@@ -2,7 +2,7 @@
   "approvedCommit": "59d7cadab839c6d8dfcf52f8be5efe6d2ced190f",
   "inputManifestSha256": "b1be81d092ffc063762fe17f508ad883ac368d5de5e8101beff2431aca3a75a5",
   "repairPatch": "upstream-repairs.patch",
-  "repairPatchSha256": "d2cf3dae7971e6722392420bb9ccba7ea169c53e337a46117e46a064bf55f284",
+  "repairPatchSha256": "7fcc48021d9ef389005b5d478c94e43ddb6b58bb440364dfc7c9e2a06c665c55",
   "excludedFromCompilation": [
     "Imported/NtfsFormatter.cs",
     "Imported/Quotas.cs"
@@ -145,8 +145,8 @@
     },
     {
       "path": "Imported/FileRecord.cs",
-      "sha256": "e13c8ef64b9e25889cc69eae35f768b64833aa67962aca51401756f2f34f1eb2",
-      "locallyRepaired": false
+      "sha256": "0c169c49532ea1f0dd2a686dd7086e5cb83f38837c3bfcfa241d299eae879ea2",
+      "locallyRepaired": true
     },
     {
       "path": "Imported/FileRecordFlags.cs",
@@ -200,7 +200,7 @@
     },
     {
       "path": "Imported/INtfsContext.cs",
-      "sha256": "8fb35dc61ebb36593b0090509ea874a28786e847fe6179700f65634a4c68161a",
+      "sha256": "9e49d749cb4dccdf24c0649515f8fd66296db5e14c6ff808d599bbcedfceec33",
       "locallyRepaired": true
     },
     {
@@ -350,7 +350,7 @@
     },
     {
       "path": "Imported/MasterFileTable.cs",
-      "sha256": "f13aa037f8df1a4c88cc6e14b2631adf1d88cbacd9e2e02dff2e3847bdcf2623",
+      "sha256": "80942c7bfcaf23f72d644551f3572dbc8edd46de117feeb0814221472c96a036",
       "locallyRepaired": true
     },
     {
@@ -385,7 +385,7 @@
     },
     {
       "path": "Imported/NtfsContext.cs",
-      "sha256": "3bafa73ee3856e86e6bbd2d93dbad8619d996ba50862e4df8bd20420c5aa9ff6",
+      "sha256": "aa518a57d0aa662e6db9ad83c3c7f3da128b7b293bc3786d43317d0405edeff2",
       "locallyRepaired": true
     },
     {
@@ -395,7 +395,7 @@
     },
     {
       "path": "Imported/NtfsFileSystem.cs",
-      "sha256": "8f71d64a24bdbef419374027d552b66448d54712a5e167330cdefb09e39eb60b",
+      "sha256": "8444eac6445132043b569970b34b7f6112189d49815f16894fa7b85ab37bfdf3",
       "locallyRepaired": true
     },
     {
@@ -500,8 +500,8 @@
     },
     {
       "path": "Imported/StandardInformation.cs",
-      "sha256": "dce76c064d5411030aedd75b464f72e08a3cc40f07282e43e9ff531ba049527c",
-      "locallyRepaired": false
+      "sha256": "4740044191fe9e1118e815386751e3a0c2ed8b057245aaa43371e453d5de998f",
+      "locallyRepaired": true
     },
     {
       "path": "Imported/StructuredNtfsAttribute.cs",

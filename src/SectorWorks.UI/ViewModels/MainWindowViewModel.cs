@@ -17,12 +17,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool disposed;
 
     public MainWindowViewModel(IExplorerService explorer, IPlatformDialogs dialogs, ILayoutStore layoutStore,
-        IPreferencesStore? preferencesStore = null)
+        IPreferencesStore? preferencesStore = null, ICommitRecoveryService? recoveryService = null)
     {
         this.explorer = explorer;
         this.dialogs = dialogs;
         this.layoutStore = layoutStore;
         this.preferencesStore = preferencesStore;
+        RecoveryService = recoveryService;
         try
         {
             ApplicationPreferences preferences = preferencesStore?.Load() ?? new ApplicationPreferences();
@@ -42,10 +43,29 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     public ObservableCollection<WorkspaceViewModel> Workspaces { get; } = [];
+    public ICommitRecoveryService? RecoveryService { get; }
+    [ObservableProperty] private string recoveryNotice = "";
+
+    public async Task<bool> CheckRecoveryAsync()
+    {
+        if (RecoveryService is null) { return false; }
+        try
+        {
+            RecoveryScan scan = await RecoveryService.DiscoverAsync(lifetime.Token);
+            RecoveryNotice = scan.Items.Count == 0 && scan.Warnings.Count == 0 ? ""
+                : $"Recovery: {scan.Items.Count} retained transactions; {scan.Warnings.Count} warnings. Use Tools > Interrupted Commit Recovery."
+                    + (scan.Warnings.Count == 0 ? "" : "\n" + string.Join("\n", scan.Warnings));
+            return RecoveryNotice.Length != 0;
+        }
+        catch (Exception error) { RecoveryNotice = "Recovery discovery failed; artifacts retained: " + error.Message; return false; }
+    }
     public LayoutSettings Layout { get; private set; }
     public ApplicationPreferences Preferences { get; private set; } = new();
     [ObservableProperty] private WorkspaceViewModel? activeWorkspace;
-    [ObservableProperty] private string status = "Ready — open an image to inspect it read-only.";
+    partial void OnActiveWorkspaceChanged(WorkspaceViewModel? oldValue, WorkspaceViewModel? newValue) =>
+        oldValue?.StopAudioForWorkspace();
+
+    [ObservableProperty] private string status = "Ready — open a disk or optical image.";
     [ObservableProperty] private string error = "";
     [ObservableProperty] private string layoutWarning = "";
     [ObservableProperty] private string preferencesWarning = "";
@@ -88,7 +108,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
                 Workspaces.Add(workspace);
                 ActiveWorkspace = workspace;
                 await workspace.InitializeAsync();
-                Status = "Ready — source opened read-only.";
+                Status = "Ready — image opened.";
             }
             catch (OperationCanceledException) { Status = "Open cancelled."; break; }
             catch (Exception ex)

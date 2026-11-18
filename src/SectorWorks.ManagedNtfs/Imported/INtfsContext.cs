@@ -33,6 +33,8 @@ namespace SectorWorks.ManagedNtfs
 
         bool ReadOnly { get; }
 
+        int VolumeVersion { get; }
+
         ReparsePoints ReparsePoints { get; }
 
         SecurityDescriptors SecurityDescriptors { get; }

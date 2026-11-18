@@ -77,8 +77,8 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             throw new ImageFormatException("FAT allocation table is too small for the declared cluster count.");
         }
         bool hasBootSignature = boot[510] == 0x55 && boot[511] == 0xaa;
-        bool legacyFloppy = IsLegacyFloppy();
-        if (!hasBootSignature && !legacyFloppy)
+        IsEarlyFloppy = HasEarlyFloppyBpb();
+        if (!hasBootSignature && !IsEarlyFloppy)
         {
             throw new ImageFormatException("FAT boot signature is missing; this is not a validated legacy FAT12 floppy layout.");
         }
@@ -111,7 +111,7 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             throw new ImageFormatException("Unsigned legacy FAT12 floppy allocation-table copies disagree.");
         }
         Name = $"FAT{_bits}";
-        bool hasExtendedLabel = boot[_bits == 32 ? 66 : 38] == 0x29 && !legacyFloppy;
+        bool hasExtendedLabel = boot[_bits == 32 ? 66 : 38] == 0x29 && !IsEarlyFloppy;
         VolumeLabel = hasExtendedLabel ? Oem.GetString(boot, _bits == 32 ? 71 : 43, 11).Trim()
             : _bits == 32 ? string.Empty : ReadFixedRootLabel();
         Properties = new Dictionary<string, string>
@@ -126,7 +126,7 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             ["Access"] = "Read-only; bounded cluster-chain validation.",
         }.AsReadOnly();
 
-        bool IsLegacyFloppy()
+        bool HasEarlyFloppyBpb()
         {
             int jump = boot[0] switch { 0xeb => boot[1] + 2, 0xe9 => U16(boot, 1) + 3, _ => -1 };
             int sectorsPerTrack = U16(boot, 24);
@@ -167,6 +167,7 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
     }
 
     public string Name { get; }
+    internal bool IsEarlyFloppy { get; }
     public string VolumeLabel { get; }
     public bool IsCaseSensitive => false;
     public IReadOnlyDictionary<string, string> Properties { get; }
@@ -293,6 +294,11 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
         output.WriteByte((byte)((reserved & ~0x18) | flags));
     }
 
+    internal void ValidateRebuiltSummary(FatFileSystem source)
+    {
+        if (_bits == 32) { FatWriteMetadata.ValidateRebuiltFat32Summary(source._device, _device); }
+    }
+
     internal long ValidateWritableAllocation(CancellationToken token = default)
     {
         if (_clusterCount > MaxChainClusters) { throw new NotSupportedException("FAT write validation is limited to 1048576 data clusters."); }
@@ -372,7 +378,8 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
         }
     }
 
-    private List<Entry> DirectoryEntries(string parent, uint cluster, bool root, CancellationToken token, bool strictNames = false)
+    private List<Entry> DirectoryEntries(string parent, uint cluster, bool root, CancellationToken token,
+        bool strictNames = false, List<byte[]>? volumeLabels = null)
     {
         var entries = new List<Entry>();
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -474,10 +481,12 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
                 if ((attributes & 0x08) != 0 || shortName is "." or "..")
                 {
                     if (strictNames && entryLongOffsets.Length != 0) { throw new ImageFormatException("Long names cannot decorate FAT special or volume-label records."); }
-                    if (strictNames && ((attributes & 0x08) != 0 ? !root || attributes != 8 : root))
+                    bool label = attributes is 0x08 or 0x28;
+                    if (strictNames && ((attributes & 0x08) != 0 ? !root || !label : root))
                     {
                         throw new NotSupportedException("Unexpected FAT volume-label or special-directory metadata.");
                     }
+                    if (label && volumeLabels is not null) { volumeLabels.Add(raw.ToArray()); }
                     continue;
                 }
                 if (strictNames && (!FatEditNames.IsSupportedName(name) || !IsSafeAlias(shortName)
@@ -485,9 +494,7 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
                 {
                     throw new NotSupportedException("FAT name, alias or entry metadata is outside the qualified safe naming subset.");
                 }
-                if (strictNames && (raw[13] > 199 || FatTime(
-                        System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[24..]),
-                        System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[22..])) is null
+                if (strictNames && (raw[13] > 199 || !SupportedModifiedDate(raw)
                     || !SupportedOptionalDate(raw, 16, 14) || !SupportedOptionalDate(raw, 18, -1)
                     || (_bits != 32 && (raw[20] != 0 || raw[21] != 0))
                     || (_bits == 32 && (raw[21] & 0xf0) != 0)))
@@ -671,6 +678,13 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             return null;
         }
         return new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified);
+    }
+
+    private bool SupportedModifiedDate(ReadOnlySpan<byte> raw)
+    {
+        ushort date = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[24..]);
+        ushort time = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(raw[22..]);
+        return (IsEarlyFloppy && date == 0 && time == 0) || FatTime(date, time) is not null;
     }
 
     private static Encoding CreateOem()

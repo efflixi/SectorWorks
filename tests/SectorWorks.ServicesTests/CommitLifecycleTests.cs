@@ -102,9 +102,16 @@ public sealed class CommitLifecycleTests
     {
         using var work = new EditDirectory();
         string source = work.File("source", "committed output");
-        string backup = work.File("backup", "original input");
-        string journal = work.File("journal", "retained");
-        var action = new CommitRecovery.RecoveryAction(source, journal, backup, CommitStage.Validated, work.File("staging", "staged"));
+        string id = Guid.NewGuid().ToString("N");
+        string backup = CommitJournal.BackupPathFor(source, id);
+        File.WriteAllText(backup, "original input");
+        string journal = CommitJournal.PathFor(source, id);
+        string staging = CommitJournal.StagingPathFor(source, id);
+        File.WriteAllText(staging, "staged");
+        // Recovery now validates untrusted journals before examining the source.
+        // Use a real well-formed journal so this still tests the finalize gap.
+        CommitJournal.Write(journal, new(id, source, backup, staging, CommitStage.Validated, DateTime.UtcNow));
+        var action = Assert.Single(CommitRecovery.Discover(work.Path));
         Assert.Throws<IOException>(() => CommitRecovery.RestoreFromBackup(action));
         Assert.Equal("committed output", File.ReadAllText(source));
         Assert.True(File.Exists(backup));
@@ -213,6 +220,7 @@ public sealed class CommitLifecycleTests
         public bool Fail { get; set; } = true;
         public Capability Qualify(IImageSession image) => inner.Qualify(image);
         public Capability QualifyVolume(IImageSession image, string volumeId) => inner.QualifyVolume(image, volumeId);
+        public Capability QualifyCommitVolume(IImageSession image, string volumeId) => inner.QualifyCommitVolume(image, volumeId);
         public void ValidateCapacity(IImageSession image, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token) =>
             inner.ValidateCapacity(image, operations, token);
         public void Apply(string copyPath, IReadOnlyList<StagedWriteOperation> operations, CancellationToken token)

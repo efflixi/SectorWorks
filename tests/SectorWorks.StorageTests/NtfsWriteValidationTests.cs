@@ -332,6 +332,65 @@ public sealed class NtfsWriteValidationTests
     }
 
     [Theory]
+    [InlineData("zero", true)]
+    [InlineData("zero", false)]
+    [InlineData("native-root", true)]
+    [InlineData("native-root", false)]
+    [InlineData("native-resource", true)]
+    [InlineData("native-resource", false)]
+    public async Task TxfLoggedUtilityMetadataNeverQualifiesThroughZeroLsnsOrOrdinaryReadableContent(
+        string valueKind, bool root)
+    {
+        using var work = new WorkDirectory();
+        string path = work.Golden("ntfs.img");
+        _ = Capture(path);
+        byte[] bytes = File.ReadAllBytes(path);
+        int mft = checked((int)U64(bytes, 48) * 4096);
+        int record = root ? mft + 5 * 1024 : FindUserRecord(bytes, mft);
+        // Exact metadata-only values observed on the generated Windows fixture,
+        // never owner content. These are refusal regressions, not TxF semantics
+        // or authentic Windows media qualification. Even all-zero LSNs cannot
+        // establish persistent KTM/TxF quiescence or offline update obligations.
+        byte[] value = valueKind switch
+        {
+            "native-root" => Convert.FromHexString(
+                "0500000000000500010000000100000000000000000000000000000000000000000000000000000000000000000000000200000000000000"),
+            "native-resource" => Convert.FromHexString(
+                "0500000000000500020000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+            _ => new byte[56]
+        };
+        InsertResidentAttribute(bytes, record, 0x100, "$TXF_DATA", value);
+        File.WriteAllBytes(path, bytes);
+        byte[] before = SHA256.HashData(bytes);
+        string reason = Assert.Throws<ImageFormatException>(() => Capture(path)).Message;
+        Assert.Contains($"MFT record {(record - mft) / 1024}", reason);
+        Assert.Contains("attribute 0x100 '$TXF_DATA'", reason);
+        using (IImageSession image = new ImageOpener().OpenReadOnly(path))
+        {
+            using Stream sentinel = Assert.Single(image.Volumes).FileSystem.OpenRead("/SENTINEL.TXT");
+            using var text = new StreamReader(sentinel);
+            Assert.Equal(SectorWorks.DependencyProbe.FixtureCatalog.Sentinel, text.ReadToEnd());
+        }
+
+        using var service = new ExplorerService(stagingDirectory: Path.GetDirectoryName(path));
+        WorkspaceInfo info = await service.OpenAsync(path);
+        VolumeInfo volume = Assert.Single(info.Volumes);
+        Assert.Equal(WorkspaceState.ReadyReadOnly, info.State);
+        Assert.False(volume.Capabilities!.Modify.Available);
+        Assert.False(volume.Capabilities.SaveAs.Available);
+        Assert.False(volume.Capabilities.CommitInPlace.Available);
+        await Assert.ThrowsAsync<NotSupportedException>(() => service.StageAsync(info.Id,
+            new(ImageChangeKind.Delete, volume.Id, "/SENTINEL.TXT")));
+        string output = work.PathFor("txf-must-not-publish.img");
+        await Assert.ThrowsAsync<NotSupportedException>(() => service.SaveAsAsync(info.Id, output));
+        await Assert.ThrowsAsync<NotSupportedException>(() => service.CommitAsync(info.Id));
+        Assert.False(File.Exists(output));
+        Assert.Equal(before, SHA256.HashData(File.ReadAllBytes(path)));
+        await service.CloseAsync(info.Id);
+        using FileStream released = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+    }
+
+    [Theory]
     [InlineData(1, false)]
     [InlineData(2, false)]
     [InlineData(3, false)]
@@ -445,6 +504,45 @@ public sealed class NtfsWriteValidationTests
     private static void Put16(byte[] b, int p, ushort value) => BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(p), value);
     private static void Put32(byte[] b, int p, uint value) => BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(p), value);
     private static void Put64(byte[] b, int p, ulong value) => BinaryPrimitives.WriteUInt64LittleEndian(b.AsSpan(p), value);
+
+    private static void InsertResidentAttribute(byte[] image, int offset, uint type, string name, byte[] value)
+    {
+        byte[] record = image.AsSpan(offset, 1024).ToArray();
+        int usa = U16(record, 4);
+        for (int sector = 1; sector <= 2; sector++)
+        {
+            record.AsSpan(usa + sector * 2, 2).CopyTo(record.AsSpan(sector * 512 - 2, 2));
+        }
+        int position = U16(record, 20);
+        while (U32(record, position) < type)
+        {
+            position += checked((int)U32(record, position + 4));
+        }
+        int used = checked((int)U32(record, 24));
+        byte[] encodedName = System.Text.Encoding.Unicode.GetBytes(name);
+        int valueOffset = (24 + encodedName.Length + 7) & ~7;
+        int length = (valueOffset + value.Length + 7) & ~7;
+        Assert.InRange(used + length, 0, record.Length);
+        record.AsSpan(position, used - position).CopyTo(record.AsSpan(position + length));
+        record.AsSpan(position, length).Clear();
+        Put32(record, position, type);
+        Put32(record, position + 4, (uint)length);
+        record[position + 9] = checked((byte)name.Length);
+        Put16(record, position + 10, 24);
+        Put16(record, position + 14, U16(record, 40));
+        Put32(record, position + 16, (uint)value.Length);
+        Put16(record, position + 20, checked((ushort)valueOffset));
+        encodedName.CopyTo(record, position + 24);
+        value.CopyTo(record, position + valueOffset);
+        Put32(record, 24, (uint)(used + length));
+        Put16(record, 40, checked((ushort)(U16(record, 40) + 1)));
+        for (int sector = 1; sector <= 2; sector++)
+        {
+            record.AsSpan(sector * 512 - 2, 2).CopyTo(record.AsSpan(usa + sector * 2, 2));
+            record.AsSpan(usa, 2).CopyTo(record.AsSpan(sector * 512 - 2, 2));
+        }
+        record.CopyTo(image, offset);
+    }
 
     private static int FindUserRecord(byte[] bytes, int mft)
     {

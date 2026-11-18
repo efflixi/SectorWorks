@@ -1,5 +1,28 @@
+CURRENT SCOPE NOTE - NOVEMBER 17, 2026
+See docs/1.0-scope-closeout.md and checklist.txt. Revised Phase2/2B/2C/2D/3
+are owner accepted complete; remaining modern NTFS qualification is DEFERRED
+POST-1.0 (P1.NTFS.MODERN.1-P1.NTFS.MODERN.6), not a transport/access task.
+Physical ARM64 is NOT VERIFIED — DEFERRED POST-1.0 BY OWNER under separate
+P1.ARM64.LINUX/P1.ARM64.WINDOWS. Existing access/security/manual-tunnel rules
+remain. Historical pending product-gate descriptions below are superseded;
+no new tests, account/ACL/tunnel changes or Phase4 work are authorized here.
+
 WINDOWS 11 HOME - OPENSSH SERVER SETUP
 ====================================
+
+CURRENT WORKFLOW (OWNER DECISION, 2026-11-16)
+--------------------------------------------
+Linux remains the primary development/default test host.
+Use the verified windows_laptop MCP tools as the default Windows command/UI
+testing connection; see docs/windows-desktop-testing.md. SSH remains the
+underlying tunnel/transfer fallback. The existing standard account was not
+elevated. Its enrolled key now uses restrict plus port-forwarding and a
+permitopen restriction for the owner-authorized loopback MCP destination;
+source-IP, PTY, agent and X11 restrictions remain. The original restrict-only
+enrollment procedure below is historical setup; do not re-enroll it over the
+updated key entry. Keep actual addresses/keys/tokens in local-only records.
+Desktop infrastructure is verified; individual SectorWorks GUI gates remain
+incomplete until their actual build/workflows are exercised.
 
 Purpose: Allow the Linux Mint development PC to connect to the Windows laptop
 over your trusted local network for later SectorWorks testing.

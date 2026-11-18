@@ -10,6 +10,8 @@ internal interface IReadOnlyFileSystemHandler
 
 internal sealed class FatFileSystemHandler : IReadOnlyFileSystemHandler
 {
+    internal const string EarlyFloppyWarning = "Legacy FAT12 floppy opened without a 0x55AA boot signature after BPB, geometry and mirrored-FAT checks. Read-only access is not a bootability guarantee.";
+
     public IReadOnlyFileSystem? TryOpen(IReadOnlyBlockDevice device, ParserContext context,
         List<string> warnings, CancellationToken token)
     {
@@ -26,7 +28,7 @@ internal sealed class FatFileSystemHandler : IReadOnlyFileSystemHandler
         var fileSystem = new FatFileSystem(device);
         if (boot[510] != 0x55 || boot[511] != 0xaa)
         {
-            warnings.Add("Legacy FAT12 floppy opened without a 0x55AA boot signature after BPB, geometry and mirrored-FAT checks. Read-only access is not a bootability guarantee.");
+            warnings.Add(EarlyFloppyWarning);
         }
         return fileSystem;
     }

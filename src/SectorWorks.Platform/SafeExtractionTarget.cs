@@ -12,6 +12,10 @@ public sealed class SafeExtractionTarget : IDisposable
 
     public SafeExtractionTarget(string destination)
     {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+        {
+            throw new PlatformNotSupportedException("Extraction is supported only on Windows and Linux.");
+        }
         root = Path.GetFullPath(destination);
         if (!Directory.Exists(root))
         {
@@ -115,6 +119,64 @@ public sealed class SafeExtractionTarget : IDisposable
         }
     }
 
+    /// <summary>Opens one existing regular sibling without following links. The
+    /// held parent prevents redirection during recovery reads and cleanup.</summary>
+    public RecoveryFile OpenRecoveryFile(string name, bool allowDelete = false)
+    {
+        if (ValidateRelativePath(name).Length != 1)
+        {
+            throw new InvalidDataException("Recovery access requires one sibling filename.");
+        }
+        SafeFileHandle handle;
+        Action remove;
+        if (OperatingSystem.IsWindows())
+        {
+            string path = Path.Combine(root, name);
+            handle = Native.CreateFile(path, 0x80000000 | (allowDelete ? 0x10000u : 0), 1,
+                IntPtr.Zero, 3, 0x00200000, IntPtr.Zero);
+            if (handle.IsInvalid) { handle.Dispose(); throw NativeError("Cannot open recovery file", path); }
+            try
+            {
+                RejectWindowsReparsePoint(handle, path);
+                if (!Native.GetFileInformation(handle, 9, out AttributeTag attributes, 8)
+                    || (attributes.Attributes & 0x10) != 0)
+                {
+                    throw new IOException("Recovery requires a regular file: " + path);
+                }
+            }
+            catch { handle.Dispose(); throw; }
+            remove = () =>
+            {
+                int delete = 1;
+                if (!Native.SetFileInformation(handle, 4, ref delete, 4)) { throw NativeError("Cannot delete recovery file", path); }
+            };
+        }
+        else
+        {
+            int descriptor = Native.OpenAt(unixRoot!.DangerousGetHandle().ToInt32(), name, 0x20000 | 0x80000 | 0x800, 0);
+            if (descriptor < 0) { throw NativeError("Cannot open recovery file without following links", name); }
+            handle = new SafeFileHandle(new IntPtr(descriptor), ownsHandle: true);
+            remove = () =>
+            {
+                if (Native.UnlinkAt(unixRoot.DangerousGetHandle().ToInt32(), name, 0) != 0)
+                {
+                    throw NativeError("Cannot delete recovery file", name);
+                }
+            };
+        }
+        try
+        {
+            var stream = new FileStream(handle, FileAccess.Read);
+            if (!stream.CanSeek || (File.GetAttributes(handle) & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0)
+            {
+                stream.Dispose();
+                throw new IOException("Recovery refuses nonregular files: " + name);
+            }
+            return new RecoveryFile(stream, allowDelete ? remove : null);
+        }
+        catch { handle.Dispose(); throw; }
+    }
+
     public static string[] ValidateRelativePath(string path)
     {
         if (string.IsNullOrEmpty(path) || path.StartsWith('/') || path.Contains('\\'))
@@ -157,8 +219,11 @@ public sealed class SafeExtractionTarget : IDisposable
         windowsRootLocks.Clear();
     }
 
-    private static int UnixDirectoryFlags => OperatingSystem.IsMacOS() ? 0x100000 | 0x100 | 0x1000000 : 0x10000 | 0x20000 | 0x80000;
-    private static int UnixCreateFlags => OperatingSystem.IsMacOS() ? 1 | 0x200 | 0x800 | 0x100 | 0x1000000 : 1 | 0x40 | 0x80 | 0x20000 | 0x80000;
+    // Linux arm64 and x64 assign different bits to O_DIRECTORY and O_NOFOLLOW.
+    private static readonly bool UnixArm64 = RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+    private static readonly int UnixNoFollow = 1 << (UnixArm64 ? 15 : 17);
+    private static readonly int UnixDirectoryFlags = (1 << (UnixArm64 ? 14 : 16)) | UnixNoFollow | 0x80000;
+    private static readonly int UnixCreateFlags = 1 | 0x40 | 0x80 | UnixNoFollow | 0x80000;
 
     private static SafeFileHandle OpenUnixDirectory(int parent, string name)
     {
@@ -300,7 +365,17 @@ public sealed class SafeExtractionTarget : IDisposable
         [DllImport("kernel32.dll", EntryPoint = "GetFileInformationByHandleEx", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetFileInformation(SafeFileHandle handle, int informationClass, out AttributeTag information, uint size);
+        [DllImport("kernel32.dll", EntryPoint = "SetFileInformationByHandle", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SetFileInformation(SafeFileHandle handle, int informationClass, ref int information, uint size);
     }
+}
+
+public sealed class RecoveryFile(FileStream stream, Action? remove) : IDisposable
+{
+    public Stream Stream => stream;
+    public void Delete() => (remove ?? throw new InvalidOperationException("Recovery file was opened read-only."))();
+    public void Dispose() => stream.Dispose();
 }
 
 public sealed class ExtractionFile(FileStream stream, Action removeIncomplete, IDisposable directoryLease) : IDisposable

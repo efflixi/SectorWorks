@@ -38,7 +38,7 @@ public sealed class NtfsCompatibilityVersionTests
             Assert.False(fs.Capabilities.Modify.Available);
             Assert.False(fs.Capabilities.CommitInPlace.Available);
             Assert.Throws<NotSupportedException>(() => session.Device.Write(0, new byte[1]));
-            if (version != "3.1")
+            if (version == "1.2")
             {
                 Capability write = new DiskImageWriter().QualifyVolume(session, session.Volumes[0].Id);
                 Assert.False(write.Available);
@@ -101,7 +101,7 @@ public sealed class NtfsCompatibilityVersionTests
     [InlineData(1, 2)]
     [InlineData(3, 0)]
     [InlineData(3, 1)]
-    public async Task LegacyLayoutReadWorkflowsUseTheSameServicesWithoutBroadeningWriterEligibility(byte major, byte minor)
+    public async Task LegacyLayoutReadWorkflowsRespectTheIndependentQualifiedWriterSubset(byte major, byte minor)
     {
         using var work = new WorkDirectory();
         string path = NtfsCompatibilityFixtures.Create(work, major, minor).Path;
@@ -119,7 +119,7 @@ public sealed class NtfsCompatibilityVersionTests
         ExtractionResult result = await service.ExtractAsync(info.Id, volume.Id, [hit.Entry], output);
         Assert.Empty(result.Failures);
         Assert.Equal(NtfsCompatibilityFixtures.NonresidentData, File.ReadAllBytes(Path.Combine(output, "PAYLOAD.BIN")));
-        if (minor != 1)
+        if (major == 1)
         {
             Assert.Equal(WorkspaceState.ReadyReadOnly, info.State);
             Assert.False(volume.Capabilities!.Modify.Available);
@@ -129,15 +129,14 @@ public sealed class NtfsCompatibilityVersionTests
             string rejected = work.PathFor("must-not-save.img");
             await Assert.ThrowsAsync<NotSupportedException>(() => service.SaveAsAsync(info.Id, rejected));
             Assert.False(File.Exists(rejected));
-            // Phase 2C legacy/attribute-list NTFS 1.2/3.0 reads remain noneditable until
-            // Phase 3 items 3.0.1-3.0.5 qualify staged editing/Save As/new-output writing.
+            // This retained NTFS 1.2 reader fixture has deliberately unqualified
+            // allocation/modern metadata. The separate writer fixture is required.
             Assert.False(info.Capabilities.CommitInPlace.Available);
         }
         else
         {
-            // NTFS 3.1 ("ordinary"/XP+ style) was already Phase 2B staged-editing/Save As
-            // qualified before Phase 2C; Phase 3 direct commit reuses that same qualified
-            // pipeline, so it is now qualified here too (3.7's "ordinary NTFS operations").
+            // Both this structural 3.0 layout and the existing 3.1 ordinary
+            // subset now have separate staged/Save As and commit evidence.
             Assert.True(info.Capabilities.CommitInPlace.Available, info.Capabilities.CommitInPlace.Reason);
         }
         Assert.Equal(before, Hash(path));

@@ -445,6 +445,43 @@ public sealed class FatLongNameWriterTests
         Assert.Equal(original, Hash(work.Path));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Fat32AcceptsOnlyAdvisoryDifferencesInBackupFsInfo(bool changeNonHintByte)
+    {
+        using var work = new Fixture("fat32.img");
+        byte[] boot = Boot(work.Path);
+        long primary = Read16(boot, 48) * 512L;
+        long backup = Read16(boot, 50) * 512L + primary;
+        using (var f = File.OpenWrite(work.Path))
+        {
+            f.Position = backup + (changeNonHintByte ? 100 : 488);
+            f.Write(changeNonHintByte ? [0x9b] : [0xff, 0xff, 0xff, 0xff]);
+        }
+        string before = Hash(work.Path);
+        var writer = new RawFatImageWriter();
+        using IImageSession source = new ImageOpener().OpenReadOnly(work.Path);
+        Capability qualification = writer.Qualify(source);
+        Assert.Equal(!changeNonHintByte, qualification.Available);
+        if (!qualification.Available)
+        {
+            Assert.Contains("FSInfo", qualification.Reason, StringComparison.Ordinal);
+            return;
+        }
+        string output = Path.Combine(Path.GetDirectoryName(work.Path)!, "save-fsinfo.img");
+        File.Copy(work.Path, output);
+        StagedWriteOperation[] operations = [Op(ImageChangeKind.AddFile, "/NEW.TXT", "ordinary file")];
+        writer.Apply(output, operations, default);
+        using IImageSession saved = new ImageOpener().OpenReadOnly(output);
+        writer.ValidateOutput(source, saved, operations, default);
+        byte[] data = File.ReadAllBytes(output);
+        Assert.True(data.AsSpan((int)primary, 512).SequenceEqual(data.AsSpan((int)backup, 512)));
+        Assert.Equal("ordinary file", Read(saved.Volumes[0].FileSystem, "/NEW.TXT"));
+        Assert.Equal(before, Hash(work.Path));
+        await AssertTools(output, "/", "NEW");
+    }
+
     [Fact]
     public async Task Fat32ReplacementPreservesAllDatesWithoutRestoringTheOldHighClusterWord()
     {

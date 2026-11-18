@@ -84,7 +84,7 @@ internal static class IsoValidation
                     unusedExtent |= outside && emptyFile;
                     if ((record[25] & 0x80) != 0)
                     {
-                        throw new ImageFormatException("ISO multi-extent files are not supported in Phase 1.");
+                        throw new ImageFormatException("ISO multi-extent files are not supported.");
                     }
                     bool special = identifierLength == 1 && record[33] is 0 or 1;
                     if (depth == 0 && position == 0 && systemUse + 7 <= recordLength
@@ -134,7 +134,7 @@ internal static class IsoValidation
             }
             if (signature is "CL" or "PL" or "RE")
             {
-                throw new ImageFormatException("Rock Ridge relocated-directory records are not supported in Phase 1.");
+                throw new ImageFormatException("Rock Ridge relocated-directory records are not supported.");
             }
             if (signature == "CE")
             {
@@ -168,7 +168,7 @@ internal static class IsoValidation
             }
             if (signature == "ES")
             {
-                throw new ImageFormatException("ISO SUSP extension-selector records are not supported in Phase 1.");
+                throw new ImageFormatException("ISO SUSP extension-selector records are not supported.");
             }
             if (signature == "SL")
             {

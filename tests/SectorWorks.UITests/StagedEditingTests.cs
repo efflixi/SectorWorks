@@ -234,6 +234,48 @@ public sealed class StagedEditingTests
     }
 
     [Fact]
+    public async Task ExternalFilesStageIntoViewedFolderWithoutReplacingConflicts()
+    {
+        using var files = new EditingFiles();
+        string source = files.Golden("fat12.img");
+        string original = files.Hash(source);
+        string first = files.Write("FIRST.TXT", "first import");
+        string second = files.Write("SECOND.TXT", "second import");
+        string conflict = Path.Combine(Directory.CreateDirectory(Path.Combine(files.Path, "other")).FullName, "FIRST.TXT");
+        File.WriteAllText(conflict, "do not overwrite");
+        using var service = new ExplorerService(stagingDirectory: files.Path);
+        var dialogs = new EditingDialogs { Name = "TARGET", OutputPath = Path.Combine(files.Path, "saved.img") };
+        WorkspaceInfo info = await service.OpenAsync(source);
+        using var workspace = new WorkspaceViewModel(service, dialogs, info, new LayoutSettings());
+        await workspace.InitializeAsync();
+        await workspace.NewDirectoryCommand.ExecuteAsync(null);
+        await workspace.NavigateAsync("/TARGET");
+
+        var incoming = new TaskCompletionSource<string?[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task import = workspace.ImportFilesAsync(() => incoming.Task);
+        await workspace.NavigateAsync("/");
+        incoming.SetResult([first, conflict, null, second]);
+        await import;
+
+        Assert.Equal("/", workspace.CurrentPath);
+        Assert.Contains("2 staged, 2 not added", workspace.Status);
+        Assert.Contains("FIRST.TXT: An entry already exists", workspace.Error);
+        Assert.Contains("Only local files can be imported", workspace.Error);
+        await workspace.NavigateAsync("/TARGET");
+        Assert.Equal(new[] { "/TARGET/FIRST.TXT", "/TARGET/SECOND.TXT" }, workspace.Entries.Select(entry => entry.Path));
+        Assert.Equal("first import", (await service.PreviewAsync(info.Id, workspace.Volume!.Id, "/TARGET/FIRST.TXT")).Text);
+        await workspace.UndoCommand.ExecuteAsync(null);
+        Assert.Equal("FIRST.TXT", Assert.Single(workspace.Entries).Name);
+        await workspace.RedoCommand.ExecuteAsync(null);
+        await workspace.SaveAsCommand.ExecuteAsync(null);
+        Assert.Empty(workspace.Error);
+        WorkspaceInfo saved = await service.OpenAsync(dialogs.OutputPath);
+        Assert.Equal("second import", (await service.PreviewAsync(saved.Id, saved.Volumes[0].Id, "/TARGET/SECOND.TXT")).Text);
+        Assert.Equal("do not overwrite", File.ReadAllText(conflict));
+        Assert.Equal(original, files.Hash(source));
+    }
+
+    [Fact]
     public async Task UnsupportedImageRendersDisabledCommandsWithRealCapabilityReasons()
     {
         using var files = new EditingFiles();
@@ -256,6 +298,8 @@ public sealed class StagedEditingTests
                 }
                 Assert.Contains(workspace.SelectedCapabilities.AddFiles.Reason, workspace.AddReason);
                 Assert.False(workspace.Info.Capabilities.Rebuild.Available);
+                await workspace.ImportFilesAsync(() => throw new InvalidOperationException("Must not read clipboard for a read-only image."));
+                Assert.Empty(workspace.PendingChanges);
             }
             finally { window.Close(); }
             return true;
@@ -435,7 +479,8 @@ public sealed class StagedEditingTests
                 Dispatcher.UIThread.RunJobs();
                 Window input = Assert.Single(owner.OwnedWindows);
                 Assert.Contains(input.GetVisualDescendants().OfType<TextBlock>(), text =>
-                    text.Text?.Contains("NFC BMP", StringComparison.Ordinal) == true);
+                    text.Text?.Contains("NFC (composed)", StringComparison.Ordinal) == true
+                    && text.Text.Contains("The image format determines allowed names", StringComparison.Ordinal));
                 TextBox box = Assert.Single(input.GetVisualDescendants().OfType<TextBox>());
                 box.Text = "RENAMED.TXT";
                 Click(input.GetVisualDescendants().OfType<Button>().Single(b => Equals(b.Content, "Stage")));
@@ -730,7 +775,7 @@ internal sealed class EditingFiles : IDisposable
     public void Dispose() => Directory.Delete(Path, true);
 }
 
-internal sealed class ControlledSaveExplorer : IExplorerService, IImageEditingService
+internal class ControlledSaveExplorer : IExplorerService, IImageEditingService
 {
     private readonly FakeExplorer explorer = new();
     public TaskCompletionSource SaveEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -772,7 +817,7 @@ internal sealed class ControlledSaveExplorer : IExplorerService, IImageEditingSe
         explorer.SearchAsync(workspaceId, query, cancellationToken);
     public Task<ExtractionResult> ExtractAsync(Guid workspaceId, string volumeId, IReadOnlyList<FileEntry> entries, string destination, IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default) =>
         explorer.ExtractAsync(workspaceId, volumeId, entries, destination, progress, cancellationToken);
-    public Task<EditingSnapshot> GetEditingSnapshotAsync(Guid workspaceId, CancellationToken cancellationToken = default) =>
+    public virtual Task<EditingSnapshot> GetEditingSnapshotAsync(Guid workspaceId, CancellationToken cancellationToken = default) =>
         Task.FromResult(StartUnmodified && !stageApplied ? new EditingSnapshot([], false, false, 100000) : Snapshot);
     public Task<EditingSnapshot> StageAsync(Guid workspaceId, ImageChangeRequest request, CancellationToken cancellationToken = default)
     {

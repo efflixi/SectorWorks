@@ -14,3 +14,6 @@ old/
 /Compaq Portable Diagnostic Disk.img
 /LEVEL01.OPL
 /starter.img
+
+# Local Windows-authored qualification payload; retained in verified evidence archives.
+/fixtures/qualification/native-notxf.vhd.gz
