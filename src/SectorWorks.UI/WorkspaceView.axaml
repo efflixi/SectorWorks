@@ -159,6 +159,7 @@
                   <Button Content="Pause" Command="{Binding PauseCdCommand}" />
                   <Button Content="Stop" Command="{Binding StopCdCommand}" />
                   <Button Content="Next" Command="{Binding NextCdCommand}" AutomationProperties.Name="Next audio track" />
+                  <Button Content="Disc Layout" Command="{Binding ShowDiscLayoutCommand}" />
                   <Button Content="Export Audio Tracks…" Command="{Binding ExportCdAudioCommand}" />
                 </WrapPanel>
                 <Grid ColumnDefinitions="Auto,125,*" ColumnSpacing="8">
@@ -175,6 +176,7 @@
               <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal" ItemSpacing="5" Margin="5">
                 <Button Content="Open Selected Track" Command="{Binding OpenCdTrackCommand}"
                         CommandParameter="{Binding #TrackGrid.SelectedItem}" />
+                <Button Content="Disc Layout" Command="{Binding ShowDiscLayoutCommand}" />
                 <Button Content="Export Audio Tracks…" Command="{Binding ExportCdAudioCommand}"
                         CommandParameter="{Binding #TrackGrid.SelectedItem}" />
               </WrapPanel>
@@ -184,15 +186,31 @@
                   <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="38" />
                   <DataGridTextColumn Header="Mode" Binding="{Binding ModeName}" Width="100" />
                   <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" />
-                  <DataGridTextColumn Header="LBA" Binding="{Binding StartLba}" Width="65" />
-                  <DataGridTextColumn Header="Sectors" Binding="{Binding SectorCount}" Width="75" />
+                  <DataGridTextColumn Header="Start LBA" Binding="{Binding StartLba}" Width="102" />
+                  <DataGridTextColumn Header="Program sectors" Binding="{Binding SectorCount}" Width="142" />
                   <DataGridTextColumn Header="Bytes/sector" Binding="{Binding SectorSize}" Width="100" />
                   <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="95" />
                 </DataGrid.Columns>
               </DataGrid>
             </DockPanel>
           </TabItem>
-          <TabItem Header="Image Map" IsEnabled="False" ToolTip.Tip="Graphical image maps are not available." />
+          <TabItem Header="{Binding ImageMapTabLabel}" IsEnabled="{Binding HasCdTracks}" ToolTip.Tip="{Binding ImageMapTabTip}">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Top" Margin="5,3,5,6" TextWrapping="Wrap" Foreground="{DynamicResource WorkbenchMuted}"
+                         Text="Image LBA counts sectors from the start of the CUE layout, not the physical disc. File time (MM:SS:FF) is relative to each source file. Unstored gaps have no source bytes." />
+              <DataGrid x:Name="DiscLayoutGrid" ItemsSource="{Binding CdLayout}" IsReadOnly="True" AutoGenerateColumns="False"
+                        CanUserSortColumns="False" AutomationProperties.Name="Disc indexes and gaps">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Track" Binding="{Binding Track}" Width="148" />
+                  <DataGridTextColumn Header="Region" Binding="{Binding Region}" Width="2*" MinWidth="215" />
+                  <DataGridTextColumn Header="Image LBA" Binding="{Binding ImageLba}" Width="110" />
+                  <DataGridTextColumn Header="Sectors" Binding="{Binding SectorCount}" Width="88" />
+                  <DataGridTextColumn Header="Source file" Binding="{Binding FileName}" Width="*" MinWidth="100" />
+                  <DataGridTextColumn Header="File time" Binding="{Binding FileTime}" Width="104" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </DockPanel>
+          </TabItem>
           <TabItem Header="Pending Changes">
             <DockPanel>
               <StackPanel DockPanel.Dock="Top" Spacing="4">

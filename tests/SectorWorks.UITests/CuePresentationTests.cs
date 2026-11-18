@@ -14,6 +14,75 @@ namespace SectorWorks.UITests;
 [Collection("Headless UI")]
 public sealed class CuePresentationTests
 {
+    [Fact]
+    public async Task DiscLayoutShowsStoredIndexesAndUnstoredGapsInDiscOrder()
+    {
+        string directory = Directory.CreateTempSubdirectory("sectorworks-cd-layout-").FullName;
+        try
+        {
+            string image = Path.Combine(directory, "layout.cue");
+            File.WriteAllBytes(Path.Combine(directory, "data.bin"), new byte[20 * 2048]);
+            File.WriteAllBytes(Path.Combine(directory, "audio.bin"), new byte[82 * 2352]);
+            File.WriteAllText(image, """
+                FILE data.bin BINARY
+                  TRACK 01 MODE1/2048
+                    INDEX 01 00:00:00
+                FILE audio.bin BINARY
+                  TRACK 02 AUDIO
+                    INDEX 00 00:00:00
+                    INDEX 01 00:00:02
+                    INDEX 02 00:00:04
+                    POSTGAP 00:00:01
+                  TRACK 03 AUDIO
+                    PREGAP 00:00:03
+                    INDEX 01 00:00:07
+                    INDEX 02 00:01:01
+                """);
+
+            using var session = HeadlessUnitTestSession.StartNew(typeof(HeadlessBootstrap));
+            await session.Dispatch(async () =>
+            {
+                using var service = new ExplorerService(stagingDirectory: Path.Combine(directory, "stage"));
+                WorkspaceInfo info = await service.OpenAsync(image);
+                using var workspace = new WorkspaceViewModel(service, new FakeDialogs(), info, new LayoutSettings());
+                await workspace.OpenCdTrackCommand.ExecuteAsync(workspace.CdTracks[1]);
+                var view = new WorkspaceView { DataContext = workspace };
+                var window = new Window { Content = view };
+                window.Show();
+                try
+                {
+                    Dispatcher.UIThread.RunJobs();
+                    Button layout = Assert.Single(view.GetVisualDescendants().OfType<Button>(),
+                        button => Equals(button.Content, "Disc Layout") && button.IsVisible);
+                    layout.Command!.Execute(null);
+                    Dispatcher.UIThread.RunJobs();
+                    var tab = Assert.IsType<TabItem>(view.FindControl<TabControl>("ToolTabs")!.SelectedItem);
+                    Assert.Equal("Disc Layout", tab.Header);
+                    var grid = view.FindControl<DataGrid>("DiscLayoutGrid")!;
+                    Assert.True(grid.IsVisible);
+                    CdLayoutRow[] expected =
+                    [
+                        new("01 · MODE1/2048", "INDEX 01 · Program start", 0, 20, "data.bin", "00:00:00"),
+                        new("02 · CD audio", "INDEX 00 · Stored pregap", 20, 2, "audio.bin", "00:00:00"),
+                        new("02 · CD audio", "INDEX 01 · Program start", 22, 2, "audio.bin", "00:00:02"),
+                        new("02 · CD audio", "INDEX 02 · Program subdivision", 24, 3, "audio.bin", "00:00:04"),
+                        new("02 · CD audio", "POSTGAP · Not stored", 27, 1, "—", "—"),
+                        new("03 · CD audio", "PREGAP · Not stored", 28, 3, "—", "—"),
+                        new("03 · CD audio", "INDEX 01 · Program start", 31, 69, "audio.bin", "00:00:07"),
+                        new("03 · CD audio", "INDEX 02 · Program subdivision", 100, 6, "audio.bin", "00:01:01"),
+                    ];
+                    Assert.Equal(expected, grid.ItemsSource!.Cast<CdLayoutRow>());
+                    Assert.Equal(2, workspace.SelectedCdTrack?.Number);
+                    Assert.Equal(5, workspace.SelectedCdTrack?.SectorCount);
+                }
+                finally { window.Close(); }
+                await service.CloseAsync(info.Id);
+                return true;
+            }, CancellationToken.None);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]

@@ -2049,6 +2049,10 @@ Support CUE/disc structures, data and mixed-mode tracks, direct CD-DA playback, 
 [x] Data selection opens filesystem view.
 [x] Audio selection opens track/audio pane.
 [x] Add track inspector details.
+[x] Show the ordered CUE track layout, including indexes, stored pregaps
+    and unstored gaps, with image-relative and source-file positions.
+    NOTE: Layout only; playback and WAV-export boundaries are unchanged.
+    See docs/prerelease-v0.5.2.md.
 
 5.5 CD-DA streaming
 [x] Stream directly from sectors without temporary WAV extraction.

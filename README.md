@@ -1,6 +1,6 @@
 # SectorWorks
 
-[v0.5.1-wav-export development prerelease: packages, verification and limits](docs/prerelease-v0.5.1.md).
+[v0.5.2-disc-layout development prerelease: packages, verification and limits](docs/prerelease-v0.5.2.md).
 
 ## Phase 5 — BIN/CUE and CD audio
 
@@ -9,6 +9,9 @@ CD audio directly from sectors. Qualified data tracks can use staged editing
 and rebuild to a new folder containing the CUE and its companions. The
 [Phase 5 report](docs/phase5-bin-cue.md) describes the supported layouts, output
 safety and playback requirements.
+
+Open **Disc Layout** to see each CUE index and gap in disc order, with its
+image-relative start, sector count, and backing file position where stored.
 
 To save CD audio, open **Track Information** or **Audio Player** and choose
 **Export Audio Tracks…**. Select tracks (or **Select All**) and choose a

@@ -6,9 +6,11 @@ using SectorWorks.Services;
 
 namespace SectorWorks.UI.ViewModels;
 
+public sealed record CdLayoutRow(string Track, string Region, int ImageLba, int SectorCount, string FileName, string FileTime);
+
 public sealed partial class WorkspaceViewModel
 {
-    private const int AudioPlayerTab = 5, TrackInformationTab = 6;
+    private const int AudioPlayerTab = 5, TrackInformationTab = 6, DiscLayoutTab = 7;
     private readonly Dictionary<int, StructureNode> trackNodes = [];
     private CancellationTokenSource? playback;
     private Task playbackTask = Task.CompletedTask;
@@ -18,7 +20,10 @@ public sealed partial class WorkspaceViewModel
     private bool seekEdited;
 
     public IReadOnlyList<CdTrack> CdTracks { get; private set; } = [];
+    public IReadOnlyList<CdLayoutRow> CdLayout { get; private set; } = [];
     public bool HasCdTracks => CdTracks.Count != 0;
+    public string ImageMapTabLabel => HasCdTracks ? "Disc Layout" : "Image Map";
+    public string? ImageMapTabTip => HasCdTracks ? null : "Graphical image maps are not available.";
     [ObservableProperty] private CdTrack? selectedCdTrack;
     [ObservableProperty] private bool isAudioPlaying;
     [ObservableProperty] private double seekSeconds;
@@ -87,6 +92,7 @@ public sealed partial class WorkspaceViewModel
     private void AddDiscNodes(StructureNode root, CdDisc disc)
     {
         CdTracks = disc.Sessions.SelectMany(session => session.Tracks).ToArray();
+        CdLayout = CdTracks.SelectMany(DescribeTrackLayout).ToArray();
         foreach (CdSession session in disc.Sessions)
         {
             var branch = new StructureNode($"Session {session.Number}", "Optical") { IsExpanded = true };
@@ -100,6 +106,44 @@ public sealed partial class WorkspaceViewModel
                 branch.Children.Add(node);
                 trackNodes.Add(track.Number, node);
             }
+        }
+    }
+
+    [RelayCommand]
+    private void ShowDiscLayout()
+    {
+        ToolVisible = true;
+        ToolIndex = DiscLayoutTab;
+    }
+
+    private static IEnumerable<CdLayoutRow> DescribeTrackLayout(CdTrack track)
+    {
+        string label = $"{track.Number:D2} · {(track.IsAudio ? "CD audio" : track.ModeName)}";
+        int programStart = track.Indexes.Single(index => index.Number == 1).FileSector;
+        int programEnd = track.StartLba + track.SectorCount;
+        if (track.Pregap > 0)
+        {
+            yield return new(label, "PREGAP · Not stored", track.StartLba - track.Pregap, track.Pregap, "—", "—");
+        }
+
+        for (int i = 0; i < track.Indexes.Count; i++)
+        {
+            CdTrackIndex index = track.Indexes[i];
+            int startLba = track.StartLba + index.FileSector - programStart;
+            int count = i + 1 < track.Indexes.Count ? track.Indexes[i + 1].FileSector - index.FileSector : programEnd - startLba;
+            string section = index.Number switch
+            {
+                0 => "Stored pregap",
+                1 => "Program start",
+                _ => "Program subdivision",
+            };
+            yield return new(label, $"INDEX {index.Number:D2} · {section}", startLba, count,
+                track.SourceName, $"{index.FileSector / 4500:D2}:{index.FileSector / 75 % 60:D2}:{index.FileSector % 75:D2}");
+        }
+
+        if (track.Postgap > 0)
+        {
+            yield return new(label, "POSTGAP · Not stored", programEnd, track.Postgap, "—", "—");
         }
     }
 
@@ -141,8 +185,8 @@ public sealed partial class WorkspaceViewModel
 
         if (disposed || SelectedCdTrack?.Number != track.Number) { return; }
         Properties = $"Track {track.Number:D2} · {track.ModeName}\nTitle: {track.Title}\nPerformer: {track.Performer}\n"
-            + $"Source: {track.SourceName}\nLBA: {track.StartLba:N0}\nSectors: {track.SectorCount:N0}\nSector size: {track.SectorSize} bytes\n"
-            + $"Stored pregap: {track.StoredPregap}; generated pregap: {track.Pregap}; postgap: {track.Postgap}\n"
+            + $"Source: {track.SourceName}\nProgram start LBA: {track.StartLba:N0}\nProgram sectors: {track.SectorCount:N0}\nSector size: {track.SectorSize} bytes\n"
+            + $"Stored pregap: {track.StoredPregap}; unstored pregap: {track.Pregap}; unstored postgap: {track.Postgap} sectors\n"
             + $"Indexes (file sectors): {string.Join(", ", track.Indexes.Select(i => $"{i.Number:D2}={i.FileSector}"))}\n"
             + $"Duration: {Clock(track.Duration.TotalSeconds)}";
         ToolIndex = track.IsAudio ? AudioPlayerTab : TrackInformationTab;
