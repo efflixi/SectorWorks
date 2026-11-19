@@ -6,8 +6,11 @@ using SectorWorks.Platform;
 
 namespace SectorWorks.UI;
 
-public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, IImageEditingDialogs, ICdAudioExportDialogs
+public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, IImageEditingDialogs, ICdAudioExportDialogs,
+    IReadOnlyImageDialogs, ICdMetadataDialogs
 {
+    private readonly SemaphoreSlim imageNotices = new(1);
+
     public async Task<IReadOnlyList<string>> PickImagesAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -32,6 +35,115 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
     public Task<string?> PickAudioExportFolderAsync(CancellationToken cancellationToken = default) =>
         PickFolderAsync("Export WAV files to folder — existing files are never overwritten", cancellationToken);
 
+    public async Task<CdMetadataMatch?> PickCdMetadataAsync(IReadOnlyList<CdMetadataMatch> matches,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (matches.Count == 0) { return null; }
+        var choices = new ComboBox
+        {
+            ItemsSource = matches.Select(match => string.Join(" · ", new[] { match.Album, match.Artist,
+                $"Disc {match.DiscNumber}", match.Edition }.Where(value => value.Length > 0))).ToArray(),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            PlaceholderText = "Choose a release",
+        };
+        Avalonia.Automation.AutomationProperties.SetName(choices, "MusicBrainz release");
+        var preview = new TextBox
+        {
+            IsReadOnly = true,
+            MinHeight = 80,
+            MaxHeight = 240,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        };
+        Avalonia.Automation.AutomationProperties.SetName(preview, "Proposed track names and performers");
+        var accept = new Button { Content = "Use track names", IsDefault = true, IsEnabled = false };
+        var cancel = new Button { Content = "Cancel", IsCancel = true };
+        var dialog = CreateDialog("MusicBrainz track names", new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = matches[0].IsApproximate
+                        ? "These releases have similar timing. Compare the track list before applying names."
+                        : "Choose the edition that matches this disc.",
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                },
+                choices,
+                preview,
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right,
+                    Children = { cancel, accept } }
+            }
+        });
+        choices.SelectionChanged += (_, _) =>
+        {
+            CdMetadataMatch? selected = choices.SelectedIndex >= 0 ? matches[choices.SelectedIndex] : null;
+            accept.IsEnabled = selected is not null;
+            preview.Text = selected is null ? "" : string.Join("\n", selected.Tracks.Select(track =>
+                $"{track.Number:D2}  {track.Title}" + (track.Performer.Length == 0 ? "" : " — " + track.Performer)));
+        };
+        if (matches.Count == 1) { choices.SelectedIndex = 0; }
+        accept.Click += (_, _) => dialog.Close(matches[choices.SelectedIndex]);
+        cancel.Click += (_, _) => dialog.Close(null);
+        using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => dialog.Close(null)));
+        CdMetadataMatch? result = await dialog.ShowDialog<CdMetadataMatch?>(owner);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
+    }
+
+    public async Task ShowReadOnlyImageAsync(string imageName, IReadOnlyList<string> issues, CancellationToken cancellationToken = default)
+    {
+        await imageNotices.WaitAsync(cancellationToken);
+        try
+        {
+            var reasons = new TextBox
+            {
+                Text = string.Join("\n", issues.Select(issue => "• " + issue)),
+                IsReadOnly = true,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                MaxHeight = 180,
+                Padding = new Avalonia.Thickness(0),
+                BorderThickness = new Avalonia.Thickness(0),
+                Background = Avalonia.Media.Brushes.Transparent,
+            };
+            Avalonia.Automation.AutomationProperties.SetName(reasons, "Reasons editing is unavailable");
+            var okay = new Button
+            {
+                Content = "OK",
+                IsDefault = true,
+                IsCancel = true,
+                HorizontalAlignment = HorizontalAlignment.Right,
+            };
+            var dialog = CreateDialog("Read-only image", new StackPanel
+            {
+                Spacing = 10,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = imageName, FontWeight = Avalonia.Media.FontWeight.SemiBold,
+                        TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
+                    },
+                    new TextBlock
+                    {
+                        Text = "This image can't be edited or rebuilt because of the following issue(s):",
+                        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    },
+                    reasons,
+                    okay,
+                }
+            });
+            okay.Click += (_, _) => dialog.Close();
+            cancellationToken.ThrowIfCancellationRequested();
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => dialog.Close()));
+            await dialog.ShowDialog(owner);
+        }
+        finally { imageNotices.Release(); }
+    }
+
     private async Task<string?> PickFolderAsync(string title, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -42,7 +154,7 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
         });
         cancellationToken.ThrowIfCancellationRequested();
         return folders.Count == 0 ? null : folders[0].TryGetLocalPath()
-            ?? throw new NotSupportedException("Extraction requires a local destination folder.");
+            ?? throw new NotSupportedException("Choose a local destination folder. The selected location does not expose a local path.");
     }
 
     public async Task<IReadOnlyList<int>?> PickAudioTracksAsync(IReadOnlyList<CdTrack> audioTracks, int? selectedTrack,

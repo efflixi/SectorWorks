@@ -12,6 +12,8 @@ public sealed partial class WorkspaceViewModel
 {
     private const int AudioPlayerTab = 5, TrackInformationTab = 6, DiscLayoutTab = 7;
     private readonly Dictionary<int, StructureNode> trackNodes = [];
+    private readonly ICdMetadataLookup? cdMetadata;
+    private bool hasConfirmedCdMetadata;
     private CancellationTokenSource? playback;
     private Task playbackTask = Task.CompletedTask;
     private long audioFrame;
@@ -22,6 +24,7 @@ public sealed partial class WorkspaceViewModel
     public IReadOnlyList<CdTrack> CdTracks { get; private set; } = [];
     public IReadOnlyList<CdLayoutRow> CdLayout { get; private set; } = [];
     public bool HasCdTracks => CdTracks.Count != 0;
+    public bool HasCdAudio => CdTracks.Any(track => track.IsAudio);
     public string ImageMapTabLabel => HasCdTracks ? "Disc Layout" : "Image Map";
     public string? ImageMapTabTip => HasCdTracks ? null : "Graphical image maps are not available.";
     [ObservableProperty] private CdTrack? selectedCdTrack;
@@ -44,6 +47,67 @@ public sealed partial class WorkspaceViewModel
     public bool CanNextCd => AdjacentAudio(1) is not null;
     public bool CanExportCdAudio => !disposed && !IsBusy && explorer is ICdAudioExportService && dialogs is ICdAudioExportDialogs
         && CdTracks.Any(track => track.IsAudio && track.Playback.Available);
+    public bool CanLookupCdMetadata => !disposed && !IsBusy && HasCdAudio
+        && cdMetadata is not null && dialogs is ICdMetadataDialogs;
+
+    [RelayCommand(CanExecute = nameof(CanLookupCdMetadata))]
+    private async Task LookupCdMetadataAsync()
+    {
+        if (!CanLookupCdMetadata || Info.OpticalDisc is not { } disc
+            || cdMetadata is not { } lookup || dialogs is not ICdMetadataDialogs picker) { return; }
+        await RunOperationAsync(async token =>
+        {
+            Status = "Looking up track names on MusicBrainz…";
+            try
+            {
+                IReadOnlyList<CdMetadataMatch> matches = await lookup.LookupAsync(disc, token);
+                token.ThrowIfCancellationRequested();
+                if (matches.Count == 0)
+                {
+                    Status = "MusicBrainz found no release with a matching track layout.";
+                    return;
+                }
+                CdMetadataMatch? selected = await picker.PickCdMetadataAsync(matches, token);
+                token.ThrowIfCancellationRequested();
+                if (selected is null)
+                {
+                    Status = "Track name selection cancelled.";
+                    return;
+                }
+                ApplyCdMetadata(disc, selected);
+                Status = "Track names loaded from MusicBrainz for " + selected.Album + ".";
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                if (!disposed) { Status = "MusicBrainz lookup cancelled."; }
+            }
+        });
+    }
+
+    private void ApplyCdMetadata(CdDisc disc, CdMetadataMatch match)
+    {
+        var labels = match.Tracks.ToDictionary(track => track.Number);
+        CdTracks = disc.Sessions.SelectMany(session => session.Tracks).Select(track =>
+            track.IsAudio && labels.TryGetValue(track.Number, out CdMetadataTrack? label)
+                ? track with
+                {
+                    Title = string.IsNullOrWhiteSpace(track.Title) ? label.Title : track.Title,
+                    Performer = string.IsNullOrWhiteSpace(track.Performer) ? label.Performer : track.Performer,
+                }
+                : track).ToArray();
+        hasConfirmedCdMetadata = true;
+        foreach (CdTrack track in CdTracks.Where(track => track.IsAudio))
+        { trackNodes[track.Number].Title = TrackTitle(track); }
+        CdLayout = CdTracks.SelectMany(DescribeTrackLayout).ToArray();
+        OnPropertyChanged(nameof(CdTracks));
+        OnPropertyChanged(nameof(CdLayout));
+        if (SelectedCdTrack is { IsAudio: true } selected)
+        {
+            CdTrack updated = CdTracks.Single(track => track.Number == selected.Number);
+            SelectedCdTrack = updated;
+            UpdateTrackProperties(updated);
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanExportCdAudio))]
     private async Task ExportCdAudioAsync(CdTrack? track)
@@ -66,7 +130,9 @@ public sealed partial class WorkspaceViewModel
                 if (!disposed && !finished && !token.IsCancellationRequested)
                 { Status = $"Exporting {p.Path} — {p.FilesCompleted:N0} of {selected.Count:N0} WAV files saved"; }
             });
-            CdAudioExportResult result = await export.ExportCdAudioAsync(Info.Id, selected, destination, progress, token);
+            IReadOnlyDictionary<int, string>? titles = hasConfirmedCdMetadata
+                ? CdTracks.Where(item => item.IsAudio).ToDictionary(item => item.Number, item => item.Title) : null;
+            CdAudioExportResult result = await export.ExportCdAudioAsync(Info.Id, selected, destination, progress, token, titles);
             finished = true;
             if (disposed) { return; }
 
@@ -80,9 +146,7 @@ public sealed partial class WorkspaceViewModel
                 details.AddRange(result.Failures.Select(f => $"{f.Path}: {f.Error}"));
                 if (result.Cancelled)
                 {
-                    var notAttempted = selected.Order().Select(number => $"Track {number:D2}.wav")
-                        .Except(result.Completed).Except(result.Failures.Select(f => f.Path));
-                    details.Add($"Not exported: {string.Join(", ", notAttempted)}");
+                    details.Add($"Not exported: {string.Join(", ", result.NotExported)}");
                 }
                 Error = string.Join("\n", details);
             }
@@ -118,7 +182,9 @@ public sealed partial class WorkspaceViewModel
 
     private static IEnumerable<CdLayoutRow> DescribeTrackLayout(CdTrack track)
     {
-        string label = $"{track.Number:D2} · {(track.IsAudio ? "CD audio" : track.ModeName)}";
+        string label = $"{track.Number:D2} · {(track.IsAudio
+            ? string.IsNullOrWhiteSpace(track.Title) ? "CD audio" : track.Title
+            : track.ModeName)}";
         int programStart = track.Indexes.Single(index => index.Number == 1).FileSector;
         int programEnd = track.StartLba + track.SectorCount;
         if (track.Pregap > 0)
@@ -158,6 +224,7 @@ public sealed partial class WorkspaceViewModel
     private async Task SelectTrackNodeAsync(StructureNode node, CdTrack track)
     {
         if (disposed) { return; }
+        if (track.IsAudio) { track = CdTracks.Single(item => item.Number == track.Number); }
         if (SelectedCdTrack?.Number != track.Number)
         {
             StopAudioForWorkspace();
@@ -184,13 +251,18 @@ public sealed partial class WorkspaceViewModel
         }
 
         if (disposed || SelectedCdTrack?.Number != track.Number) { return; }
+        UpdateTrackProperties(track);
+        ToolIndex = track.IsAudio ? AudioPlayerTab : TrackInformationTab;
+        UpdateInspector();
+    }
+
+    private void UpdateTrackProperties(CdTrack track)
+    {
         Properties = $"Track {track.Number:D2} · {track.ModeName}\nTitle: {track.Title}\nPerformer: {track.Performer}\n"
             + $"Source: {track.SourceName}\nProgram start LBA: {track.StartLba:N0}\nProgram sectors: {track.SectorCount:N0}\nSector size: {track.SectorSize} bytes\n"
             + $"Stored pregap: {track.StoredPregap}; unstored pregap: {track.Pregap}; unstored postgap: {track.Postgap} sectors\n"
             + $"Indexes (file sectors): {string.Join(", ", track.Indexes.Select(i => $"{i.Number:D2}={i.FileSector}"))}\n"
             + $"Duration: {Clock(track.Duration.TotalSeconds)}";
-        ToolIndex = track.IsAudio ? AudioPlayerTab : TrackInformationTab;
-        UpdateInspector();
     }
 
     partial void OnSelectedCdTrackChanged(CdTrack? value)

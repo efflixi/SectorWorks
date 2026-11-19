@@ -12,17 +12,20 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IPlatformDialogs dialogs;
     private readonly ILayoutStore layoutStore;
     private readonly IPreferencesStore? preferencesStore;
+    private readonly ICdMetadataLookup? cdMetadata;
     private readonly CancellationTokenSource lifetime = new();
     private readonly HashSet<CancellationTokenSource> opens = [];
     private bool disposed;
 
     public MainWindowViewModel(IExplorerService explorer, IPlatformDialogs dialogs, ILayoutStore layoutStore,
-        IPreferencesStore? preferencesStore = null, ICommitRecoveryService? recoveryService = null)
+        IPreferencesStore? preferencesStore = null, ICommitRecoveryService? recoveryService = null,
+        ICdMetadataLookup? cdMetadata = null)
     {
         this.explorer = explorer;
         this.dialogs = dialogs;
         this.layoutStore = layoutStore;
         this.preferencesStore = preferencesStore;
+        this.cdMetadata = cdMetadata;
         RecoveryService = recoveryService;
         try
         {
@@ -79,7 +82,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
             await OpenPathsAsync(await dialogs.PickImagesAsync(lifetime.Token));
         }
         catch (OperationCanceledException) { Status = "Open cancelled."; }
-        catch (Exception ex) { Error = ex.Message; Status = "Open failed."; }
+        catch (Exception ex) { Error = "Could not select an image to open: " + ex.Message; Status = "Open failed."; }
     }
 
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -93,33 +96,56 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         opens.Add(source);
         IsOpening = true;
         Error = "";
-        foreach (string path in paths)
+        try
         {
-            try
+            foreach (string path in paths)
             {
-                Status = "Opening " + Path.GetFileName(path) + "…";
-                WorkspaceInfo info = await explorer.OpenAsync(path, source.Token);
-                if (disposed || source.IsCancellationRequested)
+                WorkspaceInfo info;
+                try
                 {
-                    await explorer.CloseAsync(info.Id);
-                    break;
+                    Status = "Opening " + Path.GetFileName(path) + "…";
+                    info = await explorer.OpenAsync(path, source.Token);
+                    if (disposed || source.IsCancellationRequested)
+                    {
+                        await explorer.CloseAsync(info.Id);
+                        break;
+                    }
+                    var workspace = new WorkspaceViewModel(explorer, dialogs, info, Layout, Preferences, cdMetadata);
+                    Workspaces.Add(workspace);
+                    ActiveWorkspace = workspace;
+                    await workspace.InitializeAsync();
+                    Status = "Ready — image opened.";
                 }
-                var workspace = new WorkspaceViewModel(explorer, dialogs, info, Layout, Preferences);
-                Workspaces.Add(workspace);
-                ActiveWorkspace = workspace;
-                await workspace.InitializeAsync();
-                Status = "Ready — image opened.";
-            }
-            catch (OperationCanceledException) { Status = "Open cancelled."; break; }
-            catch (Exception ex)
-            {
-                Error += (Error.Length == 0 ? "" : "\n") + $"{path}: {ex.Message}";
-                Status = "Open failed; other workspaces are unchanged.";
+                catch (OperationCanceledException) { Status = "Open cancelled."; break; }
+                catch (Exception ex)
+                {
+                    AppendOpenError($"Could not open {path}: {ex.Message}");
+                    Status = "Open failed.";
+                    continue;
+                }
+                if (dialogs is IReadOnlyImageDialogs notices && !info.Capabilities.Modify.Available
+                    && !info.Capabilities.SaveAs.Available && !info.Capabilities.Rebuild.Available
+                    && !info.Capabilities.CommitInPlace.Available)
+                {
+                    string[] issues = info.Volumes.Select(volume => volume.Capabilities?.Modify.Reason)
+                        .Prepend(info.Capabilities.Modify.Reason)
+                        .Concat(info.Warnings.Where(warning => warning.StartsWith("Track ", StringComparison.Ordinal)))
+                        .OfType<string>().Where(reason => !string.IsNullOrWhiteSpace(reason))
+                        .Distinct(StringComparer.Ordinal).ToArray();
+                    try { await notices.ShowReadOnlyImageAsync(Path.GetFileName(path), issues, source.Token); }
+                    catch (OperationCanceledException) when (source.IsCancellationRequested) { break; }
+                    catch (Exception ex) { AppendOpenError("Could not show why " + path + " is read-only: " + ex.Message); }
+                }
             }
         }
-        opens.Remove(source);
-        IsOpening = opens.Count > 0;
+        finally
+        {
+            opens.Remove(source);
+            IsOpening = opens.Count > 0;
+        }
     }
+
+    private void AppendOpenError(string message) => Error += (Error.Length == 0 ? "" : "\n") + message;
 
     [RelayCommand]
     private async Task CloseAsync(WorkspaceViewModel? workspace)
@@ -141,7 +167,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
             await explorer.CloseAsync(workspace.Info.Id);
             Status = "Image closed.";
         }
-        catch (Exception ex) { Error = ex.Message; Status = "Close failed."; }
+        catch (Exception ex) { Error = $"Could not close {workspace.Title}: {ex.Message}"; Status = "Close failed."; }
     }
 
     public async Task<bool> ConfirmWindowCloseAsync()

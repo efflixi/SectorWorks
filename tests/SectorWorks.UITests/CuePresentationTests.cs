@@ -15,6 +15,92 @@ namespace SectorWorks.UITests;
 public sealed class CuePresentationTests
 {
     [Fact]
+    public async Task TrackLookupRunsOnlyOnClickAndConfirmedNamesReachTheWavExport()
+    {
+        using var files = new EditingFiles();
+        File.WriteAllBytes(Path.Combine(files.Path, "data.bin"), new byte[20 * 2048]);
+        File.WriteAllBytes(Path.Combine(files.Path, "audio.bin"), new byte[40 * 2352]);
+        string cue = files.Write("mixed.cue", """
+            FILE data.bin BINARY
+              TRACK 01 MODE1/2048
+                INDEX 01 00:00:00
+            FILE audio.bin BINARY
+              TRACK 02 AUDIO
+                INDEX 01 00:00:00
+              TRACK 03 AUDIO
+                TITLE "Existing CUE title"
+                INDEX 01 00:00:20
+            """);
+        string output = Directory.CreateDirectory(Path.Combine(files.Path, "output")).FullName;
+        using var session = HeadlessUnitTestSession.StartNew(typeof(HeadlessBootstrap));
+        await session.Dispatch(async () =>
+        {
+            using var service = new ExplorerService(stagingDirectory: Path.Combine(files.Path, "stage"));
+            WorkspaceInfo info = await service.OpenAsync(cue);
+            var window = new Window();
+            var lookup = new FakeMetadataLookup();
+            using var workspace = new WorkspaceViewModel(service, new AudioExportDialogs(window, output), info,
+                new LayoutSettings(), cdMetadata: lookup);
+            var view = new WorkspaceView { DataContext = workspace };
+            window.Content = view;
+            window.Show();
+            try
+            {
+                await workspace.InitializeAsync();
+                await workspace.OpenCdTrackCommand.ExecuteAsync(workspace.CdTracks[1]);
+                workspace.ShowDiscLayoutCommand.Execute(null);
+                window.UpdateLayout();
+                Button button = Assert.Single(view.GetVisualDescendants().OfType<Button>(),
+                    item => Equals(item.Content, "Look up track names…") && item.IsVisible);
+                Assert.Equal(0, lookup.Calls);
+
+                Assert.True(button.IsEnabled);
+                button.Command!.Execute(button.CommandParameter);
+                Window dialog = Assert.Single(window.OwnedWindows);
+                Assert.Equal("MusicBrainz track names", dialog.Title);
+                Dispatcher.UIThread.RunJobs();
+                Click(dialog, "Cancel");
+                await workspace.LookupCdMetadataCommand.ExecutionTask!.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Equal(1, lookup.Calls);
+                Assert.Equal("", workspace.CdTracks[1].Title);
+
+                button.Command.Execute(button.CommandParameter);
+                dialog = Assert.Single(window.OwnedWindows);
+                Dispatcher.UIThread.RunJobs();
+                ComboBox choices = Assert.Single(dialog.GetVisualDescendants().OfType<ComboBox>());
+                Assert.Equal(-1, choices.SelectedIndex);
+                choices.SelectedIndex = 1;
+                TextBox preview = Assert.Single(dialog.GetVisualDescendants().OfType<TextBox>(), item =>
+                    Avalonia.Automation.AutomationProperties.GetName(item) == "Proposed track names and performers");
+                Assert.Contains("02  Opening / Theme", preview.Text);
+                Click(dialog, "Use track names");
+                await workspace.LookupCdMetadataCommand.ExecutionTask!.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Equal(2, lookup.Calls);
+                Assert.Equal("Track 02 — Opening / Theme", workspace.AudioTrackTitle);
+                Assert.Contains("Game Artist", workspace.AudioFormat);
+                Assert.Equal("Existing CUE title", workspace.CdTracks[2].Title);
+                Assert.Equal("", info.OpticalDisc!.Sessions[0].Tracks[1].Title);
+                Assert.Contains(workspace.CdLayout, row => row.Track == "02 · Opening / Theme");
+
+                Task export = workspace.ExportCdAudioCommand.ExecuteAsync(null);
+                Click(Assert.Single(window.OwnedWindows), "Select All");
+                Click(Assert.Single(window.OwnedWindows), "Choose Folder…");
+                await export.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Empty(workspace.Error);
+                Assert.Equal(["Track 02 - Opening Theme.wav", "Track 03 - Existing CUE title.wav"],
+                    Directory.GetFiles(output).Select(Path.GetFileName).Order());
+                Assert.Equal(2, lookup.Calls);
+            }
+            finally
+            {
+                foreach (Window modal in window.OwnedWindows.ToArray()) { modal.Close(); }
+                window.Close();
+            }
+            return true;
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task DiscLayoutShowsStoredIndexesAndUnstoredGapsInDiscOrder()
     {
         string directory = Directory.CreateTempSubdirectory("sectorworks-cd-layout-").FullName;
@@ -205,14 +291,31 @@ public sealed class CuePresentationTests
         Assert.Equal(6, workspace.ToolIndex);
     }
 
-    private static void Click(Window dialog, string label)
+    private static void Click(Control dialog, string label)
     {
+        dialog.UpdateLayout();
         Button button = Assert.Single(dialog.GetVisualDescendants().OfType<Button>(), item => Equals(item.Content, label));
         Assert.True(button.IsEnabled);
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     }
 
-    private sealed class AudioExportDialogs(Window window, string? destination) : IPlatformDialogs, ICdAudioExportDialogs
+    private sealed class FakeMetadataLookup : ICdMetadataLookup
+    {
+        public int Calls { get; private set; }
+
+        public Task<IReadOnlyList<CdMetadataMatch>> LookupAsync(CdDisc disc, CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            return Task.FromResult<IReadOnlyList<CdMetadataMatch>>(
+            [
+                new("Another edition", "Other Artist", 1, "", false, [new(2, "Wrong title", "")]),
+                new("Game edition", "Game Artist", 1, "", false,
+                    [new(2, "Opening / Theme", "Game Artist"), new(3, "Different title", "")]),
+            ]);
+        }
+    }
+
+    private sealed class AudioExportDialogs(Window window, string? destination) : IPlatformDialogs, ICdAudioExportDialogs, ICdMetadataDialogs
     {
         private readonly AvaloniaPlatformDialogs dialogs = new(window);
         public int FolderPicks { get; private set; }
@@ -225,6 +328,9 @@ public sealed class CuePresentationTests
             FolderPicks++;
             return Task.FromResult<string?>(destination);
         }
+
+        public Task<CdMetadataMatch?> PickCdMetadataAsync(IReadOnlyList<CdMetadataMatch> matches, CancellationToken cancellationToken = default) =>
+            dialogs.PickCdMetadataAsync(matches, cancellationToken);
 
         public Task<IReadOnlyList<string>> PickImagesAsync(CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();

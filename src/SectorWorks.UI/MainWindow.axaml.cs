@@ -68,6 +68,8 @@ public sealed partial class MainWindow : Window
             foreach (WorkspaceView view in this.GetVisualDescendants().OfType<WorkspaceView>()) { view.SaveLayout(); }
         };
         AddHandler(KeyDownEvent, PasteFilesKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(DragDrop.DragOverEvent, ImagesDragOver);
+        AddHandler(DragDrop.DropEvent, ImagesDrop);
         KeyDown += (_, e) =>
         {
             if (e.Key == Key.F && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)))
@@ -77,6 +79,30 @@ public sealed partial class MainWindow : Window
             }
 
         };
+    }
+
+    private static void ImagesDragOver(object? sender, DragEventArgs args)
+    {
+        args.DragEffects &= args.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
+        args.Handled = true;
+    }
+
+    private async void ImagesDrop(object? sender, DragEventArgs args)
+    {
+        ImagesDragOver(sender, args);
+        if (args.DragEffects != DragDropEffects.Copy || DataContext is not MainWindowViewModel main) { return; }
+        try
+        {
+            string[] paths = args.DataTransfer.TryGetFiles()?.OfType<IStorageFile>()
+                .Select(file => file.TryGetLocalPath()).OfType<string>().ToArray() ?? [];
+            if (paths.Length == 0)
+            {
+                main.Error = "Could not open the drop. Drop a local image file.";
+                return;
+            }
+            await main.OpenPathsCommand.ExecuteAsync(paths);
+        }
+        catch (Exception ex) { main.Error = "Could not open dropped image files: " + ex.Message; }
     }
 
     private async void PasteFilesKeyDown(object? sender, KeyEventArgs args)

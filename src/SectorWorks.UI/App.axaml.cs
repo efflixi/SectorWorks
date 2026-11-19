@@ -18,7 +18,7 @@ public partial class App : Application
             var window = new MainWindow();
             var recovery = new CommitRecoveryCatalog();
             var model = new MainWindowViewModel(new ExplorerService(recoveryCatalog: recovery), new AvaloniaPlatformDialogs(window),
-                new JsonLayoutStore(), new JsonPreferencesStore(), recovery);
+                new JsonLayoutStore(), new JsonPreferencesStore(), recovery, new MusicBrainzCdMetadataLookup());
             window.DataContext = model;
             desktop.MainWindow = window;
             window.Opened += async (_, _) =>

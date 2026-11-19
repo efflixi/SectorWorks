@@ -41,8 +41,11 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
                     out bool caseMatchedSidecar), sectorSize);
                 resources.Add(file);
                 hasSidecar |= caseMatchedSidecar;
-                if (file.Length == 0 || file.Length % sectorSize != 0 || file.Length / sectorSize > CueSheet.MaxDiscSectors)
-                { throw new ImageFormatException("CUE FILE is empty, partial-sector or exceeds the disc bound: " + source.Name); }
+                if (file.Length == 0) { throw new ImageFormatException("CUE companion is empty: " + source.Name); }
+                if (file.Length % sectorSize != 0)
+                { throw new ImageFormatException($"CUE companion {source.Name} does not contain a whole number of {sectorSize}-byte sectors."); }
+                if (file.Length / sectorSize > CueSheet.MaxDiscSectors)
+                { throw new ImageFormatException("CUE companion exceeds the 120-minute sector limit: " + source.Name); }
                 members.Add(CreateMember(source.Name, file.Length, actualName));
                 int sectors = checked((int)(file.Length / sectorSize));
                 int dataTracksInMember = source.Tracks.Count(t => t.Mode != CdTrackMode.Audio);
@@ -58,8 +61,10 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
                         ? source.Tracks[i + 1].Indexes.FirstOrDefault()?.FileSector ?? -1
                         : sectors;
                     if (partitionStart < 0 || (i == 0 && partitionStart != 0) || start >= end || end > sectors
-                        || track.Indexes[^1].FileSector >= end || (track.Pregap is not null && start != partitionStart))
-                    { throw new ImageFormatException($"Track {track.Number:D2} has inconsistent or out-of-range indexes/gaps."); }
+                        || track.Indexes[^1].FileSector >= end)
+                    { throw new ImageFormatException($"Track {track.Number:D2} has indexes outside its sector range in {source.Name}."); }
+                    if (track.Pregap is not null && start != partitionStart)
+                    { throw new ImageFormatException($"Track {track.Number:D2} defines both a PREGAP and a stored INDEX 00 gap."); }
                     int count = end - start;
                     int lba = checked(disc + start - partitionStart + (track.Pregap ?? 0));
                     disc = checked(lba + count + (track.Postgap ?? 0));
@@ -101,7 +106,12 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
                         track.Indexes.AsReadOnly(), volumeId, new(audioRestriction is null,
                             audioRestriction ?? "44.1 kHz, 16-bit stereo CD audio."), source.BigEndian);
                     bool raw = track.Mode is CdTrackMode.Mode1Raw or CdTrackMode.Mode2Raw;
-                    Capability editing = new(false, "Rebuild requires a qualified non-boot ISO filesystem in the data track.");
+                    Capability editing = new(false, rebuild switch
+                    {
+                        { Udf: not null } => "BIN/CUE rebuild does not support UDF in a data track.",
+                        { Iso.Boot: not null } => "BIN/CUE rebuild cannot preserve the boot layout of this data track.",
+                        _ => "This data track has no supported ISO filesystem layout for rebuild.",
+                    });
                     if (!info.IsAudio && !hasSidecar && !sheet.HasOpaqueRemarks)
                     {
                         if (dataTracksInMember != 1 || track.Indexes.Count != 1
@@ -197,14 +207,24 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
 
     public Capability QualifyRebuild(string? volumeId)
     {
-        if (hasSidecar) { return new(false, "A disc-metadata sidecar could not be preserved."); }
+        if (hasSidecar)
+        {
+            const string sidecarReason = "The set has a disc-metadata sidecar (.CCD, .SUB or .CDT) that SectorWorks cannot validate or preserve.";
+            return new(false, sheet.HasOpaqueRemarks ? sidecarReason + " " + OpaqueRemarksReason : sidecarReason);
+        }
         if (sheet.HasOpaqueRemarks)
-        { return new(false, "CUE sheet contains unqualified REM directives."); }
+        { return new(false, OpaqueRemarksReason); }
         TrackLayout[] results = layout.Where(t => !t.Track.IsAudio && (volumeId is null || t.Track.VolumeId == volumeId)).ToArray();
         if (!results.Any(t => t.Editing.Available))
-        { return results.FirstOrDefault()?.Editing ?? new(false, "No data track with a filesystem is available for rebuild."); }
+        {
+            return results.FirstOrDefault()?.Editing ?? new(false, volumeId is null
+                ? "This disc contains only audio tracks and has no file directory to edit."
+                : "The selected volume does not belong to a data track in this disc.");
+        }
         return new(true, "Rebuild to a new BIN/CUE folder; track lengths, indexes, gaps and untouched files are preserved.");
     }
+
+    private const string OpaqueRemarksReason = "SectorWorks cannot verify that the CUE sheet's nonstandard REM directives would remain valid after rebuild.";
 
     private TrackLayout FindTrack(string volumeId) => layout.Single(t => t.Track.VolumeId == volumeId);
 
@@ -251,8 +271,8 @@ internal sealed class CueTrackDevice(FileBlockDevice device, int first, int coun
             long address = offset + written;
             Bounds.ReadExactly(device, ((long)first + address / 2048) * 2352, sector);
             bool mode2 = mode == CdTrackMode.Mode2Raw;
-            if (!CdRawSector.HasDataHeader(sector, mode))
-            { throw new ImageFormatException("Invalid CD sector header or unsupported Mode 2 Form 2 sector."); }
+            if (CdRawSector.DataHeaderIssue(sector, mode) is { } issue)
+            { throw new ImageFormatException($"Track sector {address / 2048}: {issue}"); }
             int within = (int)(address % 2048);
             int length = Math.Min(buffer.Length - written, 2048 - within);
             sector.Slice((mode2 ? 24 : 16) + within, length).CopyTo(buffer[written..]);

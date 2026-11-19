@@ -1,9 +1,25 @@
 # Build and physical-platform status
 
-The [v0.5.0-phase5 prerelease report](prerelease-v0.5.0.md) records the current
-regression, standard-user Windows and Linux desktop, four-package, and
-compatibility audit evidence. Phase-specific historical results below keep
-their original scope.
+The [v0.5.5 prerelease report](prerelease-v0.5.5.md) records the latest Linux
+regression and package checks. The [v0.5.4 compatibility report](prerelease-v0.5.4.md)
+covers the preceding CUE, ISO, and FAT compatibility changes.
+
+## UI and package review before Phase 6
+
+The owner tried the [local UI and packaging review build](../artifacts/ui-packaging-review/)
+on a Windows 11 Pro work PC and reported that the application and the new UI
+features worked in normal use, including the read-only notice and drag-to-open
+workflow. This records an owner-reported native Windows smoke test. CPU
+architecture and Windows build number are unspecified.
+
+The [review evidence index](../artifacts/ui-packaging-review/evidence-index.json)
+records the earlier automated checks and the unavailable laptop connection
+during agent verification.
+
+The owner also reported that the CD metadata review build worked as intended
+on their Windows work PC. This covers the user-triggered MusicBrainz lookup
+and use of confirmed track names in WAV exports. The laptop was unavailable
+for the v0.5.5 regression. See the [metadata review evidence](../artifacts/cd-metadata-review/evidence-index.json).
 
 ## Phase 5 — BIN/CUE and CD audio
 

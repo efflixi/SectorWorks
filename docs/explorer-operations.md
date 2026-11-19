@@ -28,6 +28,11 @@ Close waits for active operations before disposing the underlying session.
 Cancellation is checked between reads and traversal steps and passed to storage.
 The UI must cancel its current operation before closing a busy tab.
 
+Drop image files on the toolbar, tab strip or empty workspace to open them.
+A drop on an editable file list stages files in the folder being browsed.
+When an image opens read-only, the **Read-only image** dialog lists the
+available editing or rebuild blockers. Dismiss it to use the same workspace.
+
 Opening errors propagate without closing other workspaces. A workspace with no
 supported filesystem can still expose metadata and raw image hex. Editing is
 available only for separately qualified Phase 2/2B stacks. The separately
@@ -38,6 +43,23 @@ preservation claims remain unavailable.
 Structural checks on open are not advertised as full filesystem validation.
 
 ## Extraction policy
+
+### Track names and WAV export
+
+For an audio disc, choose **Disc Layout → Look up track names…** to send
+its timing information to MusicBrainz. Opening an image and exporting
+audio are offline operations. Choose an edition and review its track list
+before applying names. Approximate matches are marked, and CUE titles
+and performers take precedence. The lookup applies to the open workspace.
+
+Supported layouts use one CUE session ending in audio, including game discs
+with an initial data track. Audio keeps its original track numbering.
+After a match is confirmed, WAV export uses displayed titles such as
+`Track 02 - Opening Theme.wav`. Unsafe filename characters are replaced,
+and tracks without usable titles use `Track 02.wav`. Playback and the WAV
+audio bytes use the original track data. [MusicBrainz lookup API](https://musicbrainz.org/doc/MusicBrainz_API#discid)
+
+### File extraction
 
 - Existing host files are **never overwritten**, including duplicate names.
 - Names unsafe on either supported host family are rejected rather than silently

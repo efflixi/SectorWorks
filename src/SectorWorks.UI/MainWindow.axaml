@@ -5,7 +5,7 @@
         xmlns:converters="using:Avalonia.Data.Converters"
         x:Class="SectorWorks.UI.MainWindow" x:DataType="vm:MainWindowViewModel"
         Title="SectorWorks — Disk Image Workbench" Width="1440" Height="900"
-        MinWidth="1000" MinHeight="640">
+        MinWidth="1000" MinHeight="640" DragDrop.AllowDrop="True">
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}" />
     <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseCommand}" />
@@ -71,7 +71,7 @@
       <Grid ColumnDefinitions="*,270">
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
           <StackPanel Orientation="Horizontal" Spacing="3">
-            <Button AutomationProperties.Name="Open image" Command="{Binding OpenCommand}" ToolTip.Tip="Open image (Ctrl+O)">
+            <Button AutomationProperties.Name="Open image" Command="{Binding OpenCommand}" ToolTip.Tip="Open image (Ctrl+O), or drop image files on the toolbar">
               <StackPanel><PathIcon Data="{StaticResource IconOpen}" /><TextBlock Text="Open" /></StackPanel>
             </Button>
             <Button AutomationProperties.Name="Close image" Command="{Binding CloseCommand}" ToolTip.Tip="Close active image (Ctrl+W)">
@@ -159,7 +159,7 @@
       <ProgressBar Height="3" IsIndeterminate="True" IsVisible="{Binding ActiveWorkspace.IsBusy}" />
     </StackPanel>
     <Grid>
-      <TextBlock Text="Open an image to browse, inspect, preview and extract — without mounting or modifying the source."
+      <TextBlock Text="Drop image files here, or choose Open Image (Ctrl+O)."
                  HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="620" />
       <TabControl ItemsSource="{Binding Workspaces}" SelectedItem="{Binding ActiveWorkspace}"
                   Background="{DynamicResource WorkbenchBackground}" AutomationProperties.Name="Image workspaces">

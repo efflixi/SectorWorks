@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 appdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec "$appdir/usr/lib/sectorworks/SectorWorks.UI" "$@"
+exec "$appdir/usr/lib/sectorworks/SectorWorks" "$@"

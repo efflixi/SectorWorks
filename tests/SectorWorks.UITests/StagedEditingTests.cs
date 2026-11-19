@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using CommunityToolkit.Mvvm.Input;
@@ -19,6 +20,60 @@ namespace SectorWorks.UITests;
 [Collection("Headless UI")]
 public sealed class StagedEditingTests
 {
+    [Fact]
+    public async Task WindowDropOpensImageAndWritableFileGridDropStagesAFile()
+    {
+        using var files = new EditingFiles();
+        string image = files.Golden("fat12.img");
+        string payload = files.Write("dropped.img", "host file bytes");
+        string sourceHash = files.Hash(image);
+        using var session = HeadlessUnitTestSession.StartNew(typeof(HeadlessBootstrap));
+        await session.Dispatch(async () =>
+        {
+            using var explorer = new ExplorerService(stagingDirectory: files.Path);
+            var window = new MainWindow();
+            using var main = new MainWindowViewModel(explorer, new AvaloniaPlatformDialogs(window), new MemoryLayout());
+            window.DataContext = main;
+            window.Show();
+            try
+            {
+                await DropAsync(window, image);
+                await main.OpenPathsCommand.ExecutionTask!.WaitAsync(TimeSpan.FromSeconds(10));
+                WorkspaceViewModel workspace = Assert.Single(main.Workspaces);
+                Assert.Equal(image, workspace.Info.Metadata.Path);
+                Assert.True(workspace.CanAdd);
+                Assert.Empty(window.OwnedWindows);
+                window.UpdateLayout();
+                DataGrid grid = Assert.Single(window.GetVisualDescendants().OfType<DataGrid>(), view => view.Name == "FileGrid");
+                var modified = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                workspace.PropertyChanged += (_, _) => { if (workspace.IsModified) { modified.TrySetResult(); } };
+                await DropAsync(grid, payload);
+                await modified.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Single(main.Workspaces);
+                EditingSnapshot snapshot = await explorer.GetEditingSnapshotAsync(workspace.Info.Id);
+                Assert.Equal("/dropped.img", Assert.Single(snapshot.Changes).Path);
+                Assert.Equal(sourceHash, files.Hash(image));
+                Assert.Empty(workspace.Error);
+            }
+            finally
+            {
+                window.DataContext = null;
+                window.Close();
+            }
+            return true;
+
+            async Task DropAsync(Control target, string path)
+            {
+                IStorageFile file = (await window.StorageProvider.TryGetFileFromPathAsync(path))!;
+                Assert.NotNull(file);
+                using var data = new DataTransfer();
+                data.Add(DataTransferItem.CreateFile(file));
+                target.RaiseEvent(new DragEventArgs(DragDrop.DropEvent, data, target, default, KeyModifiers.None)
+                { DragEffects = DragDropEffects.Copy });
+            }
+        }, CancellationToken.None);
+    }
+
     [Theory]
     [InlineData("Raw", ".img")]
     [InlineData("VHD", ".vhd")]

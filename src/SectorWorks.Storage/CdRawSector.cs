@@ -15,11 +15,18 @@ internal static class CdRawSector
 
     internal static int PayloadOffset(CdTrackMode mode) => mode == CdTrackMode.Mode2Raw ? 24 : 16;
 
-    internal static bool HasDataHeader(ReadOnlySpan<byte> sector, CdTrackMode mode) =>
-        sector[0] == 0 && sector[11] == 0 && !sector[1..11].ContainsAnyExcept((byte)255)
-        && (mode == CdTrackMode.Mode2Raw
-            ? sector[15] == 2 && sector[16..20].SequenceEqual(sector[20..24]) && (sector[18] & 32) == 0
-            : sector[15] == 1);
+    internal static string? DataHeaderIssue(ReadOnlySpan<byte> sector, CdTrackMode mode)
+    {
+        if (sector[0] != 0 || sector[11] != 0 || sector[1..11].ContainsAnyExcept((byte)255))
+        { return "The raw CD sector has an invalid sync pattern."; }
+        bool mode2 = mode == CdTrackMode.Mode2Raw;
+        if (sector[15] != (mode2 ? 2 : 1))
+        { return $"The raw CD sector mode byte ({sector[15]}) does not match the CUE track's Mode {(mode2 ? 2 : 1)}."; }
+        if (mode2 && !sector[16..20].SequenceEqual(sector[20..24]))
+        { return "The raw Mode 2 sector's two XA subheader copies disagree."; }
+        return mode2 && (sector[18] & 32) != 0
+            ? "Mode 2 Form 2 sectors have a different payload layout that SectorWorks does not support." : null;
+    }
 
     internal static int Address(ReadOnlySpan<byte> sector)
     {
@@ -35,8 +42,9 @@ internal static class CdRawSector
 
     internal static void Validate(ReadOnlySpan<byte> sector, Span<byte> calculated, CdTrackMode mode, int address)
     {
-        if (!HasDataHeader(sector, mode) || address < 0 || Address(sector) != address)
-        { throw new ImageFormatException("Raw CD data sector framing, address or form is not qualified for rebuild."); }
+        if (DataHeaderIssue(sector, mode) is { } issue) { throw new ImageFormatException(issue); }
+        if (address < 0 || Address(sector) != address)
+        { throw new ImageFormatException("The raw CD sector address is invalid or breaks the track's sequential addresses."); }
         if (mode == CdTrackMode.Mode2Raw)
         {
             // Repacking may move file contents. File/channel, streaming,

@@ -33,7 +33,7 @@ public sealed class DiskImageWriter : IStagedImageWriter
     {
         Capability[] results = image.Volumes.Select(volume => QualifyVolume(image, volume.Id)).ToArray();
         return results.FirstOrDefault(result => result.Available)
-            ?? new(false, results.FirstOrDefault()?.Reason ?? "No qualified filesystem volume is available.");
+            ?? new(false, results.FirstOrDefault()?.Reason ?? "No supported filesystem could be opened for file editing.");
     }
 
     public Capability QualifyVolume(IImageSession image, string volumeId)
@@ -44,7 +44,7 @@ public sealed class DiskImageWriter : IStagedImageWriter
             ImageVolume volume = FindVolume(image, volumeId);
             if (volume.FileSystem.Name is not ("FAT12" or "FAT16" or "FAT32" or "NTFS"))
             {
-                return new(false, "This filesystem has no qualified disk-stack writer.");
+                return new(false, $"SectorWorks has no writer for the {volume.FileSystem.Name} filesystem.");
             }
             using var bounded = new DiskVolumeSession(image, volume);
             Capability result = volume.FileSystem.Name == "NTFS"
@@ -245,7 +245,7 @@ public sealed class DiskImageWriter : IStagedImageWriter
         }
         if (image.Warnings.Count != 0 && !RawFatImageWriter.HasOnlyEarlyFloppyWarning(image))
         {
-            throw new NotSupportedException("Disk structural warnings prevent writing; damaged backup GPT, hybrid/extended layouts and implicit repair are unsupported.");
+            throw new NotSupportedException("Disk layout cannot be safely edited. " + string.Join(" ", image.Warnings));
         }
         if (image.Device.LogicalSectorSize != 512 || image.Device.Length > RawFatImageWriter.MaximumImageBytes)
         {

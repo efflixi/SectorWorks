@@ -1,6 +1,6 @@
 # SectorWorks
 
-[v0.5.3-windows-launch development prerelease: packages, verification and limits](docs/prerelease-v0.5.3.md).
+[v0.5.5 development prerelease report](docs/prerelease-v0.5.5.md) · [Download packages](https://github.com/efflixi/SectorWorks/releases/tag/v0.5.5-cd-metadata)
 
 ## Phase 5 — BIN/CUE and CD audio
 
@@ -13,11 +13,16 @@ safety and playback requirements.
 Open **Disc Layout** to see each CUE index and gap in disc order, with its
 image-relative start, sector count, and backing file position where stored.
 
+Choose **Look up track names…** in Disc Layout to search MusicBrainz for an
+edition of the disc. Confirm the release to fill missing audio track labels.
+The lookup starts only when you choose the command.
+
 To save CD audio, open **Track Information** or **Audio Player** and choose
 **Export Audio Tracks…**. Select tracks (or **Select All**) and choose a
 destination folder. SectorWorks writes one lossless WAV per selected audio
-track, even if the first track is data. It never modifies the image or
-overwrites existing files.
+track, even if the first track is data. After you confirm a metadata match,
+exports use names such as `Track 02 - Opening Theme.wav`. The image is read
+only, and existing output files are protected from overwriting.
 
 ## Phase 4 — optical rebuild
 
@@ -39,9 +44,9 @@ independent optical tests on Linux, install `genisoimage` (with `isoinfo`) and
 | 6 | Additional formats and filesystems, including 360K/720K floppy compatibility (6.10) and DiskGenius PMFX read-only support (6.11) |
 | 7 | Linux and ARM64 hardening: broad Linux x64 distro/backend testing and packaging after both feature phases |
 
-Each feature phase still verifies what it adds; the broad platform sweep tests
-the combined result in Phase 7. Physical ARM64 testing remains deferred
-post-1.0. Phase 4 remains at owner review; the reorder does not start Phase 5.
+Each feature phase verifies what it adds. The broad platform sweep tests the
+combined result in Phase 7. Phase 6 is next, and physical ARM64 testing remains
+deferred post-1.0.
 
 ## Prior 1.0 scope and Phase 2/3 closeout — November 17, 2026
 
@@ -432,14 +437,17 @@ The solution test stage includes architectural/MVVM, storage, explorer
 operation and rendered UI tests plus isolated dependency experiments. Immutable fixture hashes,
 bounded malformed-input cases and large virtual-address probes are retained.
 Publish produces self-contained, untrimmed, non-AOT outputs in
-`artifacts/publish/<rid>/`, with GPL and third-party notices. The four supported targets are
+`artifacts/publish/<rid>/`. The root contains the `SectorWorks` launcher
+(`SectorWorks.exe` on Windows). The `libs/` folder holds the application
+and its runtime, `docs/` holds the third-party notices, and `licenses/`
+holds license texts. Keep those folders next to the launcher. The four supported targets are
 `linux-x64`, `linux-arm64`, `win-x64` and `win-arm64`.
 Native desktop libraries are still required; self-contained does not mean a
 statically linked GUI. Cross-publish is **not** physical platform validation.
 
-On Windows, launch `SectorWorks.UI.exe` directly; the desktop app does not
-need a console. For the developer resource check from a terminal, use
-`dotnet exec path\to\SectorWorks.UI.dll --verify-ui` with .NET available.
+Launch the packaged `SectorWorks.exe` directly on Windows or run
+`./SectorWorks` on Linux. For the developer resource check from a Windows
+terminal with .NET available, use `dotnet exec .\libs\SectorWorks.UI.dll --verify-ui`.
 
 
 The browser defaults to alphabetical folders first, then alphabetical files.

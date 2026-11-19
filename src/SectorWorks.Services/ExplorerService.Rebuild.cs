@@ -21,8 +21,10 @@ public sealed partial class ExplorerService
         return RebuildSource(image, volumeId)?.RebuildCapability
             ?? new(false, image.Metadata.HasOpticalPartitionLayout || image.Partitions.Count != 0
                 ? "Hybrid or partitioned optical images are not qualified for rebuild."
-                : image.Warnings.FirstOrDefault(w => w.StartsWith("Optical rebuild unavailable", StringComparison.Ordinal))
-                    ?? "This optical filesystem is not qualified for reconstruction.");
+                : image.Warnings.FirstOrDefault(w => w.StartsWith("Optical rebuild unavailable", StringComparison.Ordinal)
+                    || w.StartsWith("Read-only optical layout", StringComparison.Ordinal)
+                    || w.StartsWith("Unqualified UDF layout", StringComparison.Ordinal))
+                    ?? "The image has no optical filesystem layout that SectorWorks can safely reconstruct.");
     }
 
     private Capability QualifyEdit(IImageSession image, string? volumeId = null) =>

@@ -11,10 +11,11 @@ public sealed partial class StructureNode : ViewModelBase
     private readonly Func<StructureNode, Task<bool>>? loader;
     private bool loaded;
     private Task<bool>? loading;
+    private string title;
     public StructureNode(string title, string kind, string? volumeId = null, string? path = null,
         Func<StructureNode, Task<bool>>? loader = null)
     {
-        Title = title;
+        this.title = title;
         Kind = kind;
         VolumeId = volumeId;
         Path = path;
@@ -32,7 +33,7 @@ public sealed partial class StructureNode : ViewModelBase
         }
     }
 
-    public string Title { get; }
+    public string Title { get => title; internal set => SetProperty(ref title, value); }
     public string Kind { get; }
     public string? VolumeId { get; }
     public string? Path { get; }

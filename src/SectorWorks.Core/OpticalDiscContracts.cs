@@ -23,6 +23,16 @@ public sealed record CdTrack(int Number, CdTrackMode Mode, string Title, string 
 public sealed record CdSession(int Number, IReadOnlyList<CdTrack> Tracks);
 public sealed record CdDisc(string Title, string Performer, IReadOnlyList<CdSession> Sessions);
 
+public sealed record CdMetadataTrack(int Number, string Title, string Performer);
+
+public sealed record CdMetadataMatch(string Album, string Artist, int DiscNumber, string Edition,
+    bool IsApproximate, IReadOnlyList<CdMetadataTrack> Tracks);
+
+public interface ICdMetadataLookup
+{
+    Task<IReadOnlyList<CdMetadataMatch>> LookupAsync(CdDisc disc, CancellationToken cancellationToken = default);
+}
+
 public interface ICdImageSession
 {
     CdDisc Disc { get; }
@@ -36,12 +46,16 @@ public interface ICdTrackSource
     Task<PreviewResult> ReadTrackHexAsync(Guid workspaceId, int trackNumber, long offset, CancellationToken cancellationToken = default);
 }
 
-public sealed record CdAudioExportResult(IReadOnlyList<string> Completed, IReadOnlyList<ExtractionFailure> Failures, bool Cancelled);
+public sealed record CdAudioExportResult(IReadOnlyList<string> Completed, IReadOnlyList<ExtractionFailure> Failures, bool Cancelled)
+{
+    public IReadOnlyList<string> NotExported { get; init; } = [];
+}
 
 public interface ICdAudioExportService
 {
     Task<CdAudioExportResult> ExportCdAudioAsync(Guid workspaceId, IReadOnlyList<int> trackNumbers, string destination,
-        IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default);
+        IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default,
+        IReadOnlyDictionary<int, string>? trackTitles = null);
 }
 
 /// <summary>Read-only member of a source volume that spans more than one host file.</summary>

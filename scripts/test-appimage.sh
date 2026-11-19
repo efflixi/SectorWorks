@@ -7,12 +7,12 @@ appdir="$work/AppDir with spaces"
 mkdir -p "$appdir/usr/lib/sectorworks"
 cp packaging/linux/AppRun "$appdir/AppRun"
 chmod 755 "$appdir/AppRun"
-cat > "$appdir/usr/lib/sectorworks/SectorWorks.UI" <<'STUB'
+cat > "$appdir/usr/lib/sectorworks/SectorWorks" <<'STUB'
 #!/usr/bin/env bash
 printf '%s\n' "$PWD" "$@"
 exit 17
 STUB
-chmod 755 "$appdir/usr/lib/sectorworks/SectorWorks.UI"
+chmod 755 "$appdir/usr/lib/sectorworks/SectorWorks"
 status=0
 "$appdir/AppRun" "relative image.img" "--verify-ui" "" > "$work/actual" || status=$?
 [[ "$status" == 17 ]]

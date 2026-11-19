@@ -1,5 +1,10 @@
 # Windows desktop testing
 
+The owner verified the pre–Phase 6 UI and packaging changes on a Windows 11
+Pro work PC and later reported that the CD metadata review build also worked
+as intended there. See the [platform status record](platform-status.md#ui-and-package-review-before-phase-6)
+for the scope of these smoke tests.
+
 ## Superseding scope/acceptance decision — November 17, 2026
 
 [The accepted 1.0 scope and exit audit](1.0-scope-closeout.md) closes revised

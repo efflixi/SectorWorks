@@ -145,8 +145,8 @@
           <TabItem Header="Audio Player" IsEnabled="{Binding HasCdTracks}">
             <ScrollViewer>
               <StackPanel Margin="10,6" Spacing="6">
-                <TextBlock FontWeight="SemiBold" Text="{Binding AudioTrackTitle}" />
-                <TextBlock Text="{Binding AudioFormat}" Foreground="{DynamicResource WorkbenchMuted}" />
+                <TextBlock FontWeight="SemiBold" Text="{Binding AudioTrackTitle}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding AudioFormat}" TextWrapping="Wrap" Foreground="{DynamicResource WorkbenchMuted}" />
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
                   <TextBlock Text="{Binding AudioElapsed}" VerticalAlignment="Center" AutomationProperties.Name="Playback elapsed" />
                   <Slider Grid.Column="1" Minimum="0" Maximum="{Binding AudioDuration}" Value="{Binding SeekSeconds}"
@@ -196,12 +196,15 @@
           </TabItem>
           <TabItem Header="{Binding ImageMapTabLabel}" IsEnabled="{Binding HasCdTracks}" ToolTip.Tip="{Binding ImageMapTabTip}">
             <DockPanel>
+              <Button DockPanel.Dock="Bottom" Margin="5" HorizontalAlignment="Left" Content="Look up track names…"
+                      IsVisible="{Binding HasCdAudio}" Command="{Binding LookupCdMetadataCommand}"
+                      ToolTip.Tip="Send this disc’s track timing to MusicBrainz" />
               <TextBlock DockPanel.Dock="Top" Margin="5,3,5,6" TextWrapping="Wrap" Foreground="{DynamicResource WorkbenchMuted}"
                          Text="Image LBA counts sectors from the start of the CUE layout, not the physical disc. File time (MM:SS:FF) is relative to each source file. Unstored gaps have no source bytes." />
               <DataGrid x:Name="DiscLayoutGrid" ItemsSource="{Binding CdLayout}" IsReadOnly="True" AutoGenerateColumns="False"
                         CanUserSortColumns="False" AutomationProperties.Name="Disc indexes and gaps">
                 <DataGrid.Columns>
-                  <DataGridTextColumn Header="Track" Binding="{Binding Track}" Width="148" />
+                  <DataGridTextColumn Header="Track" Binding="{Binding Track}" Width="*" MinWidth="148" />
                   <DataGridTextColumn Header="Region" Binding="{Binding Region}" Width="2*" MinWidth="215" />
                   <DataGridTextColumn Header="Image LBA" Binding="{Binding ImageLba}" Width="110" />
                   <DataGridTextColumn Header="Sectors" Binding="{Binding SectorCount}" Width="88" />

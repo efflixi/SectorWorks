@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using SectorWorks.Core;
 using SectorWorks.Platform;
@@ -7,7 +8,8 @@ namespace SectorWorks.Services;
 public sealed partial class ExplorerService
 {
     public Task<CdAudioExportResult> ExportCdAudioAsync(Guid workspaceId, IReadOnlyList<int> trackNumbers, string destination,
-        IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default)
+        IProgress<OperationProgress>? progress = null, CancellationToken cancellationToken = default,
+        IReadOnlyDictionary<int, string>? trackTitles = null)
     {
         int[] selected = trackNumbers.Distinct().Order().ToArray();
         return RunAsync(workspaceId, "ExportCdAudio", lease =>
@@ -30,9 +32,9 @@ public sealed partial class ExplorerService
             var completed = new List<string>();
             var failures = new List<ExtractionFailure>();
             long bytes = 0;
-            foreach (int number in selected)
+            var files = selected.Select(number => (Number: number, Name: WaveName(number, trackTitles?.GetValueOrDefault(number)))).ToArray();
+            foreach ((int number, string name) in files)
             {
-                string name = $"Track {number:D2}.wav";
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -47,7 +49,10 @@ public sealed partial class ExplorerService
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    return new CdAudioExportResult(completed, failures, Cancelled: true);
+                    return new CdAudioExportResult(completed, failures, Cancelled: true)
+                    {
+                        NotExported = files.Skip(completed.Count + failures.Count).Select(file => file.Name).ToArray()
+                    };
                 }
                 catch (Exception error) when (IsExtractionFailure(error))
                 {
@@ -57,6 +62,24 @@ public sealed partial class ExplorerService
             }
             return new CdAudioExportResult(completed, failures, Cancelled: false);
         }, cancellationToken);
+    }
+
+    private static string WaveName(int number, string? title)
+    {
+        string prefix = FormattableString.Invariant($"Track {number:D2}");
+        if (string.IsNullOrWhiteSpace(title)) { return prefix + ".wav"; }
+
+        // Sixty scalars fit a 255-byte filename even with four-byte UTF-8
+        // characters, the track-number prefix and the extension.
+        var safe = new StringBuilder();
+        foreach (Rune rune in title.EnumerateRunes().Take(60))
+        {
+            bool replace = Rune.IsWhiteSpace(rune) || Rune.GetUnicodeCategory(rune) is UnicodeCategory.Control or UnicodeCategory.Format
+                || rune.Value is '/' or '\\' or '<' or '>' or ':' or '"' or '|' or '?' or '*';
+            safe.Append(replace ? " " : rune.ToString());
+        }
+        string label = string.Join(" ", safe.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries)).Trim(' ', '.');
+        return label.Length == 0 ? prefix + ".wav" : $"{prefix} - {label}.wav";
     }
 
     private static long WriteCdWave(CdTrack track, Stream input, Stream output, CancellationToken token)

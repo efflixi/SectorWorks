@@ -102,6 +102,28 @@ public sealed class CueImageTests
         Assert.Throws<ImageFormatException>(() => new ImageOpener().OpenReadOnly(path));
     }
 
+    [Theory]
+    [InlineData(1, 0, "sync pattern")]
+    [InlineData(15, 1, "does not match")]
+    [InlineData(20, 1, "subheader copies disagree")]
+    [InlineData(18, 32, "Mode 2 Form 2")]
+    public void RawTrackReadExplainsTheActualSectorProblem(int offset, byte changed, string reason)
+    {
+        using var work = new WorkDirectory();
+        string path = work.PathFor("data.bin");
+        byte[] sector = new byte[CdRawSector.RawBytes];
+        sector.AsSpan(1, 10).Fill(255);
+        sector[15] = 2;
+        sector[offset] = changed;
+        if (offset == 18) { sector[22] = changed; }
+        File.WriteAllBytes(path, sector);
+        using var member = new FileBlockDevice(path);
+        using var track = new CueTrackDevice(member, 0, 1, CdTrackMode.Mode2Raw);
+        var exception = Assert.Throws<ImageFormatException>(() => track.Read(0, new byte[2048]));
+        Assert.Contains("Track sector 0", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(reason, exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void RejectsSymlinkAndFifoWithoutOpeningTheirTargets()
     {

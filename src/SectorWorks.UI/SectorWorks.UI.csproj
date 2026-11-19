@@ -28,4 +28,28 @@
   <ItemGroup>
     <None Update="Themes/ICONS-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/SectorWorks-Compact-Icons.txt" />
   </ItemGroup>
+  <Target Name="ArrangeSectorWorksRelease" AfterTargets="ComputeFilesToPublish" Condition="'$(SectorWorksReleaseLayout)' == 'true'">
+    <Error Condition="'$(SelfContained)' != 'true' or '$(PublishSingleFile)' == 'true' or '$(AppHostSourcePath)' == ''"
+           Text="The SectorWorks release layout requires a self-contained apphost and separate runtime files." />
+    <PropertyGroup>
+      <_SectorWorksLauncher>$(IntermediateOutputPath)sectorworks-release$(_NativeExecutableExtension)</_SectorWorksLauncher>
+    </PropertyGroup>
+    <!-- Bind the standard .NET apphost directly to the relocated application. -->
+    <CreateAppHost AppHostSourcePath="$(AppHostSourcePath)"
+                   AppHostDestinationPath="$(_SectorWorksLauncher)"
+                   AppBinaryName="libs/$(AssemblyName)$(TargetExt)"
+                   IntermediateAssembly="@(IntermediateAssembly->'%(FullPath)')"
+                   WindowsGraphicalUserInterface="$(_UseWindowsGraphicalUserInterface)" />
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="$(AppHostIntermediatePath)" />
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+                             Condition="!$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').Replace('\', '/').StartsWith('licenses/'))">
+        <RelativePath>libs/%(ResolvedFileToPublish.RelativePath)</RelativePath>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(_SectorWorksLauncher)">
+        <RelativePath>SectorWorks$(_NativeExecutableExtension)</RelativePath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>

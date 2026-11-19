@@ -2,7 +2,7 @@
 Type=Application
 Name=SectorWorks
 Comment=Inspect disk images and stage supported file modifications
-Exec=SectorWorks.UI %F
+Exec=SectorWorks %F
 Icon=sectorworks
 Terminal=false
 Categories=System;

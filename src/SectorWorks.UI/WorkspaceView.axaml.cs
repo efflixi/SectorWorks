@@ -164,7 +164,8 @@ public sealed partial class WorkspaceView : UserControl
     private void ActivateFile() => model?.ActivateCommand.Execute(FileGrid.SelectedItem as FileEntry);
     private void FilesDragOver(object? sender, DragEventArgs args)
     {
-        args.DragEffects &= model?.CanAdd == true && args.DataTransfer.Contains(DataFormat.File)
+        if (model?.CanAdd != true) { return; }
+        args.DragEffects &= args.DataTransfer.Contains(DataFormat.File)
             ? DragDropEffects.Copy : DragDropEffects.None;
         args.Handled = true;
     }
@@ -172,7 +173,7 @@ public sealed partial class WorkspaceView : UserControl
     private async void FilesDrop(object? sender, DragEventArgs args)
     {
         FilesDragOver(sender, args);
-        if (args.DragEffects == DragDropEffects.Copy && model is { } workspace)
+        if (args.Handled && args.DragEffects == DragDropEffects.Copy && model is { } workspace)
         {
             await workspace.ImportFilesAsync(() => Task.FromResult(
                 args.DataTransfer.TryGetFiles()?.Select(item => item is IStorageFile ? item.TryGetLocalPath() : null).ToArray() ?? []));

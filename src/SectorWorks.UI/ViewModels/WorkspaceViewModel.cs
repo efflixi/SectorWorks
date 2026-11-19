@@ -28,10 +28,11 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
     public event EventHandler? EntriesReplaced;
 
     public WorkspaceViewModel(IExplorerService explorer, IPlatformDialogs dialogs, WorkspaceInfo info, LayoutSettings layout,
-        ApplicationPreferences? preferences = null)
+        ApplicationPreferences? preferences = null, ICdMetadataLookup? cdMetadata = null)
     {
         this.explorer = explorer;
         this.dialogs = dialogs;
+        this.cdMetadata = cdMetadata;
         browserPreferences = preferences ?? new ApplicationPreferences();
         browserPreferences.Validate();
         Info = info;
@@ -154,6 +155,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(CanExtract));
         ExtractCommand.NotifyCanExecuteChanged();
         ExportCdAudioCommand.NotifyCanExecuteChanged();
+        LookupCdMetadataCommand.NotifyCanExecuteChanged();
         NotifyEditingCommands();
     }
 
@@ -484,7 +486,7 @@ public sealed partial class WorkspaceViewModel : ViewModelBase, IDisposable
         Error = "";
         try { await action(token); }
         catch (OperationCanceledException) { if (!disposed && isCurrent?.Invoke() != false) { Status = "Cancelled — source remains unchanged; completed extracted files may remain. Save As never modifies the source."; } }
-        catch (Exception ex) { if (!disposed && isCurrent?.Invoke() != false) { Error = ex.Message; Status = "Operation failed — source remains read-only."; } }
+        catch (Exception ex) { if (!disposed && isCurrent?.Invoke() != false) { Error = ex.Message; Status = "Operation failed."; } }
         finally { busyCount--; IsBusy = busyCount > 0; }
     }
 

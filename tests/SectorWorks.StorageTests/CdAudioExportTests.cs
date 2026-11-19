@@ -108,6 +108,25 @@ public sealed class CdAudioExportTests
     }
 
     [Fact]
+    public async Task ConfirmedTitlesAreSanitizedAndUnusableTitlesKeepNumberedNames()
+    {
+        using var work = new WorkDirectory();
+        string cue = WriteSharedDisc(work, out byte[] bin);
+        string output = Directory.CreateDirectory(work.PathFor("output")).FullName;
+        using var service = new ExplorerService(stagingDirectory: work.PathFor("stage"));
+        WorkspaceInfo info = await service.OpenAsync(cue);
+
+        CdAudioExportResult result = await service.ExportCdAudioAsync(info.Id, [2, 3], output,
+            trackTitles: new Dictionary<int, string> { [2] = "Opening / Theme: Part I?", [3] = "..\\/*?" });
+
+        Assert.Empty(result.Failures);
+        Assert.Equal(["Track 02 - Opening Theme Part I.wav", "Track 03.wav"], result.Completed);
+        AssertWave(output, result.Completed[0], bin[(3 * 2352)..(33 * 2352)]);
+        AssertWave(output, result.Completed[1], bin[(34 * 2352)..]);
+        Assert.Equal(bin, File.ReadAllBytes(work.PathFor("shared.bin")));
+    }
+
+    [Fact]
     public async Task CancellationReportsAlreadyCompletedTracks()
     {
         using var work = new WorkDirectory();
@@ -122,6 +141,7 @@ public sealed class CdAudioExportTests
         Assert.True(result.Cancelled);
         Assert.Empty(result.Failures);
         Assert.Equal("Track 02.wav", Assert.Single(result.Completed));
+        Assert.Equal("Track 03.wav", Assert.Single(result.NotExported));
         Assert.Single(Directory.GetFileSystemEntries(output));
         AssertWave(output, "Track 02.wav", bin[(3 * 2352)..(33 * 2352)]);
     }

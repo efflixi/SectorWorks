@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -16,6 +17,63 @@ namespace SectorWorks.UITests;
 [Collection("Headless UI")]
 public sealed class ExplorerPresentationTests
 {
+    [Fact]
+    public async Task ReadOnlyOpenShowsDistinctWrappingIssuesAndKeepsTheImageOpen()
+    {
+        using var session = HeadlessUnitTestSession.StartNew(typeof(HeadlessBootstrap));
+        await session.Dispatch(async () =>
+        {
+            using var explorer = new FakeExplorer();
+            WorkspaceInfo info = explorer.Create("read-only.img");
+            Capability first = new(false, "The first volume's FAT copies disagree.");
+            Capability second = new(false, "The other volume uses unsupported metadata. " + new string('X', 500));
+            WorkspaceCapabilities capabilities = info.Capabilities with { Modify = first, SaveAs = first };
+            explorer.SlowOpen = new();
+            explorer.SlowOpen.SetResult(info with
+            {
+                Capabilities = capabilities,
+                Volumes =
+                [
+                    info.Volumes[0] with { Capabilities = capabilities },
+                    info.Volumes[0] with { Id = "other", Capabilities = capabilities with { Modify = second } },
+                ],
+            });
+            var window = new MainWindow();
+            using var main = new MainWindowViewModel(explorer, new AvaloniaPlatformDialogs(window), new MemoryLayout());
+            window.DataContext = main;
+            window.Show();
+            try
+            {
+                Task opening = main.OpenPathsCommand.ExecuteAsync(new[] { "read-only.img" });
+                Window notice = Assert.Single(window.OwnedWindows);
+                notice.UpdateLayout();
+                Assert.Contains(notice.GetVisualDescendants().OfType<TextBlock>(),
+                    element => element.Text == "This image can't be edited or rebuilt because of the following issue(s):");
+                TextBox explanation = Assert.Single(notice.GetVisualDescendants().OfType<TextBox>());
+                Assert.True(explanation.IsReadOnly);
+                Assert.Equal(TextWrapping.Wrap, explanation.TextWrapping);
+                Assert.Equal("• " + first.Reason + "\n• " + second.Reason, explanation.Text);
+                Assert.InRange(explanation.Bounds.Height, 1, 180);
+                Assert.InRange(notice.Bounds.Height, 1, 340);
+                Assert.Single(main.Workspaces);
+                notice.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "OK"))
+                    .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await opening.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Empty(window.OwnedWindows);
+                Assert.True(main.ActiveWorkspace!.Info.Capabilities.Browse.Available);
+                Assert.Empty(main.Error);
+                Assert.False(main.IsOpening);
+            }
+            finally
+            {
+                foreach (Window notice in window.OwnedWindows.ToArray()) { notice.Close(); }
+                window.DataContext = null;
+                window.Close();
+            }
+            return true;
+        }, CancellationToken.None);
+    }
+
     [Fact]
     public void PhysicalSmokePrefersReadmeButRetainsGoldenSafeFileFallback()
     {
