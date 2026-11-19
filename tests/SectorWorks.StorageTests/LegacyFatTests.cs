@@ -10,6 +10,43 @@ namespace SectorWorks.StorageTests;
 
 public sealed class LegacyFatTests
 {
+    [Fact]
+    public async Task Fat12SaveAsPreservesBadClusterMarkersAndExistingApostropheAlias()
+    {
+        using var work = new WorkDirectory();
+        byte[] image = CreateLegacyFloppy(2880, 18, 1, 9, legacy: false);
+        const int root = 19 * 512;
+        const int badData = 34 * 512;
+        "DAILY'S TXT"u8.CopyTo(image.AsSpan(root));
+        image[516] = 0x7f;
+        image[517] = 0xff;
+        image.AsSpan(512, 9 * 512).CopyTo(image.AsSpan(10 * 512));
+        image.AsSpan(badData, 512).Fill(0x5a);
+        string source = work.PathFor("bad-cluster.img");
+        string output = work.PathFor("saved.img");
+        string payload = work.PathFor("payload.bin");
+        string replacement = work.PathFor("replacement.txt");
+        File.WriteAllBytes(source, image);
+        File.WriteAllBytes(payload, new byte[2048]);
+        File.WriteAllText(replacement, "updated");
+        using var service = new ExplorerService(new ImageOpener(), stagingDirectory: work.PathFor("staging"));
+        WorkspaceInfo workspace = await service.OpenAsync(source);
+        Assert.True(workspace.Capabilities.SaveAs.Available, workspace.Capabilities.SaveAs.Reason);
+        Assert.False(workspace.Capabilities.CommitInPlace.Available);
+        await service.StageAsync(workspace.Id, new(ImageChangeKind.AddFile, workspace.Volumes[0].Id, "/ADDED.BIN", payload));
+        await service.StageAsync(workspace.Id, new(ImageChangeKind.ReplaceFile, workspace.Volumes[0].Id, "/DAILY'S.TXT", replacement));
+        await service.SaveAsAsync(workspace.Id, output);
+        byte[] saved = File.ReadAllBytes(output);
+        Assert.Equal(image.AsSpan(badData, 512).ToArray(), saved.AsSpan(badData, 512).ToArray());
+        Assert.Equal(0xff7, BinaryPrimitives.ReadUInt16LittleEndian(saved.AsSpan(516)) >> 4);
+        Assert.Equal(0xff7, BinaryPrimitives.ReadUInt16LittleEndian(saved.AsSpan(10 * 512 + 4)) >> 4);
+        Assert.Equal("DAILY'S TXT", Encoding.ASCII.GetString(saved.AsSpan(root, 11)));
+        using (IImageSession reopened = new ImageOpener().OpenReadOnly(output))
+        using (var reader = new StreamReader(reopened.Volumes[0].FileSystem.OpenRead("/DAILY'S.TXT")))
+        { Assert.Equal("updated", reader.ReadToEnd()); }
+        Assert.Equal(image, File.ReadAllBytes(source));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

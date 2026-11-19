@@ -272,6 +272,11 @@ and [authoritative checklist](../checklist.txt) for exact assignments and gates.
 Unachievable required rows stay blocked pending an explicit owner-approved
 scope decision with a named follow-up milestone, not silently deferred.
 
+The [0.5.4 development compatibility update](support-matrix.md#development-prerelease-054-compatibility)
+adds Save As profiles for FAT12 bad clusters, short raw MBR FAT16 partition
+suffixes and FAT32 volumes above the original total-cluster limit. The
+phase-specific bounds below record their original qualification.
+
 The [1.0 read-only boundary](support-matrix.md#owner-approved-10-read-only-boundary)
 excludes writers for Phase 6 VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS additions,
 without reducing Phase 2B or optical/retro writing requirements. No future

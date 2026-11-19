@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text;
 using SectorWorks.Core;
 using static SectorWorks.Storage.PartitionReader;
@@ -301,7 +302,8 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
 
     internal long ValidateWritableAllocation(CancellationToken token = default)
     {
-        if (_clusterCount > MaxChainClusters) { throw new NotSupportedException("FAT write validation is limited to 1048576 data clusters."); }
+        if (_fatBytes > RawFatImageWriter.MaximumFatTableBytes)
+        { throw new NotSupportedException("FAT write validation requires an allocation table no larger than 8 MiB."); }
         int fatLength = checked((int)(((_clusterCount + 2L) * _bits + 7) / 8));
         byte[] allocation = Bounds.Read(_device, _fatOffset, fatLength);
         for (long offset = 0; offset < _fatBytes; offset += 65536)
@@ -314,7 +316,8 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
                 throw new ImageFormatException("Mirrored FAT allocation tables differ.");
             }
         }
-        var reachable = new HashSet<uint>();
+        var reachable = new BitArray(checked((int)_clusterCount + 2));
+        int reachableCount = 0;
         var pending = new Stack<(string Path, uint Cluster, bool Root, int Depth, uint ParentCluster)>();
         pending.Push(("/", _rootCluster, true, 0, 0));
         int count = 0;
@@ -323,39 +326,39 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             token.ThrowIfCancellationRequested();
             if (directory.Depth > 128) { throw new ImageFormatException("FAT write traversal exceeds depth limits."); }
             if (!directory.Root) { ValidateSpecialEntries(directory.Cluster, directory.ParentCluster); }
-            if (!directory.Root || _bits == 32) { Claim(Chain(directory.Cluster, token)); }
+            if (!directory.Root || _bits == 32) { Claim(directory.Cluster); }
             foreach (Entry entry in DirectoryEntries(directory.Path, directory.Cluster, directory.Root, token, strictNames: true))
             {
                 if (++count > 100000) { throw new ImageFormatException("FAT write traversal exceeds entry limits."); }
                 if (entry.File.IsDirectory) { pending.Push((entry.File.Path, entry.Cluster, false, directory.Depth + 1, directory.Root ? 0 : directory.Cluster)); }
                 else if (entry.Cluster != 0)
                 {
-                    List<uint> chain = Chain(entry.Cluster, token);
-                    if (chain.Count != (entry.File.Length + _clusterBytes - 1) / _clusterBytes)
+                    int length = Claim(entry.Cluster);
+                    if (length != (entry.File.Length + _clusterBytes - 1) / _clusterBytes)
                     {
                         throw new ImageFormatException("FAT file allocation does not match its declared length.");
                     }
-                    Claim(chain);
                 }
                 else if (entry.File.Length != 0) { throw new ImageFormatException("Nonempty FAT file has no allocated cluster."); }
             }
         }
+        int badClusters = 0;
         for (uint cluster = 2; cluster < _clusterCount + 2; cluster++)
         {
             token.ThrowIfCancellationRequested();
-            int offset = checked((int)(cluster * (uint)_bits / 8));
-            uint value = _bits switch
+            uint value = EntryValue(cluster);
+            bool claimed = reachable[(int)cluster];
+            if (_bits == 12 && value == 0xff7 && !claimed)
             {
-                12 => (uint)((cluster & 1) == 0 ? U16(allocation, offset) & 0xfff : U16(allocation, offset) >> 4),
-                16 => U16(allocation, offset),
-                _ => U32(allocation, offset) & 0x0fffffff
-            };
-            if ((value != 0) != reachable.Contains(cluster))
+                badClusters++;
+                continue;
+            }
+            if ((value != 0) != claimed)
             {
                 throw new ImageFormatException("Unreferenced, cross-linked or inconsistent FAT cluster allocation.");
             }
         }
-        long freeClusters = (long)_clusterCount - reachable.Count;
+        long freeClusters = (long)_clusterCount - reachableCount - badClusters;
         if (_bits == 32)
         {
             byte[] boot = Bounds.Read(_device, 0, 512);
@@ -369,12 +372,73 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             }
         }
         return checked(freeClusters * _clusterBytes);
-        void Claim(IEnumerable<uint> clusters)
+        uint EntryValue(uint cluster)
         {
-            foreach (uint cluster in clusters)
+            int offset = checked((int)(cluster * (uint)_bits / 8));
+            return _bits switch
             {
-                if (!reachable.Add(cluster)) { throw new ImageFormatException("Cross-linked FAT cluster allocation."); }
+                12 => Fat12Entry(allocation, cluster),
+                16 => U16(allocation, offset),
+                _ => U32(allocation, offset) & 0x0fffffff
+            };
+        }
+
+        int Claim(uint cluster)
+        {
+            uint end = _bits == 12 ? 0xff8u : _bits == 16 ? 0xfff8u : 0x0ffffff8u;
+            uint reserved = end - 8;
+            int length = 0;
+            while (true)
+            {
+                token.ThrowIfCancellationRequested();
+                CheckCluster(cluster);
+                if (length == MaxChainClusters)
+                { throw new ImageFormatException("FAT cluster chain exceeds the metadata safety budget."); }
+                if (reachable[(int)cluster])
+                { throw new ImageFormatException("Cyclic or cross-linked FAT cluster allocation."); }
+                reachable[(int)cluster] = true;
+                reachableCount++;
+                length++;
+                uint next = EntryValue(cluster);
+                if (next >= end) { return length; }
+                if (next < 2 || next >= reserved)
+                { throw new ImageFormatException("FAT cluster chain refers to a free, reserved or bad cluster."); }
+                cluster = next;
             }
+        }
+    }
+
+    internal bool UsesExpandedAllocationBudget => _clusterCount > MaxChainClusters;
+
+    private static uint Fat12Entry(byte[] table, uint cluster)
+    {
+        ushort pair = U16(table, checked((int)(cluster * 3 / 2)));
+        return (uint)((cluster & 1) == 0 ? pair & 0xfff : pair >> 4);
+    }
+
+    internal Dictionary<uint, byte[]> CaptureFat12BadClusters(CancellationToken token)
+    {
+        var result = new Dictionary<uint, byte[]>();
+        if (_bits != 12) { return result; }
+        byte[] allocation = Bounds.Read(_device, _fatOffset, checked((int)(((_clusterCount + 2L) * 12 + 7) / 8)));
+        for (uint cluster = 2; cluster < _clusterCount + 2; cluster++)
+        {
+            token.ThrowIfCancellationRequested();
+            if (Fat12Entry(allocation, cluster) == 0xff7)
+            {
+                result.Add(cluster, Bounds.Read(_device, ClusterOffset(cluster), _clusterBytes));
+            }
+        }
+        return result;
+    }
+
+    internal void ValidateFat12BadClusters(Dictionary<uint, byte[]> expected, CancellationToken token)
+    {
+        Dictionary<uint, byte[]> actual = CaptureFat12BadClusters(token);
+        if (actual.Count != expected.Count || expected.Any(pair =>
+            !actual.TryGetValue(pair.Key, out byte[]? bytes) || !bytes.AsSpan().SequenceEqual(pair.Value)))
+        {
+            throw new ImageFormatException("FAT output changed the bad-cluster map or its sector bytes.");
         }
     }
 

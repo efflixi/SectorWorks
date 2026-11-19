@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using SectorWorks.Core;
 using SectorWorks.Services;
 using SectorWorks.Storage;
@@ -7,6 +8,60 @@ namespace SectorWorks.StorageTests;
 
 public sealed class DiskStagedWorkflowTests
 {
+    [Theory]
+    [InlineData(42)]
+    [InlineData(64)]
+    public async Task ShortMbrFat16PartitionSuffixStaysOutsideTheSaveAsWriteRange(int extraSectors)
+    {
+        using var work = new WorkDirectory();
+        string source = DiskWriterFixtures.Create(work, "raw", "mbr", "fat16");
+        byte[] suffix = new byte[extraSectors * 512];
+        Array.Fill(suffix, (byte)0x5a);
+        long suffixOffset;
+        using (var disk = File.Open(source, FileMode.Open, FileAccess.ReadWrite))
+        {
+            byte[] mbr = new byte[512];
+            disk.ReadExactly(mbr);
+            uint start = BinaryPrimitives.ReadUInt32LittleEndian(mbr.AsSpan(454));
+            uint size = BinaryPrimitives.ReadUInt32LittleEndian(mbr.AsSpan(458));
+            suffixOffset = (start + size) * 512L;
+            BinaryPrimitives.WriteUInt32LittleEndian(mbr.AsSpan(458), size + (uint)extraSectors);
+            disk.Position = 0;
+            disk.Write(mbr);
+            disk.Position = suffixOffset;
+            disk.Write(suffix);
+        }
+        string original = Hash(source);
+        using var service = new ExplorerService(stagingDirectory: work.PathFor("stage"));
+        WorkspaceInfo info = await service.OpenAsync(source);
+        VolumeInfo fat = Assert.Single(info.Volumes);
+        Assert.True(fat.Capabilities!.Browse.Available);
+        Assert.False(fat.Capabilities.CommitInPlace.Available);
+        if (extraSectors > 63)
+        {
+            Assert.False(fat.Capabilities.SaveAs.Available);
+            return;
+        }
+        Assert.True(fat.Capabilities.SaveAs.Available, fat.Capabilities.SaveAs.Reason);
+        string payload = work.PathFor("payload.txt");
+        File.WriteAllText(payload, "partition payload");
+        await service.StageAsync(info.Id, new(ImageChangeKind.AddFile, fat.Id, "/ADDED.TXT", payload));
+        string output = work.PathFor("saved.img");
+        await service.SaveAsAsync(info.Id, output);
+        using (var saved = File.OpenRead(output))
+        {
+            saved.Position = suffixOffset;
+            byte[] bytes = new byte[suffix.Length];
+            saved.ReadExactly(bytes);
+            Assert.Equal(suffix, bytes);
+        }
+        using (IImageSession reopened = new ImageOpener().OpenReadOnly(output))
+        using (var reader = new StreamReader(reopened.Volumes[0].FileSystem.OpenRead("/ADDED.TXT")))
+        { Assert.Equal("partition payload", reader.ReadToEnd()); }
+        DiskWriterFixtures.CheckFat(work, output);
+        Assert.Equal(original, Hash(source));
+    }
+
     [Theory]
     [MemberData(nameof(DiskWriterTests.FatRows), MemberType = typeof(DiskWriterTests))]
     public async Task EveryQualifiedRowStagesReviewsAndValidatesNewOutput(string container, string layout, string fat, int physical)

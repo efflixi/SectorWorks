@@ -49,6 +49,7 @@ internal sealed class IsoImage(IsoView[] views, int[] duplicatePrimaries, int te
         bool allowStandaloneVariants = standaloneCompatibility && !bridge;
         int terminator = 0;
         int declaredBlocks = 0;
+        ushort declaredSetSize = 0;
         int physicalBlocks = checked((int)(device.Length / SectorSize));
         (int Block, byte[] Descriptor)? bootDescriptor = null;
         for (int block = 16; block < 26; block++)
@@ -83,10 +84,16 @@ internal sealed class IsoImage(IsoView[] views, int[] duplicatePrimaries, int te
             if (descriptors.Count != (joliet ? 1 : 0) || !joliet && data[0] != 1)
             { throw new NotSupportedException("El Torito/boot, enhanced, multiple or unknown ISO descriptors are not qualified for rebuild."); }
             uint blocks = Both32(data, 80);
-            ushort setSize = Both16(data, 120);
+            ReadOnlySpan<byte> geometry = data.AsSpan(120, 12);
+            // Some single-volume producers leave one or all of these mirrored
+            // constants blank. Extents and directory references still require
+            // matching endian copies throughout the image.
+            bool omittedMirror = allowStandaloneVariants && (geometry.SequenceEqual("\x01\0\0\0\x01\0\0\0\0\x08\0\0"u8)
+                || geometry.SequenceEqual("\x01\0\0\x01\x01\0\0\0\0\x08\x08\0"u8));
+            ushort setSize = omittedMirror ? (ushort)1 : Both16(data, 120);
             if (setSize != 1 && !(allowStandaloneVariants && setSize == 0)
-                || descriptors.Count != 0 && setSize != Both16(descriptors[0].Bytes, 120)
-                || Both16(data, 124) != 1 || Both16(data, 128) != SectorSize
+                || descriptors.Count != 0 && setSize != declaredSetSize
+                || !omittedMirror && (Both16(data, 124) != 1 || Both16(data, 128) != SectorSize)
                 || data[881] != 1)
             { throw new NotSupportedException("ISO volume set, block size or file structure version is not qualified for rebuild."); }
             if (blocks <= block || blocks > physicalBlocks || declaredBlocks != 0 && blocks != declaredBlocks
@@ -97,6 +104,7 @@ internal sealed class IsoImage(IsoView[] views, int[] duplicatePrimaries, int te
             if (!HasQualifiedApplicationFields(data, allowStandaloneVariants))
             { throw new NotSupportedException("Opaque ISO application or reserved descriptor data is not qualified for rebuild."); }
             declaredBlocks = (int)blocks;
+            declaredSetSize = setSize;
             descriptors.Add((block, data, joliet));
         }
         if (terminator == 0 || descriptors.Count == 0)
@@ -448,8 +456,14 @@ internal sealed class IsoImage(IsoView[] views, int[] duplicatePrimaries, int te
                 var record = new IsoEntry(identifier, r[..33].ToArray(), susp, continuation);
                 if (pseudo)
                 {
+                    // Some producers store one block in the redundant parent
+                    // length. The graph, parent extent and path tables still
+                    // have to agree, and rebuild writes the full parent size.
+                    bool omittedParentLength = allowStandaloneVariants && !RockRidge && special == 1
+                        && depth > 0 && size == SectorSize && parentBytes > SectorSize;
                     if (!directory || identifier[0] != special || special > 1
-                        || location != (special == 0 ? block : parent) || size != (special == 0 ? bytes : parentBytes))
+                        || location != (special == 0 ? block : parent)
+                        || size != (special == 0 ? bytes : parentBytes) && !omittedParentLength)
                     { throw new ImageFormatException("Invalid ISO current/parent directory record."); }
                     if (special++ == 0)
                     {

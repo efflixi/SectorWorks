@@ -24,6 +24,8 @@ public sealed class DiskImageWriter : IStagedImageWriter
         if (!editing.Available) { return editing; }
         ImageVolume volume = FindVolume(image, volumeId);
         using var bounded = new DiskVolumeSession(image, volume);
+        if (bounded.HasPartitionSuffix)
+        { return new(false, "FAT16 partitions with a separate suffix support validated Save As only."); }
         return volume.FileSystem.Name == "NTFS" ? _ntfs.QualifyCommit(bounded) : RawFatImageWriter.QualifyCommitProfile(bounded);
     }
 
@@ -88,8 +90,8 @@ public sealed class DiskImageWriter : IStagedImageWriter
             identity = Identity(copy);
             foreach (string id in operations.Select(operation => operation.Request.VolumeId).Distinct())
             {
-                ImageVolume volume = FindVolume(copy, id);
-                ranges.Add((volume.Partition?.Offset ?? 0, volume.Partition?.Length ?? copy.Device.Length));
+                using var volume = new DiskVolumeSession(copy, FindVolume(copy, id));
+                ranges.Add((volume.Offset, volume.Device.Length));
             }
             untouched = HashOutside(copy.Device, ranges, cancellationToken);
         }
@@ -112,10 +114,10 @@ public sealed class DiskImageWriter : IStagedImageWriter
                 using (IImageSession copy = new ImageOpener().OpenReadOnly(copyPath, cancellationToken))
                 {
                     ImageVolume volume = FindVolume(copy, group.Key);
-                    offset = volume.Partition?.Offset ?? 0;
-                    length = volume.Partition?.Length ?? copy.Device.Length;
                     ntfs = volume.FileSystem.Name == "NTFS";
                     using var adapted = new DiskVolumeSession(copy, volume);
+                    offset = adapted.Offset;
+                    length = adapted.Device.Length;
                     hidden = adapted.HiddenSectors;
                     backup = adapted.BackupSector;
                     boot = Bounds.Read(adapted.Device, 0, 512);
@@ -177,10 +179,8 @@ public sealed class DiskImageWriter : IStagedImageWriter
         foreach (string id in operations.Select(operation => operation.Request.VolumeId).Distinct())
         {
             RequireVolume(output, id);
-            ImageVolume volume = FindVolume(output, id);
-            using var bounded = new PartitionBlockDevice(output.Device, volume.Partition?.Offset ?? 0,
-                volume.Partition?.Length ?? output.Device.Length);
-            if (volumeHashes[id] != HashOutside(bounded, [], cancellationToken))
+            using var volume = new DiskVolumeSession(output, FindVolume(output, id));
+            if (volumeHashes[id] != HashOutside(volume.Device, [], cancellationToken))
             {
                 throw new ImageFormatException("Reopened virtual volume bytes differ from the validated extracted-volume result.");
             }
@@ -198,8 +198,8 @@ public sealed class DiskImageWriter : IStagedImageWriter
         }
         var ranges = operations.Select(operation => operation.Request.VolumeId).Distinct().Select(id =>
         {
-            ImageVolume volume = FindVolume(source, id);
-            return (volume.Partition?.Offset ?? 0, volume.Partition?.Length ?? source.Device.Length);
+            using var volume = new DiskVolumeSession(source, FindVolume(source, id));
+            return (volume.Offset, volume.Device.Length);
         }).ToList();
         if (HashOutside(source.Device, ranges, cancellationToken) != HashOutside(output.Device, ranges, cancellationToken))
         {
@@ -385,10 +385,11 @@ public sealed class DiskImageWriter : IStagedImageWriter
     {
         public DiskVolumeSession(IImageSession image, ImageVolume volume)
         {
-            var bounded = new PartitionBlockDevice(image.Device, volume.Partition?.Offset ?? 0,
-                volume.Partition?.Length ?? image.Device.Length);
+            Offset = volume.Partition?.Offset ?? 0;
+            long partitionLength = volume.Partition?.Length ?? image.Device.Length;
+            var bounded = new PartitionBlockDevice(image.Device, Offset, partitionLength);
             byte[] boot = Bounds.Read(bounded, 0, 512);
-            long expected = (volume.Partition?.Offset ?? 0) / 512;
+            long expected = Offset / 512;
             HiddenSectors = RawFatImageWriter.HiddenSectors(boot, volume.FileSystem, expected);
             if (HiddenSectors != expected)
             {
@@ -403,11 +404,28 @@ public sealed class DiskImageWriter : IStagedImageWriter
                 bounded.Dispose();
                 throw new NotSupportedException("FAT32 primary/backup hidden-sector metadata disagree; no source repair is performed.");
             }
+            // A short partition suffix can be kept outside the editable range.
+            // It is hashed with the rest of the untouched virtual disk.
+            if (image.Metadata.Format == "Raw" && volume.Partition is { Table: "MBR", Type: "0x06" }
+                && volume.FileSystem.Name == "FAT16")
+            {
+                uint sectors = BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(19));
+                if (sectors == 0) { sectors = BinaryPrimitives.ReadUInt32LittleEndian(boot.AsSpan(32)); }
+                long declaredLength = sectors * 512L;
+                if (declaredLength > 0 && partitionLength - declaredLength is > 0 and <= 63 * 512)
+                {
+                    bounded.Dispose();
+                    bounded = new PartitionBlockDevice(image.Device, Offset, declaredLength);
+                    HasPartitionSuffix = true;
+                }
+            }
             Device = bounded;
             Metadata = new(image.Metadata.Path, "Raw", Device.Length, Device.Length, 512, image.Metadata.Properties);
             Volumes = [new(volume.Id, null, volume.FileSystem)];
         }
         public uint HiddenSectors { get; }
+        public long Offset { get; }
+        public bool HasPartitionSuffix { get; }
         public int BackupSector { get; }
         public ImageMetadata Metadata { get; }
         public IReadOnlyBlockDevice Device { get; }

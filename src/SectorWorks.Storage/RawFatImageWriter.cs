@@ -20,7 +20,11 @@ public sealed class RawFatImageWriter : IStagedImageWriter
     internal static Capability QualifyCommitProfile(IImageSession image)
     {
         Capability supported = new(true, "Independently qualified FAT disk-stack commit pipeline.");
+        if (image.Volumes[0].FileSystem is FatFileSystem { UsesExpandedAllocationBudget: true })
+        { return new(false, "FAT volumes above the direct commit allocation budget support validated Save As only."); }
         if (image.Volumes[0].FileSystem.Name != "FAT12") { return supported; }
+        if (image.Volumes[0].FileSystem is FatFileSystem fat && fat.CaptureFat12BadClusters(default).Count > 0)
+        { return new(false, "FAT12 images with bad-cluster markers support validated Save As only."); }
         byte[] boot = Bounds.Read(image.Device, 0, 512);
         return image.Device.Length == 1_474_560 && HasExtendedBoot(boot, 38)
             ? supported : new(false, "This FAT12 floppy profile supports validated Save As; direct commit is not qualified.");
@@ -224,12 +228,14 @@ public sealed class RawFatImageWriter : IStagedImageWriter
     public void ApplyToStream(Stream stream, IReadOnlyList<StagedWriteOperation> operations, CancellationToken cancellationToken)
     {
         Dictionary<string, FatFileSystem.PreservedEntry> expected;
+        Dictionary<uint, byte[]> badClusters;
         byte[] rootLabel;
         stream.Flush();
         using (var device = new StreamBlockDevice(stream, new ParserContext()))
         using (var reader = new FatFileSystem(device))
         {
             expected = reader.CapturePreservation(cancellationToken);
+            badClusters = reader.CaptureFat12BadClusters(cancellationToken);
             rootLabel = reader.CaptureRootLabel(cancellationToken);
         }
         foreach (StagedWriteOperation operation in operations)
@@ -351,6 +357,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         using (var reader = new FatFileSystem(device))
         {
             reader.ValidateWritableAllocation(cancellationToken);
+            reader.ValidateFat12BadClusters(badClusters, cancellationToken);
             reader.ValidateRootLabel(rootLabel, cancellationToken);
             reader.ValidatePreservation(expected, cancellationToken);
         }
@@ -373,6 +380,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
             throw new NotSupportedException("FAT metadata validation requires the qualified bounded FAT readers.");
         }
         saved.ValidateWritableAllocation(cancellationToken);
+        saved.ValidateFat12BadClusters(original.CaptureFat12BadClusters(cancellationToken), cancellationToken);
         saved.ValidateRebuiltSummary(original);
         saved.ValidateSourcePreservation(original, operations, cancellationToken);
     }

@@ -332,6 +332,83 @@ public sealed class OpticalRebuildTests
     }
 
     [IndependentOpticalTheory]
+    [InlineData("omitted geometry")]
+    [InlineData("omitted sequence")]
+    [InlineData("conflicting geometry")]
+    [InlineData("short parent")]
+    [InlineData("different parent extent")]
+    public async Task StandaloneIsoQualifiesOnlyKnownRedundantFieldVariants(string scenario)
+    {
+        const int sector = 2048;
+        const int primary = 16 * sector;
+        bool parentVariant = scenario.EndsWith("parent", StringComparison.Ordinal) || scenario == "different parent extent";
+        using var work = new WorkDirectory();
+        string source = Author(work, parentVariant ? "large root" : "plain");
+        byte[] original = File.ReadAllBytes(source);
+        int parentRecord = parentVariant ? FindChildParentRecord(original) : 0;
+        switch (scenario)
+        {
+            case "omitted geometry":
+                original.AsSpan(primary + 122, 2).Clear();
+                original.AsSpan(primary + 130, 2).Clear();
+                goto case "omitted sequence";
+            case "omitted sequence":
+                original.AsSpan(primary + 126, 2).Clear();
+                break;
+            case "conflicting geometry":
+                original[primary + 127] = 2;
+                break;
+            case "different parent extent":
+                WriteBoth(original.AsSpan(parentRecord + 2), 16);
+                goto case "short parent";
+            case "short parent":
+                Assert.True(BinaryPrimitives.ReadUInt32LittleEndian(original.AsSpan(parentRecord + 10)) > sector);
+                WriteBoth(original.AsSpan(parentRecord + 10), sector);
+                break;
+        }
+        File.WriteAllBytes(source, original);
+        using var service = new ExplorerService(new ImageOpener(), stagingDirectory: work.PathFor("stage"));
+        WorkspaceInfo opened = await service.OpenAsync(source);
+        Assert.True(opened.Capabilities.Browse.Available);
+        if (scenario is "conflicting geometry" or "different parent extent")
+        {
+            Assert.False(opened.Capabilities.Rebuild.Available);
+            return;
+        }
+        Assert.True(opened.Capabilities.Rebuild.Available, opened.Capabilities.Rebuild.Reason);
+        string id = Assert.Single(opened.Volumes).Id;
+        await service.StageAsync(opened.Id, new(ImageChangeKind.CreateDirectory, id, "/NEW"));
+        string output = work.PathFor("out.iso");
+        await service.SaveAsAsync(opened.Id, output);
+        byte[] result = File.ReadAllBytes(output);
+        Assert.True(original.AsSpan(primary + 120, 12).SequenceEqual(result.AsSpan(primary + 120, 12)));
+        if (parentVariant)
+        {
+            int savedParent = FindChildParentRecord(result);
+            Assert.Equal(BinaryPrimitives.ReadUInt32LittleEndian(result.AsSpan(primary + 166)),
+                BinaryPrimitives.ReadUInt32LittleEndian(result.AsSpan(savedParent + 10)));
+        }
+        Assert.Contains("/NEW", Text(Run("isoinfo", "-i", output, "-f")), StringComparison.Ordinal);
+        Assert.Equal("original"u8.ToArray(), Run("isoinfo", "-i", output, "-x", "/DIR/KEEP.TXT;1"));
+        Assert.Equal(original, File.ReadAllBytes(source));
+
+        static void WriteBoth(Span<byte> field, uint value)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(field, value);
+            BinaryPrimitives.WriteUInt32BigEndian(field[4..], value);
+        }
+
+        static int FindChildParentRecord(byte[] image)
+        {
+            int root = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(primary + 158)) * sector);
+            int recordId = image.AsSpan(root, sector).IndexOf("DIR"u8);
+            Assert.True(recordId >= 33);
+            int child = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(image.AsSpan(root + recordId - 31)) * sector);
+            return child + image[child];
+        }
+    }
+
+    [IndependentOpticalTheory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(true, true)]
@@ -599,6 +676,11 @@ public sealed class OpticalRebuildTests
         File.WriteAllText(Path.Combine(directory, "DROP.TXT"), "drop");
         File.WriteAllText(Path.Combine(directory, "UNCH.TXT"), "untouched");
         if (variant == "level2") { File.WriteAllText(Path.Combine(directory, "LONG_IDENTIFIER.TXT"), "level 2"); }
+        if (variant == "large root")
+        {
+            for (int i = 0; i < 65; i++)
+            { File.WriteAllText(Path.Combine(directory, $"F{i:D3}.TXT"), "root entry"); }
+        }
         if (variant is "joliet" or "rockridge" or "bridge" or "udf")
         { File.WriteAllText(Path.Combine(directory, "Été.txt"), "Unicode"); }
 

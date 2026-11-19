@@ -12,6 +12,19 @@ namespace SectorWorks.StorageTests;
 public sealed class CueImageTests
 {
     [Fact]
+    public void InitialSessionOneKeepsTheOriginalTrackGeometry()
+    {
+        using var work = new WorkDirectory();
+        File.WriteAllBytes(work.PathFor("sound.bin"), new byte[4 * 2352]);
+        string path = Write(work, "FILE sound.bin BINARY\nREM SESSION 01 ; Disc session\nTRACK 01 AUDIO\nINDEX 01 00:00:00\n");
+        using IImageSession image = new ImageOpener().OpenReadOnly(path);
+        CdSession session = Assert.Single(Assert.IsAssignableFrom<ICdImageSession>(image).Disc.Sessions);
+        CdTrack track = Assert.Single(session.Tracks);
+        Assert.Equal(0, track.StartLba);
+        Assert.Equal(4, track.SectorCount);
+    }
+
+    [Fact]
     public async Task SharedRawAudioFileHasBoundedSeekableProgramAreas()
     {
         using var work = new WorkDirectory();
@@ -80,6 +93,7 @@ public sealed class CueImageTests
     [InlineData("INDEX 01 00:00:00\nINDEX 02 00:00:00", 4704)]
     [InlineData("INDEX 01 00:00:00", 2353)]
     [InlineData("INDEX 01 00:00:00\nREM SESSION 2", 2352)]
+    [InlineData("INDEX 01 00:00:00\nREM SESSION 01", 2352)]
     public void RejectsMalformedOrTruncatedTrack(string directives, int bytes)
     {
         using var work = new WorkDirectory();

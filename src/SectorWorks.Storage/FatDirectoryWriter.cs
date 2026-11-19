@@ -13,7 +13,7 @@ internal sealed partial class FatFileSystem
         return parts.Length is 1 or 2 && parts[0].Length is >= 1 and <= 8
             && (parts.Length == 1 || parts[1].Length is >= 1 and <= 3)
             && parts.All(part => part.All(c => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9'
-                or '_' or '-' or '~' or '$' or '!' or '#' or '%' or '&' or '(' or ')' or '@' or '^' or '`' or '{' or '}'));
+                or '_' or '-' or '~' or '$' or '!' or '#' or '%' or '&' or '(' or ')' or '@' or '^' or '\'' or '`' or '{' or '}'));
     }
 
     internal string AliasPath(string path, CancellationToken token)

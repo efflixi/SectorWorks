@@ -81,6 +81,25 @@ allocation qualify independently. Output summary copies must match, and their
 other bytes must remain unchanged. This does not enable repair of stale primary
 counts or unqualified filesystem writes.
 
+## Development prerelease 0.5.4 compatibility
+
+CUE sheets may contain one initial `REM SESSION 1` or `REM SESSION 01`
+marker. Track and companion checks still apply. Standalone ISO and
+qualified raw ISO tracks admit two observed patterns of missing big-endian
+copies of single-volume geometry constants. A one-block parent directory
+length can qualify when the parent is larger, its address is exact, and
+directory and path-table checks agree. Rebuild writes the actual parent length.
+
+FAT editing accepts apostrophes in existing DOS short aliases. FAT12 with
+unreferenced bad-cluster markers qualifies for Save As when all other checks
+pass. The output preserves the markers and the corresponding cluster bytes.
+Raw FAT16 in a primary MBR type `0x06` partition can qualify with a suffix of
+up to 63 sectors outside its declared filesystem. Save As verifies the
+suffix with the untouched disk bytes. FAT32 can use the full supported
+8 MiB FAT table with bounded allocation validation. The individual chain
+limit still applies. These newly qualified bad-cluster, suffix and larger
+allocation profiles offer Save As only.
+
 ## Accepted 1.0 scope — November 17, 2026
 
 **Phase 2 / 2B / 2C / 2D and Phase 3: COMPLETE / OWNER ACCEPTED UNDER THE

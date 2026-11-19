@@ -29,6 +29,7 @@ internal sealed class CueSheet
         CueSource? file = null;
         CueEntry? track = null;
         int previousTrack = 0;
+        bool sessionDeclared = false;
         int lineNumber = 0;
         using var lines = new StringReader(text);
         while (lines.ReadLine() is { } line)
@@ -47,6 +48,14 @@ internal sealed class CueSheet
             switch (command)
             {
                 case "REM":
+                    if (words.Count > 1 && words[1].Equals("SESSION", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (sessionDeclared || previousTrack != 0 || words.Count < 3
+                            || words[2] is not ("1" or "01") || words.Count > 3 && !words[3].StartsWith(';'))
+                        { throw Failure("Only one initial REM SESSION 01 marker is supported."); }
+                        sessionDeclared = true;
+                        break;
+                    }
                     if (words.Count > 1 && words[1].Contains("SESSION", StringComparison.OrdinalIgnoreCase))
                     { throw Failure("Multisession CUE sheets are unsupported."); }
                     if (words.Count > 1 && words[1].ToUpperInvariant() is not ("GENRE" or "DATE" or "COMMENT" or "DISCID"))
