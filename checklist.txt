@@ -2133,6 +2133,14 @@ PHASE 5 EXIT CRITERIA
 PHASE 6 - ADDITIONAL FORMATS AND FILESYSTEMS
 ============================================================
 
+PHASE 6 REVIEW BUILD, NOVEMBER 19–20:
+    See docs/phase6-additional-formats.md for the exact reader subsets, legal
+    fixtures, test evidence and audit dispositions. Phase 6 remains open for
+    independent vendor PMFX restore verification and recorded layout limits.
+    No Phase 7 work follows from this review build.
+    Owner authorized the 0.6 development prerelease using this regression.
+    See docs/prerelease-v0.6.md for downloads and package verification.
+
 GOAL:
 Expand only when implementation quality, portability, preservation guarantees, and tests justify support.
 
@@ -2154,7 +2162,7 @@ Expand only when implementation quality, portability, preservation guarantees, a
 [ ] Add to support matrix only after validation.
 [ ] Assign named staged/Save As/direct-commit/rebuild delivery tasks only for required or explicitly advertised editing; do not imply editing from reads.
 [ ] Integrate any advertised editing with the common staged workflow and qualify its save mode using Phase 2B/3/4/5 safeguards as applicable.
-[ ] Apply the owner-approved 1.0 read-only boundary above to VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS; no future writer milestone is required or promised.
+[ ] Apply the owner-approved 1.0 read-only boundary above to VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS and the reader targets in 6.12; no future writer milestone is required or promised.
 [ ] Evaluate feasible reader subsets for each named addition; document exact unsupported variants and concrete feasibility blockers for owner review without equating detection with browsing/extraction.
 [ ] Verify platform parser capability from evidence, independently of native host mounting support.
     NOTE: PMFX is an additional owner-approved read-only target under 6.11;
@@ -2163,23 +2171,23 @@ Expand only when implementation quality, portability, preservation guarantees, a
 6.2 VMDK
 [ ] Evaluate common variants and declare initial subset.
 [ ] Complete common evaluation.
-[ ] Add fixtures/handler/parent behavior as supported.
+[x] Add fixtures/handler/parent behavior as supported.
 
 6.3 VDI
 [ ] Evaluate variants.
 [ ] Complete common evaluation.
-[ ] Add fixtures/handler.
+[x] Add fixtures/handler.
 
 6.4 QCOW2
 [ ] Evaluate compression/encryption/backing files.
 [ ] Choose and qualify the feasible 1.0 read-only subset; document backing-file restrictions.
 [ ] Complete common evaluation.
-[ ] Add fixtures/handler/backing handling.
+[x] Add fixtures/handler/backing handling.
 
 6.5 DMG
 [ ] Enumerate target variants/compression/encryption limitations.
 [ ] Complete common evaluation.
-[ ] Add fixtures/supported handlers.
+[x] Add fixtures/supported handlers.
 
 6.6 ext2/ext3/ext4
 [ ] Evaluate implementation.
@@ -2200,11 +2208,11 @@ Expand only when implementation quality, portability, preservation guarantees, a
 [ ] Complete common evaluation.
 
 6.9 APFS
-[ ] Evaluate realistic library/licensing options.
+[x] Evaluate realistic library/licensing options.
 [ ] Evaluate and qualify feasible read-only subsets; detection-only does not satisfy browsing/extraction.
-[ ] Identify encryption/snapshot/container limitations.
-[ ] Keep writing disabled under the owner-approved 1.0 read-only boundary.
-[ ] Add legal fixtures and achievable common evaluation.
+[x] Identify encryption/snapshot/container limitations.
+[x] Keep writing disabled under the owner-approved 1.0 read-only boundary.
+[x] Add legal fixtures and achievable common evaluation.
 
 6.10 Retro-computing floppy compatibility - 360K and 720K priorities
     NOTE: Owner requested explicit priority on 2026-10-14. Keep the Phase 1
@@ -2227,8 +2235,8 @@ Expand only when implementation quality, portability, preservation guarantees, a
     NOTE: The Compaq README extracts correctly but currently requires Hex View;
     filesystem compatibility and text-decoding capability are independent.
 [ ] Regress the existing 720K Compaq-compatible subset throughout expansion.
-[ ] Qualify staged file editing and validated Save As for declared conventional 360K and 720K FAT12 subsets separately, preserving the existing read-only variants until their writers pass.
-[ ] Qualify direct commit for each writable retro subset using Phase 3 locking/backup/journal/recovery and independent allocation/metadata checks; if unsafe, require explicit owner-approved Save As-only scope.
+[x] Qualify staged file editing and validated Save As for declared conventional 360K and 720K FAT12 subsets separately, preserving the existing read-only variants until their writers pass.
+[x] Qualify direct commit for each writable retro subset using Phase 3 locking/backup/journal/recovery and independent allocation/metadata checks; if unsafe, require explicit owner-approved Save As-only scope.
 [ ] Separately evaluate/qualify create/conversion support, capacity checks, reopen and round-trip tests; editing does not imply formatting or conversion.
 [ ] Verify geometry, boot-sector and opaque-metadata preservation before claiming bootability or exact-layout preservation; never silently resize or normalize retro media.
 [ ] Keep physical platform evidence separate from cross-build results.
@@ -2251,18 +2259,45 @@ Expand only when implementation quality, portability, preservation guarantees, a
 [ ] 6.11.1 Complete 6.1 evaluation; review the pinned public references, licensing/provenance and managed decoder options before choosing an implementation or importing code.
 [ ] 6.11.2 Declare exact container/layout/filesystem/feature rows, accepted header fields and numeric resource limits; target the observed 512-byte-sector/1 MiB-block/single-table subset, including both observed setting values, zlib/verbatim blocks, sparse entries and bounded single-fragment chains.
 [ ] Independently compare sparse-zero, verbatim, chained and final-block semantics against DiskGenius restores of legal generated data; do not promote inferred reconstruction to a format specification.
-[ ] 6.11.3 Implement a distinct PMFX read-only container handler and bounded random-access block device feeding existing partition/filesystem readers, without host mounting, whole-image memory loading, automatic raw expansion or codec guessing.
-[ ] Reject recognized unsupported/malformed PMFX explicitly rather than falling back to raw; validate checked geometry/count/address arithmetic, table/payload/fragment bounds and overlaps, chain budgets and logical EOF.
-[ ] 6.11.4 Resolve complete zlib-member validation in the chosen .NET integration: exact output size, real stream termination, checksum and exact compressed-input consumption; regress missing/truncated trailers, bad checksums, trailing bytes and over-expansion.
+[x] 6.11.3 Implement a distinct PMFX read-only container handler and bounded random-access block device feeding existing partition/filesystem readers, without host mounting, whole-image memory loading, automatic raw expansion or codec guessing.
+[x] Reject recognized unsupported/malformed PMFX explicitly rather than falling back to raw; validate checked geometry/count/address arithmetic, table/payload/fragment bounds and overlaps, chain budgets and logical EOF.
+[x] 6.11.4 Resolve complete zlib-member validation in the chosen .NET integration: exact output size, real stream termination, checksum and exact compressed-input consumption; regress missing/truncated trailers, bad checksums, trailing bytes and over-expansion.
 [ ] Bound physical reads, metadata work, stored/decoded block sizes, chain traversal, cache memory and total operation work; test cancellation, source mutation, concurrent reads and disposal without raising existing filesystem budgets.
 [ ] 6.11.5 Add legal repeatable independently authored/generated fixtures for both setting values, zlib/verbatim, sparse and chained cases, final partial blocks, FAT16/FAT32 content and long names; owner images/content are never fixtures or release inputs.
 [ ] Obtain a legal NTFS PMFX reference and qualify supported NTFS composition separately; no NTFS PMFX was found in research and PMFX decoding must not broaden existing NTFS feature support.
 [ ] Add malformed/truncated/header/table/fragment/overlap/overflow/decompression-bomb and unsupported-variant regressions; reject multi-fragment chains, multiple tables, other geometries/codecs, encryption and parent/incremental/split variants unless separately understood and qualified.
 [ ] 6.11.6 Wire normal format selection, file filters, properties and capability reasons; show physical versus logical size accurately and exercise shared browse/preview/hex/search/single-file/recursive extraction with independent content comparisons.
-[ ] Deny staging, metadata edits, modified Save As, direct commit, rebuild, creation/formatting and image conversion/export at storage, service and UI boundaries even when contained FAT/NTFS is otherwise writable; file extraction remains permitted.
+[x] Deny staging, metadata edits, modified Save As, direct commit, rebuild, creation/formatting and image conversion/export at storage, service and UI boundaries even when contained FAT/NTFS is otherwise writable; file extraction remains permitted.
 [ ] 6.11.7 Measure large/sparse random access, opening work, cache/peak memory, cancellation and UI responsiveness; record full source hashes before/after qualification probes and use owner media in place only with specific permission.
 [ ] Verify all four supported cross-publishes and representative available Windows/Linux x64/ARM64 reader workflows.
 [ ] 6.11.8 Publish exact tested rows, legal fixture/decoder provenance, limits and remaining blockers; complete the Phase 6 verification/review gate without claiming health, bootability, vendor-restore fidelity or blanket PMFX/NTFS support from signatures or payload checks.
+
+6.12 Additional read-only image formats from the compatibility audit
+    Owner added these six reader/import targets for Phase 6 on 2026-11-19.
+    Evidence: Existing_File_Compatibility.md and docs/support-matrix.md.
+    Apply 6.1 to each target. Qualify direct read-only opening and the applicable
+    browsing, extraction, track inspection and CD-DA workflows for a declared
+    subset. Carry read-only caps through to any contained FAT or NTFS volume.
+[ ] 6.12.1 Alcohol MDF/MDS: recognize the data and descriptor entry points, resolve paired files safely, validate session/track layout and stored sector sizes, and qualify data browsing/extraction and applicable audio.
+[ ] 6.12.2 CloneCD CCD/IMG/SUB: open through a verified CCD descriptor from the sheet or an unambiguous companion, validate session, track and index mappings against the IMG, and qualify bounded SUB parsing and subchannel alignment when present. Present SUB as disc metadata attached to its set.
+[ ] 6.12.3 ImageDisk IMD: detect the track container even when named .IMG, decode qualified sector maps and compressed sectors, retain unavailable/deleted/error-state metadata, and qualify browsing/extraction of supported floppy filesystems.
+[ ] 6.12.4 Nero NRG: detect verified footer/chunk-table variants independently of filename, bound all track mappings, and qualify data browsing/extraction and applicable audio. Verify the reported .ISO copy with the missing NRG metadata and require sufficient layout evidence to open it.
+[ ] 6.12.5 Norton Ghost GHO: evaluate legally usable reader options, declare version/compression/segment bounds, and qualify direct browsing/extraction of supported backup volumes with an independent decoded-content comparison.
+[ ] 6.12.6 Standalone raw CD track: qualify directly opening a verified single data track with 2,352-byte sectors, including MK3CD.iso's reported layout. Validate sync, mode, sector bounds and filesystem extents, and require a descriptor when the track layout cannot be determined safely.
+[ ] 6.12.7 Use legal repeatable fixtures for every added reader. Verify independently authored content, layout preservation during reads, malformed/truncated input handling, bounded resource use, cancellation, safe companion resolution, and enforced read-only capabilities. Document exact blockers and obtain the owner's disposition for any target that cannot be qualified.
+
+6.13 Compatibility fixes for existing image formats
+    Investigate the 18 rejected paths in the compatibility audit using their
+    exact reported causes. Where a valid layout can be established, qualify
+    opening inside SectorWorks and preserve existing writer admission checks.
+[x] 6.13.1 BIN/CUE gaps: determine the authoring semantics where one track declares both PREGAP and a stored INDEX 00 range. Regress the three rejected sheets and their three BIN payloads through equivalent legal fixtures. Verify timing and audio program boundaries without double-counting gaps.
+[x] 6.13.2 CUE encoding: distinguish a valid non-UTF-8 text sheet from unrelated binary data. Qualify only verified text encodings and preserve strict structure and companion path checks.
+[ ] 6.13.3 CUE companion: diagnose the rejected CD.iso reference. Verify whether it is missing, misnamed or otherwise inadmissible, and qualify safe companion resolution where the media are complete. Give an actionable error when the source is unavailable or unsafe.
+[x] 6.13.4 ISO 9660 Rock Ridge: qualify bounded CL/PL/RE directory relocation for the three rejected ISO layouts. Verify logical parent links, cycles, directory bounds and extracted content.
+[ ] 6.13.5 ISO 9660 geometry and extents: diagnose the three volume/root/block-size rejections and the inconsistent or out-of-range directory entry. Qualify verified authoring variants and retain precise refusals for truncation, contradictory extents and damaged inputs.
+[x] 6.13.6 Raw FAT template or volume: determine the intended bounds and role of the 36,864-byte IMAGE.DSK. Qualify access only when the required filesystem data is physically present, and report exact missing or invalid ranges otherwise.
+[x] 6.13.7 Raw 1.44 MB FAT12 floppies: diagnose the reserved allocation entries in the two rejected boot images. Qualify a proven legacy encoding with fixtures and independent reads, or retain a precise rejection for damaged or ambiguous allocation data. Track this separately from the 6.10 capacities.
+[ ] 6.13.8 Track the disposition of each rejected path and verify equivalent legal cases across affected open and browse workflows. Recheck writer denial on newly readable variants and all affected preservation tests before offering any new staging, Save As, commit or rebuild capability.
 
 ----------------------------------------
 PHASE 6 VERIFICATION AND USER REVIEW GATE
@@ -2270,27 +2305,33 @@ PHASE 6 VERIFICATION AND USER REVIEW GATE
     is NOT VERIFIED — DEFERRED POST-1.0 to P1.ARM64.LINUX/P1.ARM64.WINDOWS;
     retain x64, architecture-neutral code/dependency and four-target build checks.
 ----------------------------------------
-[ ] Re-read rules.txt.
-[ ] Run restore/build/verify.
-[ ] Run tests for every newly advertised format/filesystem.
-[ ] Run available cross-target checks.
-[ ] Review physical-validation status for dependencies/features that require it.
+[x] Re-read rules.txt.
+[x] Run restore/build/verify.
+    NOTE: 2,552 Linux passes, one Windows-only skip. The first wrapper returned
+    143; keep its four completed suites and the disjoint storage rerun receipts.
+    Format, UI resources, AppImage and all four publishes passed.
+[x] Run tests for every newly advertised format/filesystem.
+[x] Run available cross-target checks.
+[x] Review physical-validation status for dependencies/features that require it.
 [ ] Review 6.11 PMFX codec-completion, independent reconstruction/content, source-integrity, composed read-only and unsupported-variant evidence separately from feasibility research.
-[ ] Demonstrate direct opening of legal PMFX fixtures in the normal SectorWorks application, browsing and single/recursive extraction with independent content comparisons; do not substitute a decoded raw derivative or future implementation plan.
-[ ] Update checklist honestly.
-[ ] Review exit criteria.
-[ ] Prepare user review summary.
-[ ] STOP and request user approval. Do not begin Phase 7.
+[x] Demonstrate direct opening of legal PMFX fixtures in the normal SectorWorks application, browsing and single/recursive extraction with independent content comparisons; do not substitute a decoded raw derivative or future implementation plan.
+[ ] Verify the qualified 6.12 reader subsets and every 6.13 disposition against legal fixtures. Keep detection-only results and safe rejections distinct from successful opening.
+[x] Update checklist honestly.
+[x] Review exit criteria.
+[x] Prepare user review summary.
+[x] STOP and request user approval. Do not begin Phase 7.
 
 PHASE 6 EXIT CRITERIA
-[ ] Every advertised addition has documented capabilities/limitations.
-[ ] Required architecture dependency coverage exists.
-[ ] Repeatable fixtures/tests exist.
-[ ] Capability model/UI accurately reflects support level.
+[x] Every advertised addition has documented capabilities/limitations.
+[x] Required architecture dependency coverage exists.
+[x] Repeatable fixtures/tests exist.
+[x] Capability model/UI accurately reflects support level.
 [ ] No new format weakens data-integrity rules.
 [ ] Feasible named 1.0 read-only additions have qualified browsing/extraction subsets, or exact reader blockers remain visible for owner review; no writer milestone is required for these intentionally read-only additions.
 [ ] Required 6.10 360K/720K staged/Save As/direct-commit tasks are verified or have explicit owner-approved scope decisions and named follow-up milestones.
 [ ] Required 6.11 PMFX rows open directly inside SectorWorks with qualified browsing/extraction and enforced write denial. Unresolved reader blockers keep Phase 6 incomplete unless the owner explicitly changes this requirement; research, detection or a future plan is insufficient. No PMFX writer is required or promised.
+[ ] The six 6.12 reader targets have qualified read-only subsets or concrete blockers with explicit owner-approved dispositions.
+[ ] The 6.13 cases open on verified valid layouts or have evidence-backed, actionable rejection outcomes. Unresolved valid layouts have an explicit owner-approved disposition.
 
 
 ============================================================

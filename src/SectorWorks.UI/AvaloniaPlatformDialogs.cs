@@ -20,7 +20,7 @@ public sealed class AvaloniaPlatformDialogs(Window owner) : IPlatformDialogs, II
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("Disk and optical images") { Patterns = ["*.img", "*.ima", "*.raw", "*.vhd", "*.vhdx", "*.iso", "*.udf", "*.cue"] },
+                new FilePickerFileType("Disk and optical images") { Patterns = ["*.img", "*.ima", "*.raw", "*.vhd", "*.vhdx", "*.vdi", "*.qcow2", "*.pmfx", "*.iso", "*.udf", "*.cue", "*.bin", "*.imd", "*.vmdk", "*.dmg", "*.ccd", "*.mds", "*.mdf", "*.nrg", "*.gho"] },
                 FilePickerFileTypes.All
             ]
         });

@@ -1,8 +1,23 @@
 # Build and physical-platform status
 
-The [v0.5.5 prerelease report](prerelease-v0.5.5.md) records the latest Linux
-regression and package checks. The [v0.5.4 compatibility report](prerelease-v0.5.4.md)
+The [v0.5.5 prerelease report](prerelease-v0.5.5.md) records the prior published
+development prerelease regression and package checks. The [v0.5.4 compatibility report](prerelease-v0.5.4.md)
 covers the preceding CUE, ISO, and FAT compatibility changes.
+
+## Phase 6 review build
+
+Linux x64 completed 2,552 passes with one Windows-only skip after the
+unfinished storage suite was recovered in three disjoint sections.
+The Windows 11 x64 laptop passed 78 focused checks with four platform
+skips and opened the published app for PMFX extraction and APFS
+browsing. The default Windows suite had missing test utilities and
+other recorded setup gaps. The configured mixed-volume rerun passed all
+21 cases, and Linux independently checked its 63 exact outputs.
+
+Four Windows/Linux x64/ARM64 packages built and passed archive
+validation. Physical ARM64 remains deferred. See the
+[Phase 6 report](phase6-additional-formats.md) and
+[review evidence](../artifacts/phase6-review/evidence-index.json).
 
 ## UI and package review before Phase 6
 

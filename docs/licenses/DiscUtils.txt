@@ -2,8 +2,8 @@ DiscUtils 0.16.13
 Source: https://github.com/DiscUtils/DiscUtils
 Source commit: 59d7cadab839c6d8dfcf52f8be5efe6d2ced190f
 License: MIT
-Applies to the probe's DiscUtils.Core, DiscUtils.Streams, DiscUtils.Fat,
-DiscUtils.Ntfs, DiscUtils.Iso9660, DiscUtils.Vhd and DiscUtils.Vhdx packages.
+Applies to the DiscUtils.Core, DiscUtils.Streams, DiscUtils.Fat, DiscUtils.Ntfs,
+DiscUtils.Iso9660, DiscUtils.Vhd, DiscUtils.Vhdx, DiscUtils.Ext and DiscUtils.Vmdk packages.
 
 Upstream LICENSE.txt:
 

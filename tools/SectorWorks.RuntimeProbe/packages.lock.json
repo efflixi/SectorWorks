@@ -10,6 +10,14 @@
           "DiscUtils.Streams": "0.16.13"
         }
       },
+      "DiscUtils.Ext": {
+        "type": "Transitive",
+        "resolved": "0.16.13",
+        "contentHash": "eRomHwL21AAtHY9rA1beaN7+dVj9ZKwvGlEk2m0syxok4obLESVJyz5OYwbxxuCNyKmdSMpLOqKIV5ZNxFK7yQ==",
+        "dependencies": {
+          "DiscUtils.Core": "0.16.13"
+        }
+      },
       "DiscUtils.Fat": {
         "type": "Transitive",
         "resolved": "0.16.13",
@@ -55,6 +63,19 @@
           "DiscUtils.Core": "0.16.13"
         }
       },
+      "DiscUtils.Vmdk": {
+        "type": "Transitive",
+        "resolved": "0.16.13",
+        "contentHash": "61iTWbOLf4ZPX18u8q/anMorTYyXUFHLGo+ceGG5SC1s7mWdxy/rWIJwHn3UCeMBfKY5tf5Tjv0wkCA/zwqJ+A==",
+        "dependencies": {
+          "DiscUtils.Core": "0.16.13"
+        }
+      },
+      "SharpZipLib": {
+        "type": "Transitive",
+        "resolved": "1.4.2",
+        "contentHash": "yjj+3zgz8zgXpiiC3ZdF/iyTBbz2fFvMxZFEBPUcwZjIvXOf37Ylm+K58hqMfIBt5JgU/Z2uoUS67JmTLe973A=="
+      },
       "sectorworks.core": {
         "type": "Project"
       },
@@ -86,13 +107,16 @@
       "sectorworks.storage": {
         "type": "Project",
         "dependencies": {
+          "DiscUtils.Ext": "[0.16.13, )",
           "DiscUtils.Fat": "[0.16.13, )",
           "DiscUtils.Iso9660": "[0.16.13, )",
           "DiscUtils.Ntfs": "[0.16.13, )",
           "DiscUtils.Vhd": "[0.16.13, )",
           "DiscUtils.Vhdx": "[0.16.13, )",
+          "DiscUtils.Vmdk": "[0.16.13, )",
           "SectorWorks.Core": "[1.0.0, )",
-          "SectorWorks.ManagedNtfs": "[1.0.0, )"
+          "SectorWorks.ManagedNtfs": "[1.0.0, )",
+          "SharpZipLib": "[1.4.2, )"
         }
       }
     },

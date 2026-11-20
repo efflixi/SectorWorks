@@ -7,8 +7,9 @@ namespace SectorWorks.Storage;
 
 internal static class IsoValidation
 {
-    internal static bool Validate(IReadOnlyBlockDevice device, CancellationToken token)
+    internal static bool Validate(IReadOnlyBlockDevice device, CancellationToken token, out bool hasRelocation)
     {
+        hasRelocation = false;
         bool unusedExtent = false;
         long budget = 128L * 1024 * 1024;
         var roots = new List<(uint Block, uint Length)>();
@@ -33,6 +34,11 @@ internal static class IsoValidation
         {
             var queue = new Queue<(uint Block, uint Length, int Depth)>();
             var seen = new HashSet<uint>();
+            var physicalParents = new Dictionary<uint, uint>();
+            var logicalParents = new Dictionary<uint, uint>();
+            var parentLinks = new Dictionary<uint, uint>();
+            var relocated = new HashSet<uint>();
+            var invalidSelf = new HashSet<uint>();
             queue.Enqueue((block, length, 0));
             bool susp = false;
             int skip = 0;
@@ -94,17 +100,69 @@ internal static class IsoValidation
                         susp = true;
                         skip = record[systemUse + 6];
                     }
+                    var relocation = new Relocation();
                     if (susp && systemUse + skip < recordLength)
                     {
                         var continuations = new HashSet<long>();
                         long continuationBudget = 1024 * 1024;
-                        ValidateSusp(device, record.AsSpan(systemUse + skip), continuations, ref continuationBudget, token);
+                        ValidateSusp(device, record.AsSpan(systemUse + skip), continuations, ref continuationBudget, token, relocation);
                     }
+                    if (relocation.Child is { } child)
+                    {
+                        if (special || relocation.Parent is not null || relocation.Relocated
+                            || (record[25] & 2) != 0 || bytes != 0 || !logicalParents.TryAdd(child, directoryBlock))
+                        { throw InvalidRelocation(); }
+                    }
+                    if (relocation.Parent is { } parent)
+                    {
+                        if (!special || record[33] != 1 || relocation.Relocated || !parentLinks.TryAdd(directoryBlock, parent))
+                        { throw InvalidRelocation(); }
+                    }
+                    if (relocation.Relocated && (special || (record[25] & 2) == 0 || !relocated.Add(extent)))
+                    { throw InvalidRelocation(); }
                     if (!special && (record[25] & 2) != 0)
                     {
+                        if (!physicalParents.TryAdd(extent, directoryBlock)) { throw InvalidRelocation(); }
                         queue.Enqueue((extent, bytes, depth + 1));
                     }
+                    if (position == 0 && (relocation.Relocated || relocation.Parent is not null || relocation.Child is not null))
+                    { throw InvalidRelocation(); }
+                    if (position == 0 && (!special || record[33] != 0 || extent != directoryBlock || bytes != directoryLength))
+                    {
+                        if (invalidSelf.Count >= 131072) { throw InvalidRelocation(); }
+                        invalidSelf.Add(directoryBlock);
+                    }
                     position += recordLength;
+                }
+            }
+            if (logicalParents.Count != 0 || parentLinks.Count != 0 || relocated.Count != 0)
+            {
+                hasRelocation = true;
+                if (logicalParents.Count != relocated.Count || parentLinks.Count != relocated.Count)
+                { throw InvalidRelocation(); }
+                foreach (uint target in relocated)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (!logicalParents.TryGetValue(target, out uint logical) || !physicalParents.ContainsKey(target)
+                        || !parentLinks.TryGetValue(target, out uint actual) || actual != logical || invalidSelf.Contains(target))
+                    { throw InvalidRelocation(); }
+                }
+                var depthCache = new Dictionary<uint, int> { [block] = 0 };
+                foreach (uint directory in seen) { ValidateParents(directory, 0); }
+
+                int ValidateParents(uint directory, int depth)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (depth > 256) { throw InvalidRelocation(); }
+                    if (depthCache.TryGetValue(directory, out int cached))
+                    { return cached >= 0 ? cached : throw InvalidRelocation(); }
+                    if (!physicalParents.TryGetValue(directory, out uint parent)) { throw InvalidRelocation(); }
+                    depthCache.Add(directory, -1);
+                    int length = ValidateParents(parent, depth + 1);
+                    if (logicalParents.TryGetValue(directory, out uint logical))
+                    { length = Math.Max(length, ValidateParents(logical, depth + 1)); }
+                    if (++length > 256) { throw InvalidRelocation(); }
+                    return depthCache[directory] = length;
                 }
             }
         }
@@ -112,7 +170,7 @@ internal static class IsoValidation
     }
 
     private static void ValidateSusp(IReadOnlyBlockDevice device, ReadOnlySpan<byte> data, HashSet<long> continuations,
-        ref long budget, CancellationToken token)
+        ref long budget, CancellationToken token, Relocation relocation)
     {
         for (int position = 0; position < data.Length;)
         {
@@ -132,9 +190,20 @@ internal static class IsoValidation
             {
                 return;
             }
-            if (signature is "CL" or "PL" or "RE")
+            if (signature is "CL" or "PL")
             {
-                throw new ImageFormatException("Rock Ridge relocated-directory records are not supported.");
+                if (record.Length != 12) { throw InvalidRelocation(); }
+                uint block = BinaryPrimitives.ReadUInt32LittleEndian(record[4..]);
+                if (block != BinaryPrimitives.ReadUInt32BigEndian(record[8..]) || block < 16 || block * 2048L + 2048 > device.Length)
+                { throw InvalidRelocation(); }
+                if (signature == "CL" && relocation.Child is null) { relocation.Child = block; }
+                else if (signature == "PL" && relocation.Parent is null) { relocation.Parent = block; }
+                else { throw InvalidRelocation(); }
+            }
+            if (signature == "RE")
+            {
+                if (record.Length != 4 || relocation.Relocated) { throw InvalidRelocation(); }
+                relocation.Relocated = true;
             }
             if (signature == "CE")
             {
@@ -153,7 +222,7 @@ internal static class IsoValidation
                     throw new ImageFormatException("ISO SUSP continuation cycle, invalid bounds or 1 MiB/32-hop safety budget exceeded.");
                 }
                 byte[] continuation = Bounds.Read(device, start, checked((int)length));
-                ValidateSusp(device, continuation, continuations, ref budget, token);
+                ValidateSusp(device, continuation, continuations, ref budget, token, relocation);
             }
             if ((signature == "SP" && record.Length < 7) || (signature == "ER" && record.Length < 8)
                 || (signature == "NM" && record.Length < 5) || (signature == "SL" && record.Length < 5)
@@ -193,4 +262,15 @@ internal static class IsoValidation
             position += record.Length;
         }
     }
+
+    private static ImageFormatException InvalidRelocation() =>
+        new("Rock Ridge relocated-directory records have invalid links, bounds or directory relationships.");
+
+    private sealed class Relocation
+    {
+        internal uint? Child;
+        internal uint? Parent;
+        internal bool Relocated;
+    }
+
 }

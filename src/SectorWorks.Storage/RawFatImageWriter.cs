@@ -17,7 +17,7 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         return result.Available ? QualifyCommitProfile(image) : result;
     }
 
-    internal static Capability QualifyCommitProfile(IImageSession image)
+    internal static Capability QualifyCommitProfile(IImageSession image, bool allowConventionalRetro = true)
     {
         Capability supported = new(true, "Independently qualified FAT disk-stack commit pipeline.");
         if (image.Volumes[0].FileSystem is FatFileSystem { UsesExpandedAllocationBudget: true })
@@ -26,7 +26,12 @@ public sealed class RawFatImageWriter : IStagedImageWriter
         if (image.Volumes[0].FileSystem is FatFileSystem fat && fat.CaptureFat12BadClusters(default).Count > 0)
         { return new(false, "FAT12 images with bad-cluster markers support validated Save As only."); }
         byte[] boot = Bounds.Read(image.Device, 0, 512);
-        return image.Device.Length == 1_474_560 && HasExtendedBoot(boot, 38)
+        bool conventionalRetro = allowConventionalRetro && SupportedFloppyGeometry(boot, image.Device.Length)
+            && boot[13] == 2 && boot[16] == 2 && BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(14)) == 1
+            && BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(17)) == 112
+            && (image.Device.Length, boot[21], BinaryPrimitives.ReadUInt16LittleEndian(boot.AsSpan(22)))
+                is (368_640, 0xfd, 2) or (737_280, 0xf9, 3);
+        return HasExtendedBoot(boot, 38) && (image.Device.Length == 1_474_560 || conventionalRetro)
             ? supported : new(false, "This FAT12 floppy profile supports validated Save As; direct commit is not qualified.");
     }
 
@@ -66,6 +71,8 @@ public sealed class RawFatImageWriter : IStagedImageWriter
             return new(false, "The raw FAT writer requires one unpartitioned FAT volume.");
         }
         IReadOnlyFileSystem fs = image.Volumes[0].FileSystem;
+        if (fs is FatFileSystem { HasLegacyMediaMarker: true })
+        { return new(false, "The floppy BIOS and FAT media markers disagree. This mirrored legacy layout is qualified for reading only."); }
         if (fs.Name is not ("FAT12" or "FAT16" or "FAT32"))
         {
             return new(false, "The raw FAT writer only supports FAT12, FAT16, and FAT32 volumes.");

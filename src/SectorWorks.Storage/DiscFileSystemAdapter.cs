@@ -15,14 +15,14 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
     private bool _disposed;
 
     internal DiscFileSystemAdapter(DiscFileSystem fileSystem, ParserContext context, string name,
-        Dictionary<string, string> properties, IReadOnlyBlockDevice? opticalDevice = null)
+        Dictionary<string, string> properties, IReadOnlyBlockDevice? opticalDevice = null, bool caseSensitive = false)
     {
         _fileSystem = fileSystem;
         _context = context;
         _opticalDevice = opticalDevice;
         Name = name;
         VolumeLabel = fileSystem.VolumeLabel;
-        IsCaseSensitive = fileSystem is CDReader cd && cd.ActiveVariant == Iso9660Variant.RockRidge;
+        IsCaseSensitive = caseSensitive || fileSystem is CDReader cd && cd.ActiveVariant == Iso9660Variant.RockRidge;
         Properties = properties.AsReadOnly();
     }
 
@@ -174,8 +174,12 @@ internal sealed class DiscFileSystemAdapter : IReadOnlyFileSystem
         {
             return true;
         }
-        return _fileSystem is CDReader cd && cd.ActiveVariant == Iso9660Variant.RockRidge
-            && cd.GetUnixFileInfo(path).FileType == UnixFileType.Link;
+        return _fileSystem switch
+        {
+            CDReader { ActiveVariant: Iso9660Variant.RockRidge } cd => cd.GetUnixFileInfo(path).FileType == UnixFileType.Link,
+            DiscUtils.Ext.ExtFileSystem ext => ext.GetUnixFileInfo(path).FileType is not (UnixFileType.Regular or UnixFileType.Directory),
+            _ => false,
+        };
     }
 
     private static void ValidateIsoDirectory(CDReader cd, string path)

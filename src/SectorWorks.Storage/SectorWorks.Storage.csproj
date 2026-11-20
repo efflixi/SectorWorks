@@ -10,10 +10,13 @@
     <ProjectReference Include="../SectorWorks.Core/SectorWorks.Core.csproj" />
     <ProjectReference Include="../SectorWorks.ManagedNtfs/SectorWorks.ManagedNtfs.csproj" />
     <InternalsVisibleTo Include="SectorWorks.StorageTests" />
+    <PackageReference Include="DiscUtils.Ext" Version="0.16.13" />
     <PackageReference Include="DiscUtils.Fat" Version="0.16.13" />
     <PackageReference Include="DiscUtils.Ntfs" Version="0.16.13" />
     <PackageReference Include="DiscUtils.Iso9660" Version="0.16.13" />
     <PackageReference Include="DiscUtils.Vhd" Version="0.16.13" />
     <PackageReference Include="DiscUtils.Vhdx" Version="0.16.13" />
+    <PackageReference Include="DiscUtils.Vmdk" Version="0.16.13" />
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
   </ItemGroup>
 </Project>

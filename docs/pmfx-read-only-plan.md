@@ -1,5 +1,13 @@
 # Phase 6 PMFX read-only plan and feasibility evidence
 
+## Current Phase 6 review
+
+The direct read-only PMFX parser is implemented in the current workspace.
+See the [Phase 6 report](phase6-additional-formats.md#diskgenius-verification)
+for byte-exact generated tests, in-place evidence and the paid-edition
+restriction on the remaining vendor check. The dated research below
+records the prior feasibility work.
+
 ## Superseding scope/acceptance decision — November 17, 2026
 
 [The accepted 1.0 scope and exit audit](1.0-scope-closeout.md) closes revised

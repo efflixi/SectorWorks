@@ -9,9 +9,13 @@ namespace SectorWorks.Storage;
 public sealed class ImageOpener : IImageOpener
 {
     private static readonly IReadOnlyContainerHandler[] Containers =
-        [new VhdxContainerHandler(), new VhdContainerHandler(), new IsoContainerHandler(), new RawContainerHandler()];
+        [new VhdxContainerHandler(), new PmfxContainerHandler(), new QcowContainerHandler(), new VdiContainerHandler(),
+            new VmdkContainerHandler(), new DmgContainerHandler(), new GhostContainerHandler(),
+            new VhdContainerHandler(), new ImageDiskContainerHandler(),
+            new RawCdContainerHandler(), new IsoContainerHandler(), new RawContainerHandler()];
     private static readonly IReadOnlyFileSystemHandler[] FileSystems =
-        [new NtfsFileSystemHandler(), new FatFileSystemHandler(), new OpticalFileSystemHandler()];
+        [new NtfsFileSystemHandler(), new FatFileSystemHandler(), new ExFatFileSystemHandler(), new ExtFileSystemHandler(),
+            new HfsPlusFileSystemHandler(), new ApfsFileSystemHandler(), new OpticalFileSystemHandler()];
 
     public IImageSession OpenReadOnly(string path, CancellationToken cancellationToken = default)
     {
@@ -24,8 +28,14 @@ public sealed class ImageOpener : IImageOpener
         {
             return context.Run<IImageSession>(() =>
             {
+                if (AdditionalOpticalReaders.TryOpenSet(path, resources, cancellationToken) is { } opticalSet)
+                { return opticalSet; }
                 var source = new FileBlockDevice(path);
                 resources.Add(source);
+                if (AdditionalOpticalReaders.TryOpenNero(Path.GetFullPath(path), source, resources, cancellationToken) is { } nero)
+                { return nero; }
+                if (Path.GetExtension(path).Equals(".nrg", StringComparison.OrdinalIgnoreCase))
+                { throw new ImageFormatException("The NRG image has no valid Nero footer."); }
                 var properties = new Dictionary<string, string>();
                 var warnings = new List<string>();
                 (IReadOnlyContainerHandler handler, FormatDetection detection) = SelectContainer(source);
@@ -44,11 +54,11 @@ public sealed class ImageOpener : IImageOpener
                         throw new ImageFormatException("Truncated filesystem boot sector.");
                     }
                 }
-                bool optical = format is "ISO" or "UDF";
+                bool optical = format is "ISO" or "UDF" or "Raw CD";
                 properties["Access"] = "Read-only; no source writes, parent resolution, repair or log replay.";
                 ImageFormatException? partitionError = null;
                 IReadOnlyList<PartitionInfo> partitions;
-                try { partitions = PartitionReader.Read(device, warnings, properties, cancellationToken); }
+                try { partitions = format is "Raw CD" or "GHO" ? [] : PartitionReader.Read(device, warnings, properties, cancellationToken); }
                 catch (ImageFormatException error) when (optical)
                 {
                     partitionError = error;
@@ -61,7 +71,7 @@ public sealed class ImageOpener : IImageOpener
                 {
                     try
                     {
-                        if (OpenOpticalFileSystem(device, context, warnings, cancellationToken, standaloneCompatibility: true) is { } fs)
+                        if (OpenOpticalFileSystem(device, context, warnings, cancellationToken, standaloneCompatibility: true, allowRebuild: format != "Raw CD") is { } fs)
                         { AddOpenedVolume("volume-0", null, fs); }
                     }
                     catch (ImageFormatException error) { opticalError = error; }
@@ -90,7 +100,7 @@ public sealed class ImageOpener : IImageOpener
                 {
                     if (partitions.Count == 0 && partitionError is null)
                     { AddVolume(device, null, "volume-0", diskOnly: true); }
-                    if (volumes.Any(v => v.FileSystem.Name is "FAT12" or "FAT16" or "FAT32" or "NTFS"))
+                    if (format != "Raw CD" && volumes.Any(v => v.FileSystem.Name is "FAT12" or "FAT16" or "FAT32" or "NTFS"))
                     {
                         format = "Raw";
                         optical = false;
@@ -98,6 +108,7 @@ public sealed class ImageOpener : IImageOpener
                             + "Editing remains disabled with conflicting signatures.");
                     }
                     else if ((opticalError ?? partitionError) is { } error) { ExceptionDispatchInfo.Throw(error); }
+                    else if (format == "Raw CD") { throw new ImageFormatException("No supported filesystem was found in the standalone raw CD track."); }
                 }
                 if (volumes.Count == 0)
                 {
@@ -163,11 +174,12 @@ public sealed class ImageOpener : IImageOpener
             .Select(candidate => (candidate.Handler, candidate.Detection!)).First();
 
     internal static IReadOnlyFileSystem? OpenOpticalFileSystem(IReadOnlyBlockDevice device, ParserContext context,
-        List<string> warnings, CancellationToken token, bool standaloneCompatibility = false)
+        List<string> warnings, CancellationToken token, bool standaloneCompatibility = false, bool allowRebuild = true)
     {
         var optical = new Dictionary<string, string>();
         bool iso = false;
         bool udf = false;
+        long missingTrailer = 0;
         for (int i = 16; i < 272 && (long)(i + 1) * 2048 <= device.Length; i++)
         {
             token.ThrowIfCancellationRequested();
@@ -192,13 +204,16 @@ public sealed class ImageOpener : IImageOpener
             iso = true;
             if (descriptor[0] is 1 or 2)
             {
-                if (U16(descriptor, 128) != 2048 || U32(descriptor, 80) == 0
-                    || checked((long)U32(descriptor, 80) * 2048) > device.Length
-                    || U32(descriptor, 166) > 16 * 1024 * 1024
-                    || checked((long)U32(descriptor, 158) * 2048 + U32(descriptor, 166)) > device.Length)
-                {
-                    throw new ImageFormatException("ISO9660 volume/root directory bounds or block size is invalid.");
-                }
+                uint blocks = U32(descriptor, 80);
+                uint root = U32(descriptor, 158);
+                uint rootBytes = U32(descriptor, 166);
+                if (U16(descriptor, 128) != 2048 || blocks == 0
+                    || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(descriptor.AsSpan(84)) != blocks
+                    || rootBytes > 16 * 1024 * 1024 || root * 2048L + rootBytes > device.Length)
+                { throw new ImageFormatException("ISO9660 volume/root directory bounds or block size is invalid."); }
+                missingTrailer = Math.Max(missingTrailer, blocks * 2048L - device.Length);
+                if (missingTrailer > 150 * 2048L || (missingTrailer != 0 && (!standaloneCompatibility || device.Length % 2048 != 0)))
+                { throw new ImageFormatException("ISO9660 declares a volume larger than the available image."); }
                 optical[descriptor[0] == 1 ? "ISO9660" : "Supplementary descriptor"] = "Present";
                 if (descriptor[0] == 2 && descriptor[88] == 0x25 && descriptor[89] == 0x2f
                     && descriptor[90] is 0x40 or 0x43 or 0x45)
@@ -220,8 +235,8 @@ public sealed class ImageOpener : IImageOpener
             // UDF's volume recognition sequence may follow the ISO terminator.
         }
         int recognition = OpticalRebuildDetection.FindUdfRecognition(device, token);
-        if ((iso || udf || recognition != 0)
-            && OpticalRebuildDetection.TryOpen(device, iso, recognition, optical, warnings, token, standaloneCompatibility) is { } qualified)
+        if (missingTrailer == 0 && (iso || udf || recognition != 0)
+            && OpticalRebuildDetection.TryOpen(device, iso, recognition, optical, warnings, token, standaloneCompatibility, allowRebuild) is { } qualified)
         {
             return qualified;
         }
@@ -232,9 +247,19 @@ public sealed class ImageOpener : IImageOpener
         }
         if (iso)
         {
-            if (IsoValidation.Validate(device, token))
+            if (IsoValidation.Validate(device, token, out bool relocated))
             {
                 warnings.Add("ISO zero-length files have unused out-of-range extent addresses. They are read as empty without seeking to those addresses; no source data is rewritten.");
+            }
+            if (relocated)
+            {
+                warnings.Add("Rock Ridge directory relocation is available read-only. The physical relocation directory may also appear.");
+                optical["Rebuild qualification"] = "Rock Ridge relocated directory layout cannot be preserved by rebuild.";
+            }
+            if (missingTrailer > 0)
+            {
+                warnings.Add($"ISO9660 declares {missingTrailer / 2048} missing trailing blocks. Validated directory and file extents fit the physical image. Rebuild is unavailable.");
+                optical["Rebuild qualification"] = "The declared ISO volume extends beyond the physical image.";
             }
             bool joliet = optical.ContainsKey("Joliet");
             var reader = new CDReader(new DeviceStream(device, context), joliet, true);

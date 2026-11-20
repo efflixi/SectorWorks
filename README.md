@@ -1,6 +1,14 @@
 # SectorWorks
 
-[v0.5.5 development prerelease report](docs/prerelease-v0.5.5.md) · [Download packages](https://github.com/efflixi/SectorWorks/releases/tag/v0.5.5-cd-metadata)
+[0.6 development prerelease notes](docs/prerelease-v0.6.md) · [Download packages](https://github.com/efflixi/SectorWorks/releases/tag/v0.6)
+
+## Phase 6 — additional formats and filesystems
+
+The 0.6 development prerelease adds read-only browsing and extraction for qualified
+disk containers, filesystems, and optical formats. Conventional 360 KB and
+720 KB FAT12 media also gain direct commit within their separately qualified
+profiles. The [Phase 6 report](docs/phase6-additional-formats.md) lists the
+supported variants and the remaining verification work.
 
 ## Phase 5 — BIN/CUE and CD audio
 
@@ -41,7 +49,7 @@ independent optical tests on Linux, install `genisoimage` (with `isoinfo`) and
 | Phase | Work |
 | --- | --- |
 | 5 | BIN/CUE and optical expansion: data and mixed-mode tracks, CD-DA playback, and safe rebuilds |
-| 6 | Additional formats and filesystems, including 360K/720K floppy compatibility (6.10) and DiskGenius PMFX read-only support (6.11) |
+| 6 | Additional formats and filesystems, including 360K/720K floppy compatibility (6.10), DiskGenius PMFX (6.11), and [compatibility-audit readers and fixes](docs/support-matrix.md#phase-6-compatibility-audit-additions) (6.12–6.13) |
 | 7 | Linux and ARM64 hardening: broad Linux x64 distro/backend testing and packaging after both feature phases |
 
 Each feature phase verifies what it adds. The broad platform sweep tests the
@@ -214,10 +222,11 @@ this does not enable optical editing, Phase 3 or new physical-platform claims.
 The Phase 2B FAT envelope includes filesystem-only, primary MBR and consistent
 GPT layouts, per-volume capabilities and independent multi-volume staging.
 LFN/mixed-case/NFC BMP Unicode names are supported in a declared safe subset,
-with alias, spelling, allocation and metadata preservation checks. FAT12 remains
-limited to conventional 1,474,560-byte volumes; 360K/720K and early-DOS writing
-remain deferred. Logical sectors must be 512 bytes; VHDX 512/512 and 512/4096
-layouts are separately qualified, not 4Kn.
+with alias, spelling, allocation and metadata preservation checks. The Phase
+2B FAT12 envelope uses conventional 1,474,560-byte volumes. Qualified raw
+360K/720K profiles have separate Phase 6 commit evidence, while certain
+early-DOS profiles support Save As. Logical sectors must be 512 bytes.
+VHDX 512/512 and 512/4096 layouts are separately qualified.
 
 The owner subsequently authorized implementing and qualifying the managed NTFS
 repair. Separately named managed security/backend assemblies remove the portable
@@ -259,7 +268,7 @@ and formatting are outside 1.0 requirements, not missing required writers.
 No post-1.0 writer date is promised. Reader evaluation, legal fixtures and tests
 remain required: detection is not browsing/extraction; exact unsupported variants
 and infeasible-reader blockers must be documented for owner review, not silently
-dropped. This is not a claim that these readers are implemented.
+dropped. The current Phase 6 reader subsets and open qualification are in the [Phase 6 report](docs/phase6-additional-formats.md).
 
 Read-only caps compose across the stack: a read-only container caps even FAT/NTFS;
 ext/exFAT/HFS+/APFS stay read-only inside raw/VHD/VHDX. Internal parsers determine
@@ -267,21 +276,19 @@ access independently of native host-OS mounting capabilities. Platform limits
 require evidence, not assumptions about Windows reading filesystems from other operating systems.
 Core disk, optical and retro write milestones below are unchanged.
 
+Phase 6 also targets read-only MDF/MDS, CloneCD CCD/IMG/SUB, ImageDisk IMD,
+Nero NRG, Norton Ghost GHO, and verified standalone raw CD data tracks.
+The same phase addresses the audit’s rejected BIN/CUE, ISO, and raw FAT cases.
+See the [compatibility-audit scope](docs/support-matrix.md#phase-6-compatibility-audit-additions).
+
 ### Planned editing coverage
 
-**PMFX roadmap addition (2026-10-17):** DiskGenius PMFX read-only browsing and
-file/directory extraction are required in Phase 6, item **6.11**, for work/home
-interoperability. This is planned, **not implemented**; local FAT16/FAT32
-container research is not qualified product support and found no NTFS PMFX.
-The container will cap otherwise writable filesystems to read-only. PMFX
-writing, modified Save As, commit, rebuild and image conversion/export are not
-part of this addition; no writer milestone is promised. See the
-[research evidence and implementation/qualification plan](docs/pmfx-read-only-plan.md).
-This roadmap approval does not authorize starting Phase 6.
-**Phase 6 must deliver the reader inside SectorWorks before it is complete:**
-PMFX in the declared qualified subset must open directly for browsing and
-extraction. Research, detection-only, external raw conversion or a future
-implementation plan does not satisfy that completion gate.
+**DiskGenius PMFX (Phase 6.11)** opens directly in the current review build
+for bounded FAT16/FAT32 browsing and extraction. Generated controls cover the
+implemented allocation and codec layouts. The independent DiskGenius restore
+comparison and the NTFS reference remain open. See the
+[Phase 6 report](docs/phase6-additional-formats.md#diskgenius-verification)
+and [PMFX research](docs/pmfx-read-only-plan.md).
 
 The owner approved the editing-roadmap correction on 2026-10-15:
 **Phase 2B and the subsequently authorized Phase 2C precede Phase 3**.
@@ -299,8 +306,7 @@ covers conventional 360K/720K editing/Save As/direct-commit qualification.
 Qualified FAT/NTFS, including native passive-source outputs, bounded reader/Tower
 and legacy/list writer, commit UI and startup recovery are verified. The
 November17 scope decision defers remaining modern NTFS states and physical ARM64,
-and its conditional acceptance closes revised Phase2/2B/2C/2D/3 exits. Later
-phases remain unimplemented apart from separately authorized packaging work. See the
+and its conditional acceptance closes revised Phase2/2B/2C/2D/3 exits. See the
 [capability delivery matrix](docs/support-matrix.md#required-editing-delivery-roadmap)
 and [checklist](checklist.txt) for explicit tasks, preservation/failure gates
 and the owner-review requirement for unresolved scope.
@@ -521,9 +527,10 @@ documents for details.
 
 Retro-computing priority, 2026-10-14: **360K and 720K PC floppy images** are
 important product requirements. The tested Phase 1 read-only 720K Compaq/legacy
-FAT12 subset is retained. Broader variants and dedicated 360K qualification are
-planned in checklist Phase 6, item 6.10; neither capacity alone nor current FAT12
-support implies blanket compatibility, writing or bootability preservation.
+FAT12 subset is retained. Conventional 360K and 720K editing, Save As, and
+direct commit use the exact BPB, allocation and geometry bounds in the
+[Phase 6 report](docs/phase6-additional-formats.md#conventional-floppy-editing).
+Other retro variants remain separately scoped in item 6.10.
 
 ## License
 

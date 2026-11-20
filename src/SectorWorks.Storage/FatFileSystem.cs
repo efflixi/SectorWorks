@@ -102,9 +102,15 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             CheckCluster(_rootCluster);
         }
         byte[] first = Bounds.Read(device, _fatOffset, 3);
-        if (first[0] != boot[21] || first[1] != 0xff || (_bits == 12 && first[2] != 0xff))
+        HasLegacyMediaMarker = hasBootSignature && _bits == 12 && _sector == 512 && sectorsPerCluster == 1
+            && totalSectors == 2880 && device.Length == 1474560 && copies == 2 && sectorsPerFat == 9 && reserved == 1
+            && rootEntries == 224 && U16(boot, 24) == 18 && U16(boot, 26) == 2 && U32(boot, 28) == 0
+            && boot[21] == 0xf0 && first.AsSpan().ContainsAnyExcept((byte)0xff) == false
+            && Bounds.Read(device, _fatOffset, (int)_fatBytes).AsSpan()
+                .SequenceEqual(Bounds.Read(device, _fatOffset + _fatBytes, (int)_fatBytes));
+        if (!HasLegacyMediaMarker && (first[0] != boot[21] || first[1] != 0xff || (_bits == 12 && first[2] != 0xff)))
         {
-            throw new ImageFormatException("Invalid FAT reserved allocation entries.");
+            throw new ImageFormatException($"Invalid FAT reserved allocation entries. The BPB media byte is 0x{boot[21]:x2}; the selected table begins {Convert.ToHexString(first)}.");
         }
         if (!hasBootSignature && !Bounds.Read(device, _fatOffset, checked((int)_fatBytes)).AsSpan()
             .SequenceEqual(Bounds.Read(device, _fatOffset + _fatBytes, checked((int)_fatBytes))))
@@ -124,7 +130,9 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
             ["Volume label source"] = hasExtendedLabel ? "Extended BIOS parameter block"
                 : _bits == 32 ? "Unavailable (no extended label record)" : "Root-directory volume-label entry, if present",
             ["Timestamp interpretation"] = "FAT wall-clock time; original timezone is not recorded.",
-            ["Access"] = "Read-only; bounded cluster-chain validation.",
+            ["Access"] = HasLegacyMediaMarker
+                ? "Read-only; mirrored floppy FATs use a legacy 0xFF media marker with a 0xF0 BPB."
+                : "Read-only; bounded cluster-chain validation.",
         }.AsReadOnly();
 
         bool HasEarlyFloppyBpb()
@@ -143,6 +151,8 @@ internal sealed partial class FatFileSystem : IReadOnlyFileSystem
                 && U16(boot, 28) == 0 && jump is >= 30 and <= 36;
         }
     }
+
+    internal bool HasLegacyMediaMarker { get; }
 
     private string ReadFixedRootLabel()
     {

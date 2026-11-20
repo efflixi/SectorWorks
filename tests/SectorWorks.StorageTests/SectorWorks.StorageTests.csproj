@@ -17,6 +17,7 @@
     <ProjectReference Include="../../tools/SectorWorks.DependencyProbe/SectorWorks.DependencyProbe.csproj" />
     <Using Include="Xunit" />
     <None Include="../../fixtures/golden/*" Link="fixtures/golden/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../fixtures/phase6/*.gz" Link="fixtures/phase6/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../fixtures/qualification/*" Link="fixtures/qualification/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

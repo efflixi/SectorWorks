@@ -26,7 +26,8 @@ public sealed class DiskImageWriter : IStagedImageWriter
         using var bounded = new DiskVolumeSession(image, volume);
         if (bounded.HasPartitionSuffix)
         { return new(false, "FAT16 partitions with a separate suffix support validated Save As only."); }
-        return volume.FileSystem.Name == "NTFS" ? _ntfs.QualifyCommit(bounded) : RawFatImageWriter.QualifyCommitProfile(bounded);
+        return volume.FileSystem.Name == "NTFS" ? _ntfs.QualifyCommit(bounded)
+            : RawFatImageWriter.QualifyCommitProfile(bounded, image.Metadata.Format == "Raw" && volume.Partition is null);
     }
 
     public Capability Qualify(IImageSession image)

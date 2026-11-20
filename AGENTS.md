@@ -1,5 +1,36 @@
 # SectorWorks agent entry point
 
+## 0.6 development prerelease
+
+The owner authorized the 0.6 development prerelease from the verified Phase 6
+snapshot and asked to reuse the completed regression. See the
+[prerelease notes](docs/prerelease-v0.6.md) for the downloads and verification
+scope. Phase 6 qualification findings remain open as recorded below.
+Phase 7 requires separate authorization.
+
+## Phase 6 review — November 19–20, 2026
+
+The owner authorized Phase 6 implementation and verification. The
+[Phase 6 report](docs/phase6-additional-formats.md) and
+[evidence index](artifacts/phase6-review/evidence-index.json) record bounded
+reader coverage, conventional raw 360K/720K FAT12 writer qualification,
+targeted compatibility dispositions and four local review packages.
+
+Final Linux verification passed 2,552 tests with one Windows-only skip.
+The first runner returned 143 before StorageTests completed. Its other
+four suites passed; the same StorageTests build passed in three disjoint,
+detached selections. Keep these receipts distinct. The Windows laptop
+passed focused and desktop checks; its default unfiltered test tool gaps
+are recorded separately from the exact, independently verified mixed
+outputs. The verified standard-user app and test payloads were cleaned.
+Preserve the manual tunnel and existing NTFS and ARM64 decisions.
+
+Phase 6 stopped for owner review. The qualified PMFX reader opens and
+extracts files directly. The vendor restore comparison remains open because
+DiskGenius Free would not save the required PMFX. The owner offered a
+licensed work-PC check; the review folder includes generated VHDs and
+reproduction steps. Keep the legacy Ghost and specific unsupported or
+damaged-media rows visible. Phase 7 and publication require authorization.
 
 ## Phase 5 — owner-authorized BIN/CUE and optical expansion
 
@@ -17,6 +48,13 @@ Linux and ARM64 Hardening**. Broad platform testing follows the feature work
 and covers the combined product; feature-specific verification remains in
 Phases 5 and 6. Physical ARM64 stays deferred to P1.ARM64. No phase
 implementation or release is authorized by the reorder.
+
+The owner added Phase 6 checklist items 6.12 and 6.13 on November 19, 2026.
+Item 6.12 targets read-only MDF/MDS, CloneCD CCD/IMG/SUB, ImageDisk IMD,
+Nero NRG, Norton Ghost GHO, and standalone raw CD data tracks. Item 6.13
+tracks the compatibility audit's rejected BIN/CUE, ISO and raw FAT cases.
+Use the [audit roadmap](docs/support-matrix.md#phase-6-compatibility-audit-additions)
+for the planned scope. Phase 6 implementation still requires owner authorization.
 
 ## Phase 4 scope — November 17, 2026
 

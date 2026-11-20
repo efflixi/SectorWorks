@@ -39,13 +39,23 @@ SDK/self-contained runtime:
 
 Storage dependencies used by readers and qualified staged/Save As writers:
   DiscUtils.Fat, DiscUtils.Ntfs, DiscUtils.Iso9660, DiscUtils.Vhd,
-  DiscUtils.Vhdx, DiscUtils.Core, DiscUtils.Streams - all 0.16.13 / MIT
+  DiscUtils.Vhdx, DiscUtils.Core, DiscUtils.Streams, DiscUtils.Ext,
+  DiscUtils.Vmdk - all 0.16.13 / MIT
   Copyright (c) 2008-2011 Kenneth Bell; (c) 2014 Quamotion
   https://github.com/DiscUtils/DiscUtils
   Full text: docs/licenses/DiscUtils.txt (licenses/DiscUtils.txt in publishes).
   Development use approved by owner; production-readiness re-evaluation is
   tracked in checklist.txt. Product writes require per-stack qualification;
   no write support follows from the library APIs alone.
+
+Additional read-only codecs:
+  SharpZipLib 1.4.2 / MIT validates zlib framing and decoded bytes.
+  https://github.com/icsharpcode/SharpZipLib
+  Full text: docs/licenses/SharpZipLib.txt.
+  Ghost Fast LZ decoding uses the algorithm documented in nyarime/gho
+  commit 40af0e8eca5ce80aec8788320a98faadb666cb40 / MIT.
+  https://github.com/nyarime/gho
+  Full text: docs/licenses/Ghost-FastLZ.txt.
 
 Isolated managed NTFS source repair:
   SectorWorks.ManagedNtfs imports the approved DiscUtils NTFS source and the

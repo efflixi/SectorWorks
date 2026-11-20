@@ -13,6 +13,7 @@ internal sealed class CueSheet
     internal List<CueSource> Sources { get; } = [];
     // Nonstandard REM directives may describe data that this engine cannot interpret.
     internal bool HasOpaqueRemarks { get; private set; }
+    internal bool UsesUtf16 { get; private set; }
 
     internal static CueSheet Parse(Stream input, CancellationToken token)
     {
@@ -22,10 +23,18 @@ internal sealed class CueSheet
         input.ReadExactly(bytes);
         if (input.ReadByte() != -1) { throw new ImageFormatException("CUE sheet changed during parsing."); }
         string text;
-        try { text = new UTF8Encoding(false, true).GetString(bytes); }
-        catch (DecoderFallbackException error) { throw new ImageFormatException("CUE sheets must contain valid UTF-8.", error); }
+        bool littleEndian = bytes.Length >= 2 && bytes[0] == 0xff && bytes[1] == 0xfe;
+        bool bigEndian = bytes.Length >= 2 && bytes[0] == 0xfe && bytes[1] == 0xff;
+        bool usesUtf16 = littleEndian || bigEndian;
+        try
+        {
+            text = usesUtf16 ? new UnicodeEncoding(bigEndian, byteOrderMark: false, throwOnInvalidBytes: true).GetString(bytes, 2, bytes.Length - 2)
+                : new UTF8Encoding(false, true).GetString(bytes);
+        }
+        catch (DecoderFallbackException error)
+        { throw new ImageFormatException("CUE requires UTF-8 or BOM-marked UTF-16 text. This file contains invalid text bytes.", error); }
         if (text.StartsWith('\uFEFF')) { text = text[1..]; }
-        var sheet = new CueSheet();
+        var sheet = new CueSheet { UsesUtf16 = usesUtf16 };
         CueSource? file = null;
         CueEntry? track = null;
         int previousTrack = 0;

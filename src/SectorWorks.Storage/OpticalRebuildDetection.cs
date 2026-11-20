@@ -24,7 +24,7 @@ internal static class OpticalRebuildDetection
     }
 
     internal static OpticalFileSystem? TryOpen(IReadOnlyBlockDevice device, bool hasIso, int recognition,
-        Dictionary<string, string> properties, List<string> warnings, CancellationToken token, bool standaloneCompatibility)
+        Dictionary<string, string> properties, List<string> warnings, CancellationToken token, bool standaloneCompatibility, bool allowRebuild = true)
     {
         try
         {
@@ -59,6 +59,11 @@ internal static class OpticalRebuildDetection
             }
             if (udf is not null) { properties["UDF"] = "1.02; single read-only physical partition"; }
             properties["Optical logical sector size"] = "2048 bytes";
+            if (!allowRebuild)
+            {
+                var readOnly = new Capability(false, "The container or track layout is qualified for reading only.");
+                return new OpticalFileSystem(device, root, iso, udf, label, properties, readOnly);
+            }
             Capability capability;
             try
             {

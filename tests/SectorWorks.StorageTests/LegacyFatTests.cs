@@ -83,6 +83,7 @@ public sealed class LegacyFatTests
 
     [Theory]
     [InlineData(720, 9, 2, 2, false, true)]
+    [InlineData(1440, 9, 2, 3, false, true)]
     [InlineData(1440, 9, 2, 3, true, true)]
     [InlineData(1440, 9, 2, 3, true, false)]
     [InlineData(2400, 15, 1, 7, false, true)]
@@ -106,7 +107,7 @@ public sealed class LegacyFatTests
         using var service = new ExplorerService(new ImageOpener(), stagingDirectory: work.PathFor("stage"));
         WorkspaceInfo workspace = await service.OpenAsync(source);
         Assert.True(workspace.Capabilities.SaveAs.Available, workspace.Capabilities.SaveAs.Reason);
-        Assert.Equal(!legacy && sectors == 2880, workspace.Capabilities.CommitInPlace.Available);
+        Assert.Equal(!legacy && (sectors is 720 or 1440 or 2880), workspace.Capabilities.CommitInPlace.Available);
         await service.StageAsync(workspace.Id, new(ImageChangeKind.AddFile, workspace.Volumes[0].Id, "/NEW.TXT", content));
         await service.SaveAsAsync(workspace.Id, output);
         VerifyOutput(File.ReadAllBytes(output));

@@ -1,5 +1,19 @@
 # Support matrix
 
+## Phase 6 reader expansion
+
+The [0.6 development prerelease](prerelease-v0.6.md) can browse and extract from qualified VMDK, VDI,
+QCOW2, DMG, exFAT, ext2/3/4, HFS+, APFS, ImageDisk IMD, standalone raw CD,
+CloneCD, MDS/MDF, NRG, GHO and PMFX variants. The [Phase 6 report](phase6-additional-formats.md)
+records explicit geometry, codec, filesystem and track limits. It also tracks
+independent checks still outstanding for PMFX and legacy Ghost.
+
+The qualified raw 360 KB and 720 KB FAT12 profiles support staged edits,
+Save As and direct commit. Their precise admission limits and independent
+allocation, data and boot-record checks are in the same report. Older
+filesystem, archive, optical, storage device and NTFS writer safety rules
+still govern other layouts.
+
 ## Phase 5 BIN/CUE capabilities
 
 | CUE layout | Read / playback | Modified output |
@@ -14,7 +28,7 @@ No BIN/CUE source commit, CD burning, subchannel decoding or general boot/layout
 claim. See [Phase 5](phase5-bin-cue.md) for exact gates, backend requirements
 and evidence. Existing Phase 4 standalone ISO/UDF support is separate.
 
-The [second compatibility follow-up](../Existing_File_Compatibility.md) also
+The second compatibility follow-up also
 accepts one-digit CUE track and index numbers without changing the sheet.
 Raw rebuild qualification checks consecutive stored sector addresses and
 EDC/ECC throughout the edited track. It preserves addresses and copies
@@ -29,7 +43,7 @@ The [Phase 4 report](phase4-optical-rebuild.md) lists exact format and
 preservation predicates, limits and platform evidence. Unsupported boot,
 hybrid, opaque and divergent-namespace layouts stay read-only.
 
-The [compatibility follow-up](../Existing_File_Compatibility.md) qualifies
+The compatibility follow-up qualifies
 standalone ISO zero trailers and narrowly recognized descriptor version stamps.
 Rebuild retains the trailer length and descriptor bytes; nonzero untracked data
 and unknown descriptor fields still block it. Hybrid disk and optical views are
@@ -44,7 +58,7 @@ normal namespace rules. A bounded CD-XA label and ordinary Form 1 directory
 metadata can be retained; XA interleaving, file numbers and opaque producer
 fields are not reconstructed. Sector layout reference: [ECMA-130](https://ecma-international.org/publications-and-standards/standards/ecma-130/).
 
-The [third compatibility pass](../Existing_File_Compatibility.md) adds these
+The third compatibility pass adds these
 bounded variants for standalone ISO and otherwise qualified ISO-in-CUE:
 
 - Contiguous, byte-identical copies of the primary descriptor. Every copy is
@@ -151,7 +165,8 @@ and coherent LFS2 images remain outside write qualification. Physical ARM64 is
 
 | Subset | Modify / validated Save As | Source commit |
 | --- | --- | --- |
-| Existing qualified FAT12/16/32 and ordinary NTFS rows | Retained; final Windows regression and independent exact-output checks pass | Retained independent decision |
+| Earlier qualified FAT12/16/32 and ordinary NTFS rows | Retained; exact-output evidence in the corresponding phase records | Retained independent decision |
+| Conventional unpartitioned raw 360K and 720K FAT12 | Qualified edited Save As on the separate Phase 6 profiles | Qualified on the same profiles with signed extended BPB, exact geometry and existing safety predicates |
 | Bounded NTFS 1.2/3.0/3.1 ordinary + resident/nonresident moved-data, split-data and moved-root-index lists | Qualified 441-row Linux/Windows selections, enabled | Separately qualified 441-row selections, enabled |
 | Readable default TxF/transaction-bearing, dirty/ambiguous NTFS or LFS2/cache layouts | Read-only; modern-state qualification deferred to P1.NTFS.MODERN | Unavailable |
 | Native passive NTFS3.1 exact0x1400/cleanLFS1.1/empty repair-deleted state | Qualified five-operation Save As;15 unique disk/layout rows | Separately qualified;60 native volume oracles/standard-user Windows output checks |
@@ -269,7 +284,7 @@ in [storage implementation](storage-phase1.md) and [explorer operations](explore
 | Fixed/dynamic VHDX | Sector sizes and virtual/container metadata | Same supported disk filesystem subset; synthetic and independent fixed fixtures |
 | ISO9660 | Volume and descriptor metadata | Ordinary files/directories |
 | Joliet | Extension selected by descriptor escape sequence | Unicode filenames, ordinary files/directories |
-| Rock Ridge | Ordinary supported SUSP metadata | Ordinary files/directories; no relocated/multi-extent/interleaved layouts |
+| Rock Ridge | Supported SUSP records and validated CL/PL/RE directory relocation | Ordinary files/directories; relocated layouts read-only, multiextent/interleaved unavailable |
 | ISO/UDF bridge | Detect both sets of descriptors; independently reconcile supported namespace trees | Bounded UDF 1.02 plus ISO views when qualified; ISO-only fallback when safe |
 | UDF-only | Detection and bounded UDF 1.02 ROM-profile validation | Ordinary supported files/directories; unsupported layouts may be detection-only |
 | Differencing VHD/VHDX | Parent requirement diagnostic | Rejected; no automatic parent traversal |
@@ -381,6 +396,9 @@ Linux x64, Windows x64 and Raspberry Pi 500 Linux ARM64 results.
 
 ### Phase 6 PMFX read-only delivery plan
 
+The direct reader is present in the [Phase 6 review build](phase6-additional-formats.md#diskgenius-verification). The original qualification plan and outstanding vendor and NTFS checks follow.
+
+
 Owner-approved roadmap addition **2026-10-17**, checklist **6.11.1-6.11.8**.
 This is a required read-only addition, **not an implemented reader** or
 authorization to start Phase 6. It follows the 1.0 read-only/blocker-review
@@ -404,6 +422,32 @@ source hashes establish preservation during research, not product safety.
 PMFX staging, modified Save As, commit, rebuild, creation/formatting and image
 conversion/export are outside this addition, with no future writer promise.
 File extraction is required; image conversion is not implied.
+
+### Phase 6 compatibility-audit additions
+
+The owner added checklist items **6.12** and **6.13** on November 19, 2026.
+They cover 38 paths that need a new reader or opening mode and 18 rejected
+paths in existing formats. Counts are physical files in the local compatibility
+audit. The table records the original targets. See the
+[Phase 6 report](phase6-additional-formats.md) for their disposition.
+
+| Planned read-only reader or opening mode | Audit paths | Initial qualification target |
+| --- | ---: | --- |
+| Alcohol MDF/MDS | 10 | Recognize each entry point and validate the paired descriptor, session and track layout. Verify applicable data and audio reads. |
+| CloneCD CCD/IMG/SUB | 20 | Read the CCD track map and associated IMG payloads. Verify SUB alignment and metadata when present. The counted paths are 10 CCD descriptors and 10 SUB companions. |
+| ImageDisk IMD | 4 | Decode qualified track maps and sector encodings, including verified IMD files with .IMG names, and expose supported floppy filesystems. |
+| Nero NRG | 2 | Validate footer/chunk-table variants and read qualified tracks. The copy named .ISO needs valid layout evidence because its NRG metadata is missing. |
+| Norton Ghost GHO | 1 | Qualify a bounded backup reader using an independent decoded-content comparison. |
+| Standalone raw CD track | 1 | Open a verified single 2,352-byte-sector data track directly, including the layout diagnosed in MK3CD.iso. |
+
+Item **6.13** covers six paths affected by ambiguous CUE gap declarations, two
+other CUE rejections involving encoding and companion resolution, seven ISO
+rejections involving Rock Ridge relocation or geometry/extent validation, and
+three raw FAT cases involving volume bounds or 1.44 MB reserved allocation
+entries. Validate actual media structure and qualify fixes on legal generated
+or independently authored fixtures. Incomplete or damaged inputs need precise
+rejection reasons. Newly readable variants remain read-only until the applicable
+writer checks have been independently qualified.
 
 ### Phase 2C NTFS reader qualification plan
 
@@ -515,7 +559,8 @@ milestone or delivery date. Core raw/VHD/VHDX FAT/ordinary-NTFS, optical and ret
 write milestones remain required.
 
 Apply caps per stack: a read-only container caps FAT/NTFS; ext/exFAT/HFS+/APFS
-stay read-only in writable raw/VHD/VHDX. Internal parsers, not host mounting,
+stay read-only in writable raw/VHD/VHDX. The readers in item 6.12 follow the
+same read-only boundary. Internal parsers, not host mounting,
 determine application support. Record platform limitations only from evidence.
 
 ### Required editing delivery roadmap
@@ -586,7 +631,7 @@ section 6.6 records the same delivery policy.
 | ISO 9660/Joliet/supported Rock Ridge | Phase 4 shared staging passes qualified layout rows | Unavailable | Validated new-image rebuild with qualified namespace and metadata preservation |
 | Declared UDF 1.02 and ISO/UDF bridge subsets | Phase 4 bounded read and staged editing | Unavailable | Verified new-image rebuild preserving consistent qualified views |
 | Qualified BIN/CUE data and mixed-mode layouts | Shared staging on the qualified MODE1/2048 ISO data-track subset | Unavailable | Validated separate new output sets; no source-set replacement |
-| Conventional 360K/720K FAT12 subsets | Phase 6 item 6.10 | Phase 6 item 6.10 using Phase 3 safeguards | Normally not needed for raw file edits; create/conversion separate |
+| Conventional raw 360K/720K FAT12 subsets | Phase 6 item 6.10 qualified profiles | Phase 6 independently checked both qualified capacities under Phase 3 safeguards | Normally not needed for raw file edits; create/conversion separate |
 
 Disk coverage applies to structurally valid combinations with declared resource,
 sector-size and feature bounds, not every variation an upstream library recognizes.
@@ -651,8 +696,9 @@ required core/optical/retro writer gaps still require explicit owner review.
 360K (368640-byte conventional raw images) and 720K (737280 bytes) are explicit
 retro-computing priorities. The compatibility follow-up verified selected
 generated 360K/720K and early-DOS BPB profiles for staging and validated Save As
-without replacing the boot sector. It did not qualify direct commit for these
-newly admitted profiles, blanket retro support or a full Phase 6.10 exit.
+without replacing the boot sector. Phase 6 subsequently added direct commit
+for the two independently checked conventional profiles. Early-DOS cases
+retain their distinct access limits. See the [exact profile and evidence](phase6-additional-formats.md#conventional-floppy-editing).
 
 Fixture coverage, ambiguous/missing BPBs, geometry/media-descriptor checks,
 independent extraction verification and preservation/write qualification are

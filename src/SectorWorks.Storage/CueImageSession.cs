@@ -11,6 +11,7 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
     private readonly string directory;
     private readonly CueSheet sheet;
     private readonly bool hasSidecar;
+    private bool hasCombinedAudioGaps;
     private bool disposed;
 
     private CueImageSession(string fullPath, FileBlockDevice catalog, CueSheet sheet, CancellationToken token)
@@ -63,8 +64,12 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
                     if (partitionStart < 0 || (i == 0 && partitionStart != 0) || start >= end || end > sectors
                         || track.Indexes[^1].FileSector >= end)
                     { throw new ImageFormatException($"Track {track.Number:D2} has indexes outside its sector range in {source.Name}."); }
-                    if (track.Pregap is not null && start != partitionStart)
-                    { throw new ImageFormatException($"Track {track.Number:D2} defines both a PREGAP and a stored INDEX 00 gap."); }
+                    if (track.Pregap > 0 && start != partitionStart)
+                    {
+                        if (track.Mode != CdTrackMode.Audio)
+                        { throw new ImageFormatException($"Data track {track.Number:D2} has both an unstored PREGAP and a stored INDEX 00 gap."); }
+                        hasCombinedAudioGaps = true;
+                    }
                     int count = end - start;
                     int lba = checked(disc + start - partitionStart + (track.Pregap ?? 0));
                     disc = checked(lba + count + (track.Postgap ?? 0));
@@ -207,6 +212,10 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
 
     public Capability QualifyRebuild(string? volumeId)
     {
+        if (sheet.UsesUtf16)
+        { return new(false, "UTF-16 CUE descriptors are read-only. Rebuild preservation is unqualified."); }
+        if (hasCombinedAudioGaps)
+        { return new(false, "This CUE combines an unstored PREGAP with a stored audio INDEX 00 gap. Rebuild preservation is unqualified."); }
         if (hasSidecar)
         {
             const string sidecarReason = "The set has a disc-metadata sidecar (.CCD, .SUB or .CDT) that SectorWorks cannot validate or preserve.";
@@ -251,7 +260,8 @@ internal sealed class CueImageSession : IImageSession, ICdImageSession, IImageSe
         OpticalFileSystem? Rebuild, Capability Editing);
 }
 
-internal sealed class CueTrackDevice(FileBlockDevice device, int first, int count, CdTrackMode mode, bool raw = false, bool ownsDevice = false) : IReadOnlyBlockDevice
+internal sealed class CueTrackDevice(IReadOnlyBlockDevice device, int first, int count, CdTrackMode mode,
+    bool raw = false, bool ownsDevice = false, int? initialAddress = null) : IReadOnlyBlockDevice
 {
     private int StoredSector => mode == CdTrackMode.Mode1Cooked ? 2048 : 2352;
     public int LogicalSectorSize => raw || mode == CdTrackMode.Audio ? StoredSector : 2048;
@@ -273,6 +283,8 @@ internal sealed class CueTrackDevice(FileBlockDevice device, int first, int coun
             bool mode2 = mode == CdTrackMode.Mode2Raw;
             if (CdRawSector.DataHeaderIssue(sector, mode) is { } issue)
             { throw new ImageFormatException($"Track sector {address / 2048}: {issue}"); }
+            if (initialAddress is { } expected && CdRawSector.Address(sector) != expected + address / 2048)
+            { throw new ImageFormatException($"Track sector {address / 2048}: Raw CD sector address is out of sequence."); }
             int within = (int)(address % 2048);
             int length = Math.Min(buffer.Length - written, 2048 - within);
             sector.Slice((mode2 ? 24 : 16) + within, length).CopyTo(buffer[written..]);

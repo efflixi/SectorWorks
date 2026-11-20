@@ -513,6 +513,30 @@
       "value": null
     }
   },
+  "DiscUtils.Ext/0.16.13": {
+    "authors": {
+      "attributes": {},
+      "value": "Kenneth Bell,LordMike"
+    },
+    "license": {
+      "attributes": {
+        "type": "expression"
+      },
+      "value": "MIT"
+    },
+    "licenseUrl": {
+      "attributes": {},
+      "value": "https://licenses.nuget.org/MIT"
+    },
+    "repository": {
+      "attributes": {
+        "commit": "59d7cadab839c6d8dfcf52f8be5efe6d2ced190f",
+        "type": "git",
+        "url": "https://github.com/DiscUtils/DiscUtils"
+      },
+      "value": null
+    }
+  },
   "DiscUtils.Fat/0.16.13": {
     "authors": {
       "attributes": {},
@@ -634,6 +658,30 @@
     }
   },
   "DiscUtils.Vhdx/0.16.13": {
+    "authors": {
+      "attributes": {},
+      "value": "Kenneth Bell,LordMike"
+    },
+    "license": {
+      "attributes": {
+        "type": "expression"
+      },
+      "value": "MIT"
+    },
+    "licenseUrl": {
+      "attributes": {},
+      "value": "https://licenses.nuget.org/MIT"
+    },
+    "repository": {
+      "attributes": {
+        "commit": "59d7cadab839c6d8dfcf52f8be5efe6d2ced190f",
+        "type": "git",
+        "url": "https://github.com/DiscUtils/DiscUtils"
+      },
+      "value": null
+    }
+  },
+  "DiscUtils.Vmdk/0.16.13": {
     "authors": {
       "attributes": {},
       "value": "Kenneth Bell,LordMike"
@@ -942,6 +990,34 @@
         "commit": "36206450d47fec22e281ba9846445edc796f5080",
         "type": "git",
         "url": "https://github.com/microsoft/vstest"
+      },
+      "value": null
+    }
+  },
+  "SharpZipLib/1.4.2": {
+    "authors": {
+      "attributes": {},
+      "value": "ICSharpCode"
+    },
+    "copyright": {
+      "attributes": {},
+      "value": "Copyright \u00a9 2000-2022 SharpZipLib Contributors"
+    },
+    "license": {
+      "attributes": {
+        "type": "expression"
+      },
+      "value": "MIT"
+    },
+    "licenseUrl": {
+      "attributes": {},
+      "value": "https://licenses.nuget.org/MIT"
+    },
+    "repository": {
+      "attributes": {
+        "commit": "33f64eb0f28cdd2b084cb822fcc224c7c5aba553",
+        "type": "git",
+        "url": "https://github.com/icsharpcode/SharpZipLib"
       },
       "value": null
     }

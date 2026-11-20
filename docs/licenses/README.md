@@ -18,6 +18,9 @@ notice, the upstream license is retained:
   the retained Avalonia text. Avalonia.Headless 12.1.4 is test-only.
 - MicroCom: repository commit `76785efcafd91b5902fd19dd11145f6dd655b7b4`,
   `LICENSE`.
+- SharpZipLib 1.4.2: repository commit `33f64eb0f28cdd2b084cb822fcc224c7c5aba553`,
+  `LICENSE.txt`. The Ghost Fast LZ implementation retains the MIT notice
+  from [nyarime/gho](https://github.com/nyarime/gho/tree/40af0e8eca5ce80aec8788320a98faadb666cb40).
 - Tmds.DBus: repository commit `b4a7fed0b878f74cb54f7cca84d2889af4e596ba`,
   `COPYING`.
 - VSTest: repository commit `36206450d47fec22e281ba9846445edc796f5080`,

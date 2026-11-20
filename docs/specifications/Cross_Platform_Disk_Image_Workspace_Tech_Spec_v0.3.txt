@@ -207,6 +207,7 @@ Later / Advanced Formats:
 - QCOW2
 - DMG
 - DiskGenius PMFX (Phase 6 read-only browsing/extraction; see section 6.2.2)
+- Alcohol MDF/MDS, CloneCD CCD/IMG/SUB, ImageDisk IMD, Nero NRG, Norton Ghost GHO, and verified standalone raw CD data tracks (Phase 6 read-only targets; see section 6.2.3)
 - Expanded retro-floppy compatibility, prioritizing 360K and 720K media
 - Other common disk, floppy, optical, or virtual-machine image formats
 
@@ -240,6 +241,14 @@ The local corpus exposed FAT16/FAT32, not NTFS. Obtain legal NTFS PMFX coverage 
 
 Apply the read-only cap compositionally, including otherwise writable FAT/NTFS. PMFX modification/staging, metadata edits, modified-image Save As, source commit, rebuild, creation/formatting and image conversion/export are outside this addition; file extraction is required. No future PMFX writer milestone/date is required or promised. Keep concrete reader blockers incomplete for explicit owner review rather than silently dropping required read support. Existing disk/optical/retro writing requirements are unchanged.
 
+
+6.2.3 PHASE 6 COMPATIBILITY-AUDIT ADDITIONS
+
+The owner added six read-only targets under checklist item 6.12 on November 19, 2026. Qualify bounded direct readers or opening modes for Alcohol MDF/MDS, CloneCD CCD/IMG/SUB, ImageDisk IMD, Nero NRG, Norton Ghost GHO, and verified single raw CD data tracks. Support applicable browsing, extraction, track inspection and CD-DA playback in the normal workspace. Resolve companion files safely and validate metadata and byte ranges against the backing data. Apply read-only caps to the composed stack, including otherwise writable FAT/NTFS volumes.
+
+Checklist item 6.13 covers rejected BIN/CUE gaps, sheet encoding and missing or inadmissible companions, ISO 9660 Rock Ridge relocation and geometry or extent failures, and raw FAT volume bounds and 1.44 MB reserved allocation entries. Qualify verified variants against legal fixtures and independent evidence. Give actionable reasons for unavailable bytes, contradictory structure or unknown layouts. Require independent writer qualification before exposing writing or reconstruction on a newly readable variant.
+
+Record legal fixture provenance, tested subsets, malformed-input behavior, and concrete blockers. Phase 6 review requires a qualified outcome or explicit owner disposition for each unresolved valid layout or reader target. This roadmap update records scope for future implementation.
 
 6.3 PARTITION TABLE GOALS
 
@@ -342,7 +351,7 @@ Post-1.0 NTFS update: unchecked P1.NTFS.MODERN.1-P1.NTFS.MODERN.6 in checklist.t
 Physical ARM64 qualification is NOT VERIFIED — DEFERRED POST-1.0 BY OWNER, tracked separately as P1.ARM64.LINUX and P1.ARM64.WINDOWS. The owner owns hardware and can test later; this is prioritization, not permanent hardware absence or abandoned support. Four-target code, dependency review and build/package support remain. Cross-publishing is not physical compatibility. Physical ARM64 runtime/GUI/performance requirements in later phases/release reviews are scheduled under those tasks and do not gate 1.0 or affected phase exits; unrelated x64 work remains required.
 
 Existing read-only additions policy, owner-approved October 15/17, retained:
-VMDK, VDI, QCOW2, DMG, ext2/ext3/ext4, exFAT, HFS+, APFS and PMFX target qualified read-only subsets for 1.0 where feasible. Their staging/modified Save As/commit/rebuild/creation/formatting are outside 1.0, not unassigned writer gaps; no future writer milestone/date is promised. Phase 6 still requires reader evaluation, legal fixtures/tests, exact capability reasons and explicit owner review of concrete infeasibility blockers. Detection is not browsing/extraction; required PMFX direct application opening/browsing/extraction remains mandatory under 6.11/section 6.2.2. Internal parsers, not host mounting support, determine access. Apply read-only caps compositionally across containers and filesystems, including otherwise writable FAT/NTFS.
+VMDK, VDI, QCOW2, DMG, ext2/ext3/ext4, exFAT, HFS+, APFS and PMFX target qualified read-only subsets for 1.0 where feasible. Their staging/modified Save As/commit/rebuild/creation/formatting are outside 1.0, not unassigned writer gaps; no future writer milestone/date is promised. Phase 6 still requires reader evaluation, legal fixtures/tests, exact capability reasons and explicit owner review of concrete infeasibility blockers. Detection is not browsing/extraction; required PMFX direct application opening/browsing/extraction remains mandatory under 6.11/section 6.2.2. Internal parsers, not host mounting support, determine access. Apply read-only caps compositionally across containers and filesystems, including otherwise writable FAT/NTFS. The same 1.0 boundary applies to the six item 6.12 readers.
 
 Delivery assignments (preserved with revised exit scope):
 - Phase 2 retains verified conventional unpartitioned raw FAT12/FAT16/FAT32 DOS 8.3 editing and validated Save As.
@@ -1053,6 +1062,7 @@ Phase 6 - Additional Formats and Filesystems
 - Explicitly qualify conventional 360K/720K staged editing, Save As and safe direct commit; track creation/conversion separately.
 - Qualify feasible read-only subsets of VMDK/VDI/QCOW2/DMG/ext/exFAT/HFS+/APFS for 1.0; document concrete reader blockers for owner review without promising later writers.
 - Implement and qualify bounded DiskGenius PMFX read-only browsing/extraction under checklist 6.11 and section 6.2.2, reusing existing filesystem readers and denying writing/rebuild; roadmap approval on October 17, 2026 does not authorize implementation.
+- Qualify the six read-only compatibility-audit targets in checklist 6.12 and resolve the existing-format open failures tracked in 6.13. Follow section 6.2.3 and document unsupported layouts with specific evidence for owner review.
 
 Phase 7 - Linux and ARM64 Hardening
 - After Phases 5 and 6, validate the combined product on representative Linux x86-64 distributions, including the new optical and format workflows.
